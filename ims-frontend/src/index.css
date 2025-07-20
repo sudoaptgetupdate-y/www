@@ -1,0 +1,154 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&family=Noto+Sans:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem
+  }
+  .dark {
+    /* Dark mode styles */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* --- START: โค้ดสำหรับ Print (ฉบับปรับปรุง) --- */
+@media print {
+  body {
+    background: white !important;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 10pt;
+  }
+
+  /* 1. ซ่อนส่วนที่ไม่ต้องการพิมพ์ทั้งหมด */
+  body > #root > div > aside,
+  body > #root > div > div > header,
+  .no-print {
+    display: none !important;
+  }
+  
+  /* 2. จัด Layout หลักของหน้าพิมพ์ */
+  .printable-area {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 1.5cm; /* ระยะขอบกระดาษ */
+    margin: 0 !important;
+  }
+  
+  /* 3. สไตล์หัวเอกสาร */
+  .print-header {
+    display: block !important; /* แสดงผลเฉพาะตอนพิมพ์ */
+    text-align: center;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 1rem;
+  }
+  .print-header h1 {
+    font-size: 22px;
+    font-weight: bold;
+    color: #000;
+  }
+  .print-header p {
+    font-size: 14px;
+    color: #555;
+    margin-top: 4px;
+  }
+
+  /* 4. สไตล์ Card และตาราง */
+  .printable-area .card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    margin-bottom: 1.5rem;
+    padding: 0 !important;
+  }
+  .printable-area .card-header {
+    padding: 1rem;
+    border-bottom: 1px solid #ddd;
+  }
+   .printable-area .card-content {
+    padding: 1rem;
+   }
+  .printable-area table {
+    color: black;
+    width: 100%;
+  }
+  .printable-area table th,
+  .printable-area table td {
+    border-color: #ddd !important;
+    padding: 0.75rem;
+  }
+  .printable-area table thead {
+    background-color: #f9f9f9;
+  }
+  .printable-area table tfoot tr {
+    border-top: 2px solid #333 !important;
+  }
+  .printable-area .badge {
+    border: 1px solid #ccc !important;
+    background-color: #f0f0f0 !important;
+    color: black !important;
+  }
+
+  /* 5. ซ่อน Header/Footer ของ Browser */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  
+  /* 6. สไตล์ส่วนลายเซ็นต์ */
+  .signature-section {
+    display: flex !important;
+    justify-content: space-between;
+    margin-top: 5rem;
+    page-break-inside: avoid; /* ป้องกันการขึ้นหน้าใหม่กลางส่วนลายเซ็นต์ */
+  }
+  .signature-box {
+    width: 45%;
+    text-align: center;
+    font-size: 12px;
+  }
+  .signature-box .signature-line {
+    border-bottom: 1px dotted #333;
+    height: 2rem;
+    margin-bottom: 0.5rem;
+  }
+}
+/* --- END --- */
