@@ -348,7 +348,7 @@ export default function InventoryPage() {
                                                             <DropdownMenuItem
                                                                 className="text-red-600 focus:text-red-500"
                                                                 onSelect={(e) => e.preventDefault()}
-                                                                disabled={item.status === 'SOLD' || item.status === 'BORROWED'}
+                                                                disabled={item.status === 'SOLD' || item.status === 'BORROWED' || item.status === 'DEFECTIVE'}
                                                                 onClick={() => setItemToDelete(item)}
                                                             >
                                                                 <Trash2 className="mr-2 h-4 w-4" /> Delete
@@ -446,21 +446,6 @@ export default function InventoryPage() {
                                 placeholder="AA:BB:CC:DD:EE:FF"
                              />
                         </div>
-                        {isEditMode && (
-                             <div className="space-y-2">
-                                <Label htmlFor="status">Status</Label>
-                                <Select onValueChange={(value) => setFormData(prev => ({...prev, status: value}))} value={formData.status}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="IN_STOCK">In Stock</SelectItem>
-                                        <SelectItem value="SOLD">Sold</SelectItem>
-                                        <SelectItem value="BORROWED">Borrowed</SelectItem>
-                                        <SelectItem value="RESERVED">Reserved</SelectItem>
-                                        <SelectItem value="DEFECTIVE">Defective</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
                         <DialogFooter><Button type="submit">Save</Button></DialogFooter>
                     </form>
                 </DialogContent>
