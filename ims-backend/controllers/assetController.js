@@ -4,7 +4,7 @@ const { PrismaClient, ItemType } = require('@prisma/client');
 const prisma = new PrismaClient();
 const assetController = {};
 
-// POST /api/assets - สร้าง Asset ใหม่
+// ... (โค้ดส่วนบน: createAsset, updateAsset, deleteAsset, getAllAssets, getAssetById ไม่เปลี่ยนแปลง) ...
 assetController.createAsset = async (req, res) => {
     try {
         const { serialNumber, macAddress, productModelId, assetCode } = req.body;
@@ -32,7 +32,6 @@ assetController.createAsset = async (req, res) => {
     }
 };
 
-// PUT /api/assets/:id - อัปเดตข้อมูล Asset
 assetController.updateAsset = async (req, res) => {
     try {
         const { id } = req.params;
@@ -57,7 +56,6 @@ assetController.updateAsset = async (req, res) => {
     }
 };
 
-// DELETE /api/assets/:id - ลบ Asset
 assetController.deleteAsset = async (req, res) => {
     const { id } = req.params;
     try {
@@ -86,8 +84,6 @@ assetController.deleteAsset = async (req, res) => {
     }
 };
 
-
-// --- โค้ดเดิมจากขั้นตอนที่ 1 ---
 assetController.getAllAssets = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -104,7 +100,6 @@ assetController.getAllAssets = async (req, res) => {
                 { macAddress: { equals: searchTerm } },
                 { productModel: { modelNumber: { contains: searchTerm } } },
                 { assetCode: { contains: searchTerm } },
-                { assignmentRecords: { some: { assignment: { assignee: { name: { contains: searchTerm } } } } } }
             ];
         }
         
@@ -179,37 +174,86 @@ assetController.getAssetById = async (req, res) => {
     }
 };
 
+// --- START: ส่วนที่แก้ไข ---
 assetController.getAssetHistory = async (req, res) => {
     const { id } = req.params;
+    const itemId = parseInt(id);
     try {
+        const history = [];
+
+        // 1. Assignment History
         const assignmentRecords = await prisma.assetAssignmentOnItems.findMany({
-            where: { inventoryItemId: parseInt(id) },
+            where: { inventoryItemId: itemId },
             include: {
                 assignment: {
                     include: {
                         assignee: { select: { name: true } },
+                        approvedBy: { select: { name: true } }
                     }
                 }
             },
-            orderBy: {
-                assignedAt: 'desc'
+            orderBy: { assignedAt: 'asc' }
+        });
+
+        assignmentRecords.forEach(record => {
+            history.push({
+                type: 'ASSIGN',
+                date: record.assignedAt,
+                details: `Assigned to ${record.assignment.assignee.name}`,
+                user: record.assignment.approvedBy.name,
+                transactionId: record.assignmentId,
+                transactionType: 'ASSIGNMENT'
+            });
+            if (record.returnedAt) {
+                history.push({
+                    type: 'RETURN',
+                    date: record.returnedAt,
+                    details: `Returned from ${record.assignment.assignee.name}`,
+                    user: record.assignment.approvedBy.name,
+                    transactionId: record.assignmentId,
+                    transactionType: 'ASSIGNMENT'
+                });
             }
         });
 
-        const formattedHistory = assignmentRecords.map(record => ({
-            id: `${record.assignmentId}-${record.inventoryItemId}`,
-            assignedTo: record.assignment.assignee,
-            assignedAt: record.assignedAt,
-            returnedAt: record.returnedAt,
-            notes: record.assignment.notes
-        }));
+        // 2. Repair History
+        const repairRecords = await prisma.repairOnItems.findMany({
+            where: { inventoryItemId: itemId },
+            include: { repair: { include: { receiver: true, createdBy: true } } },
+            orderBy: { sentAt: 'asc' }
+        });
 
-        res.status(200).json(formattedHistory);
+        repairRecords.forEach(record => {
+            history.push({
+                type: 'REPAIR_SENT',
+                date: record.sentAt,
+                details: `Sent to ${record.repair.receiver.name} for repair`,
+                user: record.repair.createdBy.name,
+                transactionId: record.repairId,
+                transactionType: 'REPAIR'
+            });
+            if (record.returnedAt) {
+                const outcome = record.repairOutcome === 'REPAIRED_SUCCESSFULLY' ? 'Success' : 'Failed';
+                history.push({
+                    type: 'REPAIR_RETURNED',
+                    date: record.returnedAt,
+                    details: `Returned from ${record.repair.receiver.name} (Outcome: ${outcome})`,
+                    user: record.repair.createdBy.name,
+                    transactionId: record.repairId,
+                    transactionType: 'REPAIR'
+                });
+            }
+        });
+
+        const sortedHistory = history.sort((a, b) => new Date(b.date) - new Date(a.date));
+        res.status(200).json(sortedHistory);
+
     } catch (error) {
         console.error("Error fetching asset history:", error);
         res.status(500).json({ error: 'Could not fetch asset history.' });
     }
 };
+// --- END: ส่วนที่แก้ไข ---
 
 assetController.decommissionAsset = async (req, res) => {
     const { id } = req.params;

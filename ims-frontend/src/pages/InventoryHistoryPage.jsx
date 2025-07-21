@@ -7,31 +7,17 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, ShoppingCart, ArrowRightLeft, CornerUpLeft, Package, ArchiveX } from "lucide-react";
+import { ArrowLeft, ShoppingCart, ArrowRightLeft, CornerUpLeft, Package, ArchiveX, Wrench, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-// --- START: ส่วนที่แก้ไข ---
-const eventIcons = {
-    SALE: <ShoppingCart className="h-4 w-4 text-green-600" />,
-    BORROW: <ArrowRightLeft className="h-4 w-4 text-orange-600" />,
-    RETURN: <CornerUpLeft className="h-4 w-4 text-blue-600" />,
-    VOID: <ArchiveX className="h-4 w-4 text-red-600" />,
+const eventConfig = {
+    SALE: { icon: <ShoppingCart className="h-4 w-4" />, label: 'Sold', variant: 'success' },
+    VOID: { icon: <ArchiveX className="h-4 w-4" />, label: 'Voided', variant: 'destructive' },
+    BORROW: { icon: <ArrowRightLeft className="h-4 w-4" />, label: 'Borrowed', variant: 'warning' },
+    RETURN: { icon: <CornerUpLeft className="h-4 w-4" />, label: 'Returned', variant: 'info' },
+    REPAIR_SENT: { icon: <Wrench className="h-4 w-4" />, label: 'Sent to Repair', variant: 'info' },
+    REPAIR_RETURNED: { icon: <ShieldCheck className="h-4 w-4" />, label: 'Repair Return', variant: 'success' },
 };
-
-const eventLabels = {
-    SALE: 'Sold',
-    BORROW: 'Borrowed',
-    RETURN: 'Returned',
-    VOID: 'Voided',
-};
-
-const eventColors = {
-    SALE: 'success',
-    BORROW: 'warning',
-    RETURN: 'info',
-    VOID: 'destructive',
-};
-// --- END: ส่วนที่แก้ไข ---
 
 
 export default function InventoryHistoryPage() {
@@ -59,6 +45,21 @@ export default function InventoryHistoryPage() {
         };
         fetchData();
     }, [itemId, token]);
+
+    const getTransactionLink = (type, id) => {
+        switch (type) {
+            case 'SALE':
+            case 'VOID':
+                return `/sales/${id}`;
+            case 'BORROWING':
+                // Note: The 'RETURN' event for borrowing shares the same transaction ID
+                return `/borrowings/${id}`;
+            case 'REPAIR':
+                return `/repairs/${id}`;
+            default:
+                return '#';
+        }
+    };
 
     if (loading) return <p>Loading history...</p>;
     if (!itemDetails) return <p>Item not found.</p>;
@@ -88,37 +89,35 @@ export default function InventoryHistoryPage() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left w-24">Event</th>
                                 <th className="p-2 text-left">Date</th>
-                                <th className="p-2 text-left">Customer</th>
+                                <th className="p-2 text-left">Details</th>
                                 <th className="p-2 text-left">Handled By</th>
-                                <th className="p-2 text-center">Reference ID</th>
+                                <th className="p-2 text-center w-40">Event</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {history.length > 0 ? history.map((h, index) => (
+                            {history.length > 0 ? history.map((h, index) => {
+                                const config = eventConfig[h.type] || { label: h.type, variant: 'secondary', icon: null };
+                                // Handle cases where transactionType might be missing for older events
+                                const link = h.transactionId ? getTransactionLink(h.transactionType, h.transactionId) : '#';
+                                return (
                                 <tr key={index} className="border-b">
-                                    <td className="p-2">
-                                        <Badge variant={eventColors[h.type]} className="w-24 justify-center">
-                                            {eventIcons[h.type]}
-                                            <span className="ml-1.5">{eventLabels[h.type]}</span>
-                                        </Badge>
-                                    </td>
                                     <td className="p-2">{new Date(h.date).toLocaleString()}</td>
-                                    <td className="p-2">{h.customer || '-'}</td>
+                                    <td className="p-2">{h.details}</td>
                                     <td className="p-2">{h.user || '-'}</td>
                                     <td className="p-2 text-center">
-                                        <Button 
-                                            variant="link" 
-                                            className="h-auto p-0"
-                                            onClick={() => navigate(h.type === 'SALE' || h.type === 'VOID' ? `/sales/${h.transactionId}` : `/borrowings/${h.transactionId}`)}
+                                         <Badge 
+                                            variant={config.variant} 
+                                            className="w-36 justify-center cursor-pointer"
+                                            onClick={() => link !== '#' && navigate(link)}
                                         >
-                                            #{h.transactionId}
-                                        </Button>
+                                            {config.icon}
+                                            <span className="ml-1.5">{config.label}</span>
+                                        </Badge>
                                     </td>
                                 </tr>
-                            )) : (
-                                <tr><td colSpan="5" className="p-4 text-center text-muted-foreground">No transaction history found for this item.</td></tr>
+                            )}) : (
+                                <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">No transaction history found for this item.</td></tr>
                             )}
                         </tbody>
                     </table>

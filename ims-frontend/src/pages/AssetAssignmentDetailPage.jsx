@@ -94,7 +94,7 @@ export default function AssetAssignmentDetailPage() {
         <div className="space-y-6 printable-area">
             <div className="flex justify-between items-center no-print">
                 {/* --- START: ส่วนที่แก้ไข --- */}
-                <Button variant="outline" onClick={() => navigate('/asset-assignments')}>
+                <Button variant="outline" onClick={() => navigate(-1)}>
                 {/* --- END: ส่วนที่แก้ไข --- */}
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back

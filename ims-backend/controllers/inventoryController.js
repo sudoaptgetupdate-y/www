@@ -4,7 +4,6 @@ const { PrismaClient, ItemType } = require('@prisma/client');
 const prisma = new PrismaClient();
 const inventoryController = {};
 
-// POST /api/inventory - เพิ่มสินค้าใหม่
 inventoryController.addInventoryItem = async (req, res) => {
     try {
         const { serialNumber, macAddress, productModelId } = req.body;
@@ -12,7 +11,7 @@ inventoryController.addInventoryItem = async (req, res) => {
 
         const newItem = await prisma.inventoryItem.create({
             data: {
-                itemType: ItemType.SALE, // บังคับเป็น SALE
+                itemType: ItemType.SALE,
                 serialNumber: serialNumber || null,
                 macAddress: macAddress || null,
                 productModelId,
@@ -31,7 +30,6 @@ inventoryController.addInventoryItem = async (req, res) => {
     }
 };
 
-// GET /api/inventory - ดึงข้อมูลสินค้าทั้งหมด
 inventoryController.getAllInventoryItems = async (req, res) => {
     try {
         if (req.query.all === 'true') {
@@ -98,7 +96,6 @@ inventoryController.getAllInventoryItems = async (req, res) => {
     }
 };
 
-// GET /api/inventory/:id - ดึงข้อมูลสินค้าชิ้นเดียว
 inventoryController.getInventoryItemById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -118,7 +115,6 @@ inventoryController.getInventoryItemById = async (req, res) => {
     }
 };
 
-// PUT /api/inventory/:id - อัปเดตข้อมูลสินค้า
 inventoryController.updateInventoryItem = async (req, res) => {
     try {
         const { id } = req.params;
@@ -142,7 +138,6 @@ inventoryController.updateInventoryItem = async (req, res) => {
     }
 };
 
-// DELETE /api/inventory/:id - ลบสินค้า
 inventoryController.deleteInventoryItem = async (req, res) => {
     const { id } = req.params;
     try {
@@ -171,7 +166,6 @@ inventoryController.deleteInventoryItem = async (req, res) => {
     }
 };
 
-// PATCH /api/inventory/:id/decommission - ปลดระวางสินค้า
 inventoryController.decommissionItem = async (req, res) => {
     const { id } = req.params;
     try {
@@ -192,7 +186,6 @@ inventoryController.decommissionItem = async (req, res) => {
     }
 };
 
-// PATCH /api/inventory/:id/reinstate - นำสินค้ากลับมาใช้งาน
 inventoryController.reinstateItem = async (req, res) => {
     const { id } = req.params;
     try {
@@ -213,7 +206,7 @@ inventoryController.reinstateItem = async (req, res) => {
     }
 };
 
-// --- START: เพิ่มฟังก์ชันนี้กลับเข้ามา ---
+// --- START: ส่วนที่แก้ไข ---
 inventoryController.getInventoryItemHistory = async (req, res) => {
     const { id } = req.params;
     const itemId = parseInt(id);
@@ -224,69 +217,89 @@ inventoryController.getInventoryItemHistory = async (req, res) => {
             include: { productModel: true }
         });
 
-        if (!item || item.itemType !== 'SALE') {
-            return res.status(404).json({ error: 'Inventory item for sale not found.' });
+        if (!item) { // No need to check itemType here, history is for all types
+            return res.status(404).json({ error: 'Item not found.' });
         }
 
         const history = [];
 
-        // 1. ตรวจสอบประวัติการขาย
+        // 1. Sale History
         const saleRecord = await prisma.sale.findFirst({
             where: { itemsSold: { some: { id: itemId } } },
-            include: { customer: true, soldBy: true, voidedBy: true } // เพิ่ม voidedBy
+            include: { customer: true, soldBy: true, voidedBy: true }
         });
-
         if (saleRecord) {
             history.push({
                 type: 'SALE',
-                status: saleRecord.status,
                 date: saleRecord.saleDate,
-                customer: saleRecord.customer.name,
+                details: `Sold to ${saleRecord.customer.name}`,
                 user: saleRecord.soldBy.name,
-                transactionId: saleRecord.id
+                transactionId: saleRecord.id,
+                transactionType: 'SALE'
             });
-
-            // ถ้าการขายถูก Void ให้เพิ่ม Event เข้าไปใน History
             if (saleRecord.status === 'VOIDED' && saleRecord.voidedAt) {
                 history.push({
                     type: 'VOID',
                     date: saleRecord.voidedAt,
-                    customer: saleRecord.customer.name,
+                    details: `Sale voided`,
                     user: saleRecord.voidedBy ? saleRecord.voidedBy.name : 'N/A',
-                    transactionId: saleRecord.id
+                    transactionId: saleRecord.id,
+                    transactionType: 'SALE'
                 });
             }
         }
 
-        // 2. ตรวจสอบประวัติการยืม-คืน
+        // 2. Borrowing History
         const borrowingRecords = await prisma.borrowingOnItems.findMany({
             where: { inventoryItemId: itemId },
-            include: {
-                borrowing: {
-                    include: {
-                        borrower: true, // Customer
-                        approvedBy: true // User
-                    }
-                }
-            },
+            include: { borrowing: { include: { borrower: true, approvedBy: true } } },
             orderBy: { assignedAt: 'asc' }
         });
-
         borrowingRecords.forEach(record => {
             history.push({
                 type: 'BORROW',
                 date: record.assignedAt,
-                customer: record.borrowing.borrower.name,
+                details: `Borrowed by ${record.borrowing.borrower.name}`,
                 user: record.borrowing.approvedBy.name,
-                transactionId: record.borrowingId
+                transactionId: record.borrowingId,
+                transactionType: 'BORROWING'
             });
             if (record.returnedAt) {
                 history.push({
                     type: 'RETURN',
                     date: record.returnedAt,
-                    customer: record.borrowing.borrower.name,
+                    details: `Returned by ${record.borrowing.borrower.name}`,
                     user: record.borrowing.approvedBy.name,
-                    transactionId: record.borrowingId
+                    transactionId: record.borrowingId,
+                    transactionType: 'BORROWING'
+                });
+            }
+        });
+
+        // 3. Repair History
+        const repairRecords = await prisma.repairOnItems.findMany({
+            where: { inventoryItemId: itemId },
+            include: { repair: { include: { receiver: true, createdBy: true } } },
+            orderBy: { sentAt: 'asc' }
+        });
+        repairRecords.forEach(record => {
+            history.push({
+                type: 'REPAIR_SENT',
+                date: record.sentAt,
+                details: `Sent to ${record.repair.receiver.name}`,
+                user: record.repair.createdBy.name,
+                transactionId: record.repairId,
+                transactionType: 'REPAIR'
+            });
+            if (record.returnedAt) {
+                const outcome = record.repairOutcome === 'REPAIRED_SUCCESSFULLY' ? 'Success' : 'Failed';
+                history.push({
+                    type: 'REPAIR_RETURNED',
+                    date: record.returnedAt,
+                    details: `Returned from ${record.repair.receiver.name} (Outcome: ${outcome})`,
+                    user: record.repair.createdBy.name, // Assuming the creator is the one who receives it back
+                    transactionId: record.repairId,
+                    transactionType: 'REPAIR'
                 });
             }
         });
@@ -303,6 +316,6 @@ inventoryController.getInventoryItemHistory = async (req, res) => {
         res.status(500).json({ error: 'Could not fetch item history.' });
     }
 };
-// --- END: เพิ่มฟังก์ชันนี้กลับเข้ามา ---
+// --- END: ส่วนที่แก้ไข ---
 
 module.exports = inventoryController;

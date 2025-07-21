@@ -100,7 +100,7 @@ export default function RepairDetailPage() {
     return (
         <div className="space-y-4 printable-area"> {/* <-- ลด space y */}
             <div className="flex justify-between items-center no-print">
-                <Button variant="outline" onClick={() => navigate('/repairs')}>
+                <Button variant="outline" onClick={() => navigate(-1)}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
                 </Button>
                 <div>

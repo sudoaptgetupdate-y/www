@@ -1,6 +1,6 @@
 // ims-backend/controllers/repairController.js
 
-const { PrismaClient, ItemStatus, ItemOwner, RepairStatus } = require('@prisma/client');
+const { PrismaClient, ItemStatus, ItemOwner, RepairStatus, RepairOutcome, ItemType } = require('@prisma/client'); // <-- แก้ไขบรรทัดนี้
 const prisma = new PrismaClient();
 const repairController = {};
 
@@ -141,9 +141,10 @@ repairController.getRepairOrderById = async (req, res) => {
     }
 };
 
+// PATCH /api/repairs/:id/return - รับของคืนจากซ่อม
 repairController.returnItemsFromRepair = async (req, res) => {
     const { id: repairId } = req.params;
-    const { itemsToReturn } = req.body; // Expects an array of { inventoryItemId, repairOutcome }
+    const { itemsToReturn } = req.body; // Expects array of { inventoryItemId, repairOutcome }
 
     if (!itemsToReturn || itemsToReturn.length === 0) {
         return res.status(400).json({ error: 'At least one item to return is required.' });
@@ -153,37 +154,62 @@ repairController.returnItemsFromRepair = async (req, res) => {
         await prisma.$transaction(async (tx) => {
             const now = new Date();
 
-            // 1. Update each item in the join table
-            for (const item of itemsToReturn) {
+            for (const itemData of itemsToReturn) {
+                const { inventoryItemId, repairOutcome } = itemData;
+
+                // 1. Verify the item exists and is part of this repair order
+                const repairItemRecord = await tx.repairOnItems.findUnique({
+                    where: {
+                        repairId_inventoryItemId: {
+                            repairId: parseInt(repairId),
+                            inventoryItemId: inventoryItemId
+                        }
+                    },
+                    include: {
+                        inventoryItem: true
+                    }
+                });
+
+                if (!repairItemRecord || repairItemRecord.inventoryItem.status !== 'REPAIRING') {
+                    throw new Error(`Item ID ${inventoryItemId} is not valid for this repair order or is not in a REPAIRING state.`);
+                }
+                
+                // 2. Update the join table with the outcome
                 await tx.repairOnItems.update({
-                    where: { repairId_inventoryItemId: { repairId: parseInt(repairId), inventoryItemId: item.inventoryItemId } },
+                    where: {
+                        repairId_inventoryItemId: {
+                            repairId: parseInt(repairId),
+                            inventoryItemId: inventoryItemId
+                        }
+                    },
                     data: {
                         returnedAt: now,
-                        repairOutcome: item.repairOutcome,
+                        repairOutcome: repairOutcome,
                     },
                 });
 
-                // 2. Update the status of the actual inventory item
-                const inventoryItem = await tx.inventoryItem.findUnique({ where: { id: item.inventoryItemId } });
-                
+                // 3. Determine the new status for the InventoryItem
+                const { inventoryItem } = repairItemRecord;
                 let newStatus;
+
                 if (inventoryItem.ownerType === ItemOwner.CUSTOMER) {
                     newStatus = ItemStatus.RETURNED_TO_CUSTOMER;
                 } else { // COMPANY owned
-                    if (item.repairOutcome === RepairOutcome.REPAIRED_SUCCESSFULLY) {
+                    if (repairOutcome === RepairOutcome.REPAIRED_SUCCESSFULLY) {
                         newStatus = inventoryItem.itemType === ItemType.ASSET ? ItemStatus.IN_WAREHOUSE : ItemStatus.IN_STOCK;
                     } else { // UNREPAIRABLE
                         newStatus = ItemStatus.DECOMMISSIONED;
                     }
                 }
                 
+                // 4. Update the InventoryItem's status
                 await tx.inventoryItem.update({
-                    where: { id: item.inventoryItemId },
+                    where: { id: inventoryItemId },
                     data: { status: newStatus },
                 });
             }
 
-            // 3. Update the main Repair Order status
+            // 5. Update the main Repair Order status after all items are processed
             const remainingItems = await tx.repairOnItems.count({
                 where: { repairId: parseInt(repairId), returnedAt: null }
             });
@@ -199,8 +225,9 @@ repairController.returnItemsFromRepair = async (req, res) => {
         res.status(200).json({ message: 'Items have been returned successfully.' });
     } catch (error) {
         console.error("Return Items Error:", error);
-        res.status(500).json({ error: 'Could not process the return.' });
+        res.status(500).json({ error: error.message || 'Could not process the return.' });
     }
 };
+
 
 module.exports = repairController;
