@@ -37,7 +37,9 @@ export default function EditAssetPage() {
     useEffect(() => {
         const fetchAsset = async () => {
             try {
-                const response = await axiosInstance.get(`/inventory-items/${assetId}`, {
+                // --- START: แก้ไขบรรทัดนี้ ---
+                const response = await axiosInstance.get(`/assets/${assetId}`, {
+                // --- END: แก้ไขบรรทัดนี้ ---
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const assetData = response.data;
@@ -46,6 +48,7 @@ export default function EditAssetPage() {
                     serialNumber: assetData.serialNumber || '',
                     macAddress: assetData.macAddress || '',
                     productModelId: assetData.productModelId,
+                    status: assetData.status // เพิ่ม status เข้ามาด้วย
                 });
                 setInitialModel(assetData.productModel);
                 setIsMacRequired(assetData.productModel.category.requiresMacAddress);
@@ -91,7 +94,9 @@ export default function EditAssetPage() {
             return;
         }
         try {
-            await axiosInstance.put(`/inventory-items/${assetId}`, formData, { 
+            // --- START: แก้ไขบรรทัดนี้ ---
+            await axiosInstance.put(`/assets/${assetId}`, formData, { 
+            // --- END: แก้ไขบรรทัดนี้ ---
                 headers: { Authorization: `Bearer ${token}` } 
             });
             toast.success("Asset updated successfully!");
