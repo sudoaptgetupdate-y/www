@@ -26,16 +26,6 @@ addressController.createAddress = async (req, res) => {
 // GET /api/addresses - ดึงข้อมูลที่อยู่ทั้งหมด
 addressController.getAllAddresses = async (req, res) => {
     try {
-        if (req.query.all === 'true') {
-            const allAddresses = await prisma.address.findMany({ 
-                orderBy: { name: 'asc' },
-                // --- START: ส่วนที่แก้ไข ---
-                take: 1000 // จำกัดให้ดึงข้อมูลสูงสุด 1000 รายการ
-                // --- END ---
-            });
-            return res.status(200).json(allAddresses);
-        }
-
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const searchTerm = req.query.search || '';
@@ -49,7 +39,7 @@ addressController.getAllAddresses = async (req, res) => {
             ],
         } : {};
 
-        const [addresses, totalItems] = await prisma.$transaction([
+        const [addresses, totalItems] = await Promise.all([
             prisma.address.findMany({ where, skip, take: limit, orderBy: { createdAt: 'desc' } }),
             prisma.address.count({ where }),
         ]);
@@ -96,6 +86,9 @@ addressController.updateAddress = async (req, res) => {
         if (error.code === 'P2002') {
             return res.status(400).json({ error: 'This address name already exists.' });
         }
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'The address you are trying to update was not found.' });
+        }
         res.status(500).json({ error: 'Could not update the address.' });
     }
 };
@@ -109,6 +102,9 @@ addressController.deleteAddress = async (req, res) => {
     } catch (error) {
         if (error.code === 'P2003') { // Foreign key constraint
             return res.status(400).json({ error: 'Cannot delete this address as it is currently in use in a repair order.' });
+        }
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'The address you are trying to delete was not found.' });
         }
         res.status(500).json({ error: 'Could not delete the address.' });
     }

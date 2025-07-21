@@ -27,9 +27,7 @@ export default function CreateSalePage() {
     const location = useLocation();
     const token = useAuthStore((state) => state.token);
 
-    // --- START: แก้ไข 1/4: เพิ่ม State เก็บข้อมูลดิบ ---
     const [fetchedItems, setFetchedItems] = useState([]);
-    // --- END ---
     const [availableItems, setAvailableItems] = useState([]);
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
     const [selectedItems, setSelectedItems] = useState([]);
@@ -44,21 +42,22 @@ export default function CreateSalePage() {
         }
     }, [location.state]);
 
-    // --- START: แก้ไข 2/4: useEffect นี้จะทำหน้าที่ 'ดึง' ข้อมูลอย่างเดียว ---
+    // useEffect นี้จะทำหน้าที่ 'ดึง' ข้อมูลจาก API เท่านั้น
     useEffect(() => {
         const fetchAvailableItems = async () => {
             if (!token) return;
             setIsLoading(true);
             try {
+                // API จะรับผิดชอบการกรองตาม status และ search term
                 const response = await axiosInstance.get("/inventory", {
                     headers: { Authorization: `Bearer ${token}` },
                     params: {
                         status: 'IN_STOCK',
                         search: debouncedItemSearch,
-                        limit: 100
+                        limit: 100 // ดึงมาแสดงผลในตารางจำนวนหนึ่ง
                     }
                 });
-                setFetchedItems(response.data.data); // อัปเดตข้อมูลดิบ
+                setFetchedItems(response.data.data);
             } catch (error) {
                 toast.error("Failed to fetch available items.");
             } finally {
@@ -67,16 +66,13 @@ export default function CreateSalePage() {
         };
         fetchAvailableItems();
     }, [token, debouncedItemSearch]);
-    // --- END ---
 
-    // --- START: แก้ไข 3/4: useEffect ใหม่นี้จะทำหน้าที่ 'กรอง' ข้อมูลโดยเฉพาะ ---
+    // useEffect นี้จะทำหน้าที่ 'กรอง' รายการที่ถูกเลือกแล้วออกจากรายการที่แสดงผล
     useEffect(() => {
         const selectedIds = new Set(selectedItems.map(i => i.id));
         setAvailableItems(fetchedItems.filter(item => !selectedIds.has(item.id)));
     }, [selectedItems, fetchedItems]);
-    // --- END ---
 
-    // --- START: แก้ไข 4/4: ทำให้ Logic การ Add/Remove ง่ายขึ้น ---
     const handleAddItem = (itemToAdd) => {
         setSelectedItems(prev => [...prev, itemToAdd]);
     };
@@ -84,7 +80,6 @@ export default function CreateSalePage() {
     const handleRemoveItem = (itemToRemove) => {
         setSelectedItems(prev => prev.filter(item => item.id !== itemToRemove.id));
     };
-    // --- END ---
 
     const handleSubmit = async () => {
         if (!selectedCustomerId) {

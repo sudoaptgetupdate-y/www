@@ -132,7 +132,7 @@ assetAssignmentController.getAllAssignments = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        const [assignments, totalItems] = await prisma.$transaction([
+        const [assignments, totalItems] = await Promise.all([
             prisma.assetAssignment.findMany({
                 skip,
                 take: limit,

@@ -83,7 +83,9 @@ const MyAssetsTab = () => {
                                         <Badge variant={getStatusVariant(asset.status)} className="w-24 justify-center">{asset.status}</Badge>
                                     </td>
                                     <td className="p-2 text-center">
-                                        <Button variant="outline" size="sm" onClick={() => navigate(`/assets/${asset.id}`)}>
+                                        {/* --- START: แก้ไขบรรทัดนี้ --- */}
+                                        <Button variant="outline" size="sm" onClick={() => navigate(`/assets/${asset.id}/history`)}>
+                                        {/* --- END: แก้ไขบรรทัดนี้ --- */}
                                             Details
                                         </Button>
                                     </td>

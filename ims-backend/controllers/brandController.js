@@ -25,18 +25,9 @@ exports.createBrand = async (req, res) => {
 // ดู Brand ทั้งหมด (แก้ไขให้รองรับ all และ pagination)
 exports.getAllBrands = async (req, res) => {
     try {
-        // เพิ่มเงื่อนไข: ถ้ามีการส่ง ?all=true ให้ส่งข้อมูลทั้งหมดสำหรับ dropdown
-        if (req.query.all === 'true') {
-            const allBrands = await prisma.brand.findMany({ 
-                orderBy: { name: 'asc' },
-                // --- START: ส่วนที่แก้ไข ---
-                take: 1000 // จำกัดให้ดึงข้อมูลสูงสุด 1000 รายการ
-                // --- END ---
-            });
-            return res.status(200).json(allBrands);
-        }
+        // ลบเงื่อนไข ?all=true ออกไปทั้งหมด
+        // ฟังก์ชันจะรองรับการค้นหาและแบ่งหน้าเป็นหลัก
 
-        // Logic การแบ่งหน้าเดิม
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const searchTerm = req.query.search || '';
@@ -46,7 +37,7 @@ exports.getAllBrands = async (req, res) => {
             ? { name: { contains: searchTerm } }
             : {};
 
-        const [brands, totalItems] = await prisma.$transaction([
+        const [brands, totalItems] = await Promise.all([
             prisma.brand.findMany({
                 where,
                 skip,
@@ -107,6 +98,9 @@ exports.updateBrand = async (req, res) => {
         if (error.code === 'P2002') {
             return res.status(400).json({ error: 'This brand name already exists.' });
         }
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'The brand you are trying to update was not found.' });
+        }
         console.error(error);
         res.status(500).json({ error: 'Could not update the brand' });
     }
@@ -122,6 +116,9 @@ exports.deleteBrand = async (req, res) => {
     } catch (error) {
         if (error.code === 'P2003') {
             return res.status(400).json({ error: 'Cannot delete this brand because it is being used by product models.' });
+        }
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'The brand you are trying to delete was not found.' });
         }
         console.error(error);
         res.status(500).json({ error: 'Could not delete the brand' });

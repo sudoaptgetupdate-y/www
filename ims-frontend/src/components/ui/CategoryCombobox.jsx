@@ -1,4 +1,4 @@
-// src/components/ui/UserCombobox.jsx
+// src/components/ui/CategoryCombobox.jsx
 
 import { useState, useEffect } from "react";
 import axiosInstance from '@/api/axiosInstance';
@@ -21,7 +21,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-// --- START: เพิ่ม useDebounce ---
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
@@ -30,112 +29,107 @@ function useDebounce(value, delay) {
     }, [value, delay]);
     return debouncedValue;
 }
-// --- END ---
 
-export function UserCombobox({ selectedValue, onSelect, initialUser }) {
+export function CategoryCombobox({ selectedValue, onSelect, initialCategory }) {
   const token = useAuthStore((state) => state.token);
   const [open, setOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState([]); // เปลี่ยนชื่อ state
-  const [selectedUserDisplay, setSelectedUserDisplay] = useState(null);
-  
-  // --- START: เพิ่ม State และ Debounce สำหรับการค้นหา ---
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedCategoryDisplay, setSelectedCategoryDisplay] = useState(null);
+
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  // --- END ---
 
   useEffect(() => {
-    if (initialUser) {
-      setSelectedUserDisplay(initialUser);
+    if (initialCategory) {
+      setSelectedCategoryDisplay(initialCategory);
       if(!searchQuery){
-        setSearchResults([initialUser]);
+        setSearchResults([initialCategory]);
       }
     }
-  }, [initialUser]);
-  
-  // --- START: แก้ไข useEffect ให้ค้นหาข้อมูลแทนการดึงทั้งหมด ---
+  }, [initialCategory]);
+
   useEffect(() => {
     if (!open) {
       setSearchQuery("");
       return;
     }
 
-    const fetchUsers = async () => {
+    const fetchCategories = async () => {
       setIsLoading(true);
       try {
-        const response = await axiosInstance.get("/users", {
+        const response = await axiosInstance.get("/categories", {
           headers: { Authorization: `Bearer ${token}` },
           params: { search: debouncedSearchQuery, limit: 10 },
         });
         setSearchResults(response.data.data);
       } catch (error) {
-        toast.error("Failed to fetch users.");
+        toast.error("Failed to search for categories.");
       } finally {
         setIsLoading(false);
       }
     };
-    fetchUsers();
+
+    fetchCategories();
   }, [debouncedSearchQuery, open, token]);
-  // --- END ---
   
   useEffect(() => {
     if (selectedValue) {
-        const user = searchResults.find(u => String(u.id) === selectedValue);
-        if (user) {
-            setSelectedUserDisplay(user);
+        const category = searchResults.find(c => String(c.id) === selectedValue);
+        if(category) {
+            setSelectedCategoryDisplay(category);
         }
     } else {
-        setSelectedUserDisplay(null);
+        setSelectedCategoryDisplay(null);
     }
   }, [selectedValue, searchResults]);
+
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" role="combobox" className="w-full justify-between">
           <span className="truncate">
-            {selectedValue && selectedUserDisplay
-              ? `${selectedUserDisplay.name} (${selectedUserDisplay.username})`
-              : "Select user..."}
+            {selectedValue && selectedCategoryDisplay
+              ? selectedCategoryDisplay.name
+              : "Select category..."}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        {/* --- START: แก้ไข Command ให้รองรับการค้นหาจาก API --- */}
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search user by name..."
+            placeholder="Search category name..."
             value={searchQuery}
             onValueChange={setSearchQuery}
           />
           <CommandList>
             {isLoading && <div className="p-2 text-center text-sm">Loading...</div>}
-            <CommandEmpty>No user found.</CommandEmpty>
+            <CommandEmpty>No category found.</CommandEmpty>
             <CommandGroup>
-              {searchResults.map((user) => (
+              {searchResults.map((category) => (
                 <CommandItem
-                  key={user.id}
-                  value={String(user.id)} // ใช้ ID เป็น value
+                  key={category.id}
+                  value={String(category.id)}
                   onSelect={() => {
-                     onSelect(String(user.id));
-                     setSelectedUserDisplay(user);
+                     onSelect(String(category.id));
+                     setSelectedCategoryDisplay(category);
                      setOpen(false);
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selectedValue === String(user.id) ? "opacity-100" : "opacity-0"
+                      selectedValue === String(category.id) ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {user.name} ({user.username})
+                  {category.name}
                 </CommandItem>
               ))}
             </CommandGroup>
           </CommandList>
         </Command>
-        {/* --- END --- */}
       </PopoverContent>
     </Popover>
   );

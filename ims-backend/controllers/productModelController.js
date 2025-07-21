@@ -31,7 +31,6 @@ exports.createProductModel = async (req, res) => {
 // --- Get all Product Models (Paginated or All) ---
 exports.getAllProductModels = async (req, res) => {
     try {
-        // This is the include object we will reuse to ensure consistency
         const includeRelations = {
             category: true,
             brand: true,
@@ -40,19 +39,6 @@ exports.getAllProductModels = async (req, res) => {
             }
         };
 
-        // --- Branch for "all=true" requests (for dropdowns) ---
-        if (req.query.all === 'true') {
-            const allProductModels = await prisma.productModel.findMany({
-                orderBy: { modelNumber: 'asc' },
-                include: includeRelations, // Ensure relations are included here too
-                // --- START: ส่วนที่แก้ไข ---
-                take: 1000 // จำกัดให้ดึงข้อมูลสูงสุด 1000 รายการ
-                // --- END ---
-            });
-            return res.status(200).json(allProductModels);
-        }
-
-        // --- Branch for Paginated requests (for tables) ---
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const searchTerm = req.query.search || '';
@@ -64,17 +50,18 @@ exports.getAllProductModels = async (req, res) => {
                     { modelNumber: { contains: searchTerm } },
                     { description: { contains: searchTerm } },
                     { brand: { name: { contains: searchTerm } } },
+                    { category: { name: { contains: searchTerm } } }
                 ]
             }
             : {};
         
-        const [productModels, totalItems] = await prisma.$transaction([
+        const [productModels, totalItems] = await Promise.all([
             prisma.productModel.findMany({
                 where,
                 skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
-                include: includeRelations // Use the consistent include object
+                include: includeRelations
             }),
             prisma.productModel.count({ where })
         ]);
@@ -137,6 +124,9 @@ exports.updateProductModel = async (req, res) => {
         if (error.code === 'P2002') {
             return res.status(400).json({ error: 'This model number already exists for this brand.' });
         }
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'The product model you are trying to update was not found.' });
+        }
         console.error(error);
         res.status(500).json({ error: 'Could not update the product model' });
     }
@@ -153,6 +143,9 @@ exports.deleteProductModel = async (req, res) => {
     } catch (error) {
          if (error.code === 'P2003') { // Foreign key constraint failed
             return res.status(400).json({ error: 'Cannot delete this model because it is linked to inventory items.' });
+        }
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'The product model you are trying to delete was not found.' });
         }
         console.error(error);
         res.status(500).json({ error: 'Could not delete the product model' });

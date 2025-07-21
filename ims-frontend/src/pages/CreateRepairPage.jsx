@@ -1,7 +1,7 @@
 // src/pages/CreateRepairPage.jsx
 
 import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -11,10 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProductModelCombobox } from "@/components/ui/ProductModelCombobox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Trash2, PlusCircle } from "lucide-react";
+import { AddressCombobox } from "@/components/ui/AddressCombobox";
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -77,10 +77,8 @@ const CustomerItemDialog = ({ onAddItem }) => {
 
 export default function CreateRepairPage() {
     const navigate = useNavigate();
-    const location = useLocation();
     const token = useAuthStore((state) => state.token);
 
-    const [addresses, setAddresses] = useState([]);
     const [availableItems, setAvailableItems] = useState([]);
     const [selectedItems, setSelectedItems] = useState([]);
     const [itemSearch, setItemSearch] = useState("");
@@ -91,25 +89,9 @@ export default function CreateRepairPage() {
 
     const debouncedItemSearch = useDebounce(itemSearch, 500);
 
-    // Fetch addresses for dropdowns
-    useEffect(() => {
-        const fetchAddresses = async () => {
-            try {
-                const response = await axiosInstance.get('/addresses', {
-                    headers: { Authorization: `Bearer ${token}` },
-                    params: { all: 'true' }
-                });
-                setAddresses(response.data);
-            } catch (error) {
-                toast.error("Failed to fetch addresses.");
-            }
-        };
-        fetchAddresses();
-    }, [token]);
-
-    // Fetch company's items available for repair
     useEffect(() => {
         const fetchItems = async () => {
+            if (!token) return;
             const params = { search: debouncedItemSearch, limit: 100 };
             try {
                 // Fetch from both inventory and assets
@@ -126,26 +108,20 @@ export default function CreateRepairPage() {
             }
         };
         fetchItems();
-    }, [debouncedItemSearch, token]); // <-- แก้ไข: เอา selectedItems ออก
+    }, [debouncedItemSearch, token]);
 
     const handleAddItem = (itemToAdd) => {
-        // --- START: ส่วนที่แก้ไข ---
         setSelectedItems(prev => [...prev, itemToAdd]);
-        // Only remove from available list if it's not a customer item
         if (!itemToAdd.isCustomerItem) {
             setAvailableItems(prev => prev.filter(item => item.id !== itemToAdd.id));
         }
-        // --- END: ส่วนที่แก้ไข ---
     };
 
     const handleRemoveItem = (itemToRemove) => {
-        // --- START: ส่วนที่แก้ไข ---
         setSelectedItems(selectedItems.filter(item => item.id !== itemToRemove.id));
-        // Only add back if it's not a customer item and there's no search term
         if (!itemToRemove.isCustomerItem && !itemSearch) {
             setAvailableItems(prev => [itemToRemove, ...prev]);
         }
-        // --- END: ส่วนที่แก้ไข ---
     };
 
     const handleSubmit = async () => {
@@ -221,15 +197,17 @@ export default function CreateRepairPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>From (Sender)</Label>
-                            <Select onValueChange={setSenderId}><SelectTrigger><SelectValue placeholder="Select sender..." /></SelectTrigger><SelectContent>
-                                {addresses.map(a => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
-                            </SelectContent></Select>
+                            <AddressCombobox
+                                selectedValue={senderId}
+                                onSelect={setSenderId}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label>To (Receiver)</Label>
-                            <Select onValueChange={setReceiverId}><SelectTrigger><SelectValue placeholder="Select receiver..." /></SelectTrigger><SelectContent>
-                                {addresses.map(a => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
-                            </SelectContent></Select>
+                            <AddressCombobox
+                                selectedValue={receiverId}
+                                onSelect={setReceiverId}
+                            />
                         </div>
                     </div>
                     <div className="space-y-2">

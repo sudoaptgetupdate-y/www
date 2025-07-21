@@ -8,38 +8,30 @@ const userController = {};
 
 userController.getAllUsers = async (req, res) => {
     try {
-        if (req.query.all === 'true') {
-            const allUsers = await prisma.user.findMany({
-                where: { accountStatus: 'ACTIVE' },
-                orderBy: { name: 'asc' },
-                select: { id: true, name: true, username: true, email: true },
-                // --- START: ส่วนที่แก้ไข ---
-                take: 1000 // จำกัดให้ดึงข้อมูลสูงสุด 1000 รายการ
-                // --- END ---
-            });
-            return res.status(200).json(allUsers);
-        }
-
+        // ลบเงื่อนไข if (req.query.all === 'true') ออกไป
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const searchTerm = req.query.search || '';
         const skip = (page - 1) * limit;
 
-        const where = searchTerm
-            ? {
+        const where = {
+            // ค้นหาเฉพาะ User ที่ยัง Active อยู่สำหรับ dropdown
+            accountStatus: 'ACTIVE', 
+            ...(searchTerm && {
                 OR: [
                     { name: { contains: searchTerm } },
-                    { email: { contains: searchTerm } }
+                    { email: { contains: searchTerm } },
+                    { username: { contains: searchTerm } }
                 ]
-            }
-            : {};
+            })
+        };
 
-        const [users, totalItems] = await prisma.$transaction([
+        const [users, totalItems] = await Promise.all([
              prisma.user.findMany({
                 where,
                 skip,
                 take: limit,
-                orderBy: { createdAt: 'desc' },
+                orderBy: { name: 'asc' }, // เรียงตามชื่อเพื่อให้หาได้ง่าย
                 select: {
                     id: true,
                     username: true,
@@ -122,6 +114,9 @@ userController.updateUser = async (req, res) => {
             const field = error.meta.target[0];
             return res.status(400).json({ error: `This ${field} is already in use.` });
         }
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'The user you are trying to update was not found.' });
+        }
         res.status(500).json({ error: 'Could not update the user.' });
     }
 };
@@ -137,6 +132,9 @@ userController.updateUserStatus = async (req, res) => {
         });
         res.status(200).json(updatedUser);
     } catch (error) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'The user you are trying to update was not found.' });
+        }
         res.status(500).json({ error: 'Could not update user status.' });
     }
 };
@@ -149,6 +147,9 @@ userController.deleteUser = async (req, res) => {
         });
         res.status(204).send();
     } catch (error) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'The user you are trying to delete was not found.' });
+        }
         res.status(500).json({ error: 'Could not delete user.' });
     }
 };

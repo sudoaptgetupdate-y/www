@@ -30,16 +30,7 @@ exports.createCategory = async (req, res) => {
 
 exports.getAllCategories = async (req, res) => {
     try {
-        if (req.query.all === 'true') {
-            const allCategories = await prisma.category.findMany({ 
-                orderBy: { name: 'asc' },
-                // --- START: ส่วนที่แก้ไข ---
-                take: 1000 // จำกัดให้ดึงข้อมูลสูงสุด 1000 รายการ
-                // --- END ---
-            });
-            return res.status(200).json(allCategories);
-        }
-
+        // ลบเงื่อนไข ?all=true ออกไปทั้งหมด
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const searchTerm = req.query.search || '';
@@ -49,7 +40,7 @@ exports.getAllCategories = async (req, res) => {
             ? { name: { contains: searchTerm } }
             : {};
 
-        const [categories, totalItems] = await prisma.$transaction([
+        const [categories, totalItems] = await Promise.all([
             prisma.category.findMany({
                 where,
                 skip,

@@ -32,25 +32,13 @@ inventoryController.addInventoryItem = async (req, res) => {
 
 inventoryController.getAllInventoryItems = async (req, res) => {
     try {
-        if (req.query.all === 'true') {
-            const allItems = await prisma.inventoryItem.findMany({
-                 where: { status: 'IN_STOCK', itemType: ItemType.SALE },
-                 include: { productModel: { include: { brand: true, category: true } } },
-                 orderBy: { updatedAt: 'desc' },
-                 // --- START: ส่วนที่แก้ไข ---
-                 take: 1000 // จำกัดให้ดึงข้อมูลสูงสุด 1000 รายการ
-                 // --- END ---
-            });
-            return res.status(200).json(allItems);
-        }
-
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
         const searchTerm = req.query.search || '';
         const statusFilter = req.query.status || 'All';
 
-        let where = { itemType: ItemType.SALE };
+        let where = { itemType: ItemType.SALE }; // Default to SALE items
 
         if (searchTerm) {
             where.OR = [
@@ -137,6 +125,9 @@ inventoryController.updateInventoryItem = async (req, res) => {
             const target = Array.isArray(error.meta.target) ? error.meta.target.join(', ') : error.meta.target;
             return res.status(400).json({ error: `The following fields must be unique: ${target}` });
         }
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'The item you are trying to update was not found.' });
+        }
         res.status(500).json({ error: 'Could not update the item' });
     }
 };
@@ -164,6 +155,9 @@ inventoryController.deleteInventoryItem = async (req, res) => {
 
         res.status(204).send();
     } catch (error) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'The item you are trying to delete was not found.' });
+        }
         console.error("Delete Item Error:", error);
         res.status(500).json({ error: 'Could not delete the item.' });
     }

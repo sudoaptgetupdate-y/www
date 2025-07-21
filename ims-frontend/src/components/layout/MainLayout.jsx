@@ -96,7 +96,7 @@ const MainLayout = () => {
                      <div>
                         <p className="px-3 py-2 text-slate-400 text-xs font-bold uppercase">System</p>
                         <div className="space-y-1">
-                            <NavItem to="/users" handleclick={onNavLinkClick}><Settings size={18}/> Users</NavItem>
+                            <NavItem to="/users" handleclick={onNavLinkClick}><Settings size={18}/>User Management</NavItem>
                         </div>
                     </div>
                 )}
@@ -166,7 +166,7 @@ const MainLayout = () => {
                 </main>
                 
                 <footer className="p-4 bg-white text-center text-sm text-muted-foreground border-t no-print">
-                    © 2025 Your Company Name. All Rights Reserved. - Version 1.0.0
+                    © 2025 NTPLC Engineer Of Nakhon Si Thammarat. All Rights Reserved. - Version 1.0.0
                 </footer>
             </div>
         </div>

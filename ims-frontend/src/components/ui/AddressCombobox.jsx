@@ -1,4 +1,4 @@
-// src/components/ui/UserCombobox.jsx
+// src/components/ui/AddressCombobox.jsx
 
 import { useState, useEffect } from "react";
 import axiosInstance from '@/api/axiosInstance';
@@ -21,7 +21,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-// --- START: เพิ่ม useDebounce ---
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
@@ -30,112 +29,107 @@ function useDebounce(value, delay) {
     }, [value, delay]);
     return debouncedValue;
 }
-// --- END ---
 
-export function UserCombobox({ selectedValue, onSelect, initialUser }) {
+export function AddressCombobox({ selectedValue, onSelect, initialAddress }) {
   const token = useAuthStore((state) => state.token);
   const [open, setOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState([]); // เปลี่ยนชื่อ state
-  const [selectedUserDisplay, setSelectedUserDisplay] = useState(null);
-  
-  // --- START: เพิ่ม State และ Debounce สำหรับการค้นหา ---
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedAddressDisplay, setSelectedAddressDisplay] = useState(null);
+
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  // --- END ---
 
   useEffect(() => {
-    if (initialUser) {
-      setSelectedUserDisplay(initialUser);
+    if (initialAddress) {
+      setSelectedAddressDisplay(initialAddress);
       if(!searchQuery){
-        setSearchResults([initialUser]);
+        setSearchResults([initialAddress]);
       }
     }
-  }, [initialUser]);
-  
-  // --- START: แก้ไข useEffect ให้ค้นหาข้อมูลแทนการดึงทั้งหมด ---
+  }, [initialAddress]);
+
   useEffect(() => {
     if (!open) {
       setSearchQuery("");
       return;
     }
 
-    const fetchUsers = async () => {
+    const fetchAddresses = async () => {
       setIsLoading(true);
       try {
-        const response = await axiosInstance.get("/users", {
+        const response = await axiosInstance.get("/addresses", {
           headers: { Authorization: `Bearer ${token}` },
           params: { search: debouncedSearchQuery, limit: 10 },
         });
         setSearchResults(response.data.data);
       } catch (error) {
-        toast.error("Failed to fetch users.");
+        toast.error("Failed to search for addresses.");
       } finally {
         setIsLoading(false);
       }
     };
-    fetchUsers();
+
+    fetchAddresses();
   }, [debouncedSearchQuery, open, token]);
-  // --- END ---
   
   useEffect(() => {
     if (selectedValue) {
-        const user = searchResults.find(u => String(u.id) === selectedValue);
-        if (user) {
-            setSelectedUserDisplay(user);
+        const address = searchResults.find(a => String(a.id) === selectedValue);
+        if(address) {
+            setSelectedAddressDisplay(address);
         }
     } else {
-        setSelectedUserDisplay(null);
+        setSelectedAddressDisplay(null);
     }
   }, [selectedValue, searchResults]);
+
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" role="combobox" className="w-full justify-between">
           <span className="truncate">
-            {selectedValue && selectedUserDisplay
-              ? `${selectedUserDisplay.name} (${selectedUserDisplay.username})`
-              : "Select user..."}
+            {selectedValue && selectedAddressDisplay
+              ? selectedAddressDisplay.name
+              : "Select address..."}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        {/* --- START: แก้ไข Command ให้รองรับการค้นหาจาก API --- */}
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search user by name..."
+            placeholder="Search address name..."
             value={searchQuery}
             onValueChange={setSearchQuery}
           />
           <CommandList>
             {isLoading && <div className="p-2 text-center text-sm">Loading...</div>}
-            <CommandEmpty>No user found.</CommandEmpty>
+            <CommandEmpty>No address found.</CommandEmpty>
             <CommandGroup>
-              {searchResults.map((user) => (
+              {searchResults.map((address) => (
                 <CommandItem
-                  key={user.id}
-                  value={String(user.id)} // ใช้ ID เป็น value
+                  key={address.id}
+                  value={String(address.id)}
                   onSelect={() => {
-                     onSelect(String(user.id));
-                     setSelectedUserDisplay(user);
+                     onSelect(String(address.id));
+                     setSelectedAddressDisplay(address);
                      setOpen(false);
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selectedValue === String(user.id) ? "opacity-100" : "opacity-0"
+                      selectedValue === String(address.id) ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {user.name} ({user.username})
+                  {address.name}
                 </CommandItem>
               ))}
             </CommandGroup>
           </CommandList>
         </Command>
-        {/* --- END --- */}
       </PopoverContent>
     </Popover>
   );

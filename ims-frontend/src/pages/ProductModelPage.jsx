@@ -13,6 +13,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
+import { BrandCombobox } from "@/components/ui/BrandCombobox";
+import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -50,8 +52,6 @@ export default function ProductModelPage() {
         refreshData 
     } = usePaginatedFetch("/product-models");
     
-    const [brands, setBrands] = useState([]);
-    const [categories, setCategories] = useState([]);
     const token = useAuthStore((state) => state.token);
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
@@ -61,31 +61,9 @@ export default function ProductModelPage() {
     const [formData, setFormData] = useState(initialFormData);
     const [editingModelId, setEditingModelId] = useState(null);
     const [modelToDelete, setModelToDelete] = useState(null);
+    const [initialBrandForEdit, setInitialBrandForEdit] = useState(null);
+    const [initialCategoryForEdit, setInitialCategoryForEdit] = useState(null);
 
-
-    useEffect(() => {
-        const fetchRelatedData = async () => {
-            if (!token) return;
-            try {
-                const [brandsRes, categoriesRes] = await Promise.all([
-                    axiosInstance.get("/brands", { 
-                        headers: { Authorization: `Bearer ${token}` },
-                        params: { all: 'true' }
-                    }),
-                    axiosInstance.get("/categories", { 
-                        headers: { Authorization: `Bearer ${token}` },
-                        params: { all: 'true' }
-                    })
-                ]);
-                setBrands(brandsRes.data);
-                setCategories(categoriesRes.data);
-            } catch (error) {
-                toast.error("Failed to fetch brands or categories for form.");
-            }
-        };
-        fetchRelatedData();
-    }, [token]);
-    
     const handleInputChange = (e) => {
         const { id, value } = e.target;
         setFormData({ ...formData, [id]: id === 'sellingPrice' ? parseFloat(value) || 0 : value });
@@ -106,9 +84,13 @@ export default function ProductModelPage() {
                 categoryId: String(model.categoryId),
                 brandId: String(model.brandId),
             });
+            setInitialBrandForEdit(model.brand);
+            setInitialCategoryForEdit(model.category);
         } else {
             setIsEditMode(false);
             setFormData(initialFormData);
+            setInitialBrandForEdit(null);
+            setInitialCategoryForEdit(null);
         }
         setIsDialogOpen(true);
     };
@@ -231,15 +213,19 @@ export default function ProductModelPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="brandId">Brand</Label>
-                                <Select onValueChange={(value) => handleSelectChange('brandId', value)} value={String(formData.brandId || '')} required><SelectTrigger><SelectValue placeholder="Select a brand" /></SelectTrigger><SelectContent>
-                                    {brands.map(brand => <SelectItem key={brand.id} value={String(brand.id)}>{brand.name}</SelectItem>)}
-                                </SelectContent></Select>
+                                <BrandCombobox
+                                    selectedValue={formData.brandId}
+                                    onSelect={(value) => handleSelectChange('brandId', value)}
+                                    initialBrand={initialBrandForEdit}
+                                />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="categoryId">Category</Label>
-                                <Select onValueChange={(value) => handleSelectChange('categoryId', value)} value={String(formData.categoryId || '')} required><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger><SelectContent>
-                                    {categories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}
-                                </SelectContent></Select>
+                                <CategoryCombobox
+                                    selectedValue={formData.categoryId}
+                                    onSelect={(value) => handleSelectChange('categoryId', value)}
+                                    initialCategory={initialCategoryForEdit}
+                                />
                             </div>
                         </div>
                         <DialogFooter><Button type="submit">Save</Button></DialogFooter>

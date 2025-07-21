@@ -96,7 +96,7 @@ saleController.getAllSales = async (req, res) => {
 
         const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
         
-        const [sales, totalItems] = await prisma.$transaction([
+        const [sales, totalItems] = await Promise.all([
             prisma.sale.findMany({
                 where,
                 skip,

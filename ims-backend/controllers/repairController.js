@@ -77,7 +77,7 @@ repairController.getAllRepairOrders = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        const [repairs, totalItems] = await prisma.$transaction([
+        const [repairs, totalItems] = await Promise.all([
             prisma.repair.findMany({
                 skip,
                 take: limit,

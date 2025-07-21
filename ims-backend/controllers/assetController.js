@@ -52,6 +52,9 @@ assetController.updateAsset = async (req, res) => {
             const target = Array.isArray(error.meta.target) ? error.meta.target.join(', ') : error.meta.target;
             return res.status(400).json({ error: `The following fields must be unique: ${target}` });
         }
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'The asset you are trying to update was not found.' });
+        }
         res.status(500).json({ error: 'Could not update the asset' });
     }
 };
@@ -79,6 +82,9 @@ assetController.deleteAsset = async (req, res) => {
 
         res.status(204).send();
     } catch (error) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'The asset you are trying to delete was not found.' });
+        }
         console.error("Delete Asset Error:", error);
         res.status(500).json({ error: 'Could not delete the asset.' });
     }
