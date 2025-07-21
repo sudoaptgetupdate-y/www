@@ -1,7 +1,7 @@
 // src/pages/CreateBorrowingPage.jsx
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -24,48 +24,60 @@ function useDebounce(value, delay) {
 
 export default function CreateBorrowingPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const token = useAuthStore((state) => state.token);
 
+    const [fetchedItems, setFetchedItems] = useState([]);
     const [availableItems, setAvailableItems] = useState([]);
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
     const [selectedItems, setSelectedItems] = useState([]);
     const [itemSearch, setItemSearch] = useState("");
     const [dueDate, setDueDate] = useState("");
     const [notes, setNotes] = useState("");
-
+    const [isLoading, setIsLoading] = useState(false);
     const debouncedItemSearch = useDebounce(itemSearch, 500);
+
+    useEffect(() => {
+        const initialItems = location.state?.initialItems || [];
+        if (initialItems.length > 0) {
+            setSelectedItems(initialItems);
+        }
+    }, [location.state]);
 
     useEffect(() => {
         const fetchInventory = async () => {
             if (!token) return;
+            setIsLoading(true);
             try {
-                // --- START: ส่วนที่แก้ไข ---
                 const inventoryRes = await axiosInstance.get("/inventory", {
-                // --- END: ส่วนที่แก้ไข ---
                     headers: { Authorization: `Bearer ${token}` },
                     params: {
                         status: 'IN_STOCK',
                         search: debouncedItemSearch
                     }
                 });
-
-                const selectedIds = new Set(selectedItems.map(i => i.id));
-                const newAvailableItems = inventoryRes.data.data.filter(item => !selectedIds.has(item.id));
-                setAvailableItems(newAvailableItems);
-
+                setFetchedItems(inventoryRes.data.data);
             } catch (error) {
                 toast.error("Failed to fetch inventory items.");
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchInventory();
-    }, [token, debouncedItemSearch, selectedItems]);
+    }, [token, debouncedItemSearch]);
+
+    useEffect(() => {
+        const selectedIds = new Set(selectedItems.map(i => i.id));
+        setAvailableItems(fetchedItems.filter(item => !selectedIds.has(item.id)));
+    }, [selectedItems, fetchedItems]);
+
 
     const handleAddItem = (itemToAdd) => {
-        setSelectedItems([...selectedItems, itemToAdd]);
+        setSelectedItems(prev => [...prev, itemToAdd]);
     };
 
     const handleRemoveItem = (itemToRemove) => {
-        setSelectedItems(selectedItems.filter(item => item.id !== itemToRemove.id));
+        setSelectedItems(prev => prev.filter(item => item.id !== itemToRemove.id));
     };
 
     const handleSubmit = async () => {

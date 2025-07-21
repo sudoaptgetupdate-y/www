@@ -36,7 +36,10 @@ inventoryController.getAllInventoryItems = async (req, res) => {
             const allItems = await prisma.inventoryItem.findMany({
                  where: { status: 'IN_STOCK', itemType: ItemType.SALE },
                  include: { productModel: { include: { brand: true, category: true } } },
-                 orderBy: { updatedAt: 'desc' }
+                 orderBy: { updatedAt: 'desc' },
+                 // --- START: ส่วนที่แก้ไข ---
+                 take: 1000 // จำกัดให้ดึงข้อมูลสูงสุด 1000 รายการ
+                 // --- END ---
             });
             return res.status(200).json(allItems);
         }

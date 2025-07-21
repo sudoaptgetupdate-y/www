@@ -12,7 +12,10 @@ userController.getAllUsers = async (req, res) => {
             const allUsers = await prisma.user.findMany({
                 where: { accountStatus: 'ACTIVE' },
                 orderBy: { name: 'asc' },
-                select: { id: true, name: true, username: true, email: true }
+                select: { id: true, name: true, username: true, email: true },
+                // --- START: ส่วนที่แก้ไข ---
+                take: 1000 // จำกัดให้ดึงข้อมูลสูงสุด 1000 รายการ
+                // --- END ---
             });
             return res.status(200).json(allUsers);
         }

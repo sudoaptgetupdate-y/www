@@ -210,7 +210,9 @@ export default function InventoryPage() {
         }
     };
 
-    const handleSellItem = (itemToSell) => navigate('/sales/new', { state: { initialItems: [itemToSell] } });
+    const handleSellItem = (itemToSell) => {
+        navigate('/sales/new', { state: { initialItems: [itemToSell] } });
+    };
     const handleBorrowItem = (itemToBorrow) => navigate('/borrowings/new', { state: { initialItems: [itemToBorrow] } });
 
     return (

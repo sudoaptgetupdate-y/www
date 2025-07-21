@@ -27,6 +27,9 @@ export default function CreateSalePage() {
     const location = useLocation();
     const token = useAuthStore((state) => state.token);
 
+    // --- START: แก้ไข 1/4: เพิ่ม State เก็บข้อมูลดิบ ---
+    const [fetchedItems, setFetchedItems] = useState([]);
+    // --- END ---
     const [availableItems, setAvailableItems] = useState([]);
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
     const [selectedItems, setSelectedItems] = useState([]);
@@ -41,14 +44,13 @@ export default function CreateSalePage() {
         }
     }, [location.state]);
 
+    // --- START: แก้ไข 2/4: useEffect นี้จะทำหน้าที่ 'ดึง' ข้อมูลอย่างเดียว ---
     useEffect(() => {
         const fetchAvailableItems = async () => {
             if (!token) return;
             setIsLoading(true);
             try {
-                // --- START: ส่วนที่แก้ไข ---
                 const response = await axiosInstance.get("/inventory", {
-                // --- END: ส่วนที่แก้ไข ---
                     headers: { Authorization: `Bearer ${token}` },
                     params: {
                         status: 'IN_STOCK',
@@ -56,11 +58,7 @@ export default function CreateSalePage() {
                         limit: 100
                     }
                 });
-
-                const selectedIds = new Set(selectedItems.map(i => i.id));
-                const newAvailable = response.data.data.filter(item => !selectedIds.has(item.id));
-                setAvailableItems(newAvailable);
-
+                setFetchedItems(response.data.data); // อัปเดตข้อมูลดิบ
             } catch (error) {
                 toast.error("Failed to fetch available items.");
             } finally {
@@ -68,19 +66,25 @@ export default function CreateSalePage() {
             }
         };
         fetchAvailableItems();
-    }, [token, debouncedItemSearch, selectedItems]);
+    }, [token, debouncedItemSearch]);
+    // --- END ---
 
+    // --- START: แก้ไข 3/4: useEffect ใหม่นี้จะทำหน้าที่ 'กรอง' ข้อมูลโดยเฉพาะ ---
+    useEffect(() => {
+        const selectedIds = new Set(selectedItems.map(i => i.id));
+        setAvailableItems(fetchedItems.filter(item => !selectedIds.has(item.id)));
+    }, [selectedItems, fetchedItems]);
+    // --- END ---
+
+    // --- START: แก้ไข 4/4: ทำให้ Logic การ Add/Remove ง่ายขึ้น ---
     const handleAddItem = (itemToAdd) => {
         setSelectedItems(prev => [...prev, itemToAdd]);
-        setAvailableItems(prev => prev.filter(item => item.id !== itemToAdd.id));
     };
 
     const handleRemoveItem = (itemToRemove) => {
-        setSelectedItems(selectedItems.filter(item => item.id !== itemToRemove.id));
-        if (!itemSearch) {
-             setAvailableItems(prev => [itemToRemove, ...prev].sort((a,b) => a.id - b.id));
-        }
+        setSelectedItems(prev => prev.filter(item => item.id !== itemToRemove.id));
     };
+    // --- END ---
 
     const handleSubmit = async () => {
         if (!selectedCustomerId) {

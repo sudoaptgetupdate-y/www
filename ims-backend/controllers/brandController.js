@@ -27,7 +27,12 @@ exports.getAllBrands = async (req, res) => {
     try {
         // เพิ่มเงื่อนไข: ถ้ามีการส่ง ?all=true ให้ส่งข้อมูลทั้งหมดสำหรับ dropdown
         if (req.query.all === 'true') {
-            const allBrands = await prisma.brand.findMany({ orderBy: { name: 'asc' } });
+            const allBrands = await prisma.brand.findMany({ 
+                orderBy: { name: 'asc' },
+                // --- START: ส่วนที่แก้ไข ---
+                take: 1000 // จำกัดให้ดึงข้อมูลสูงสุด 1000 รายการ
+                // --- END ---
+            });
             return res.status(200).json(allBrands);
         }
 

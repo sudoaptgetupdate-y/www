@@ -27,6 +27,9 @@ export default function CreateAssetAssignmentPage() {
     const location = useLocation();
     const token = useAuthStore((state) => state.token);
 
+    // --- START: แก้ไข 1/4: เพิ่ม State เก็บข้อมูลดิบ ---
+    const [fetchedAssets, setFetchedAssets] = useState([]);
+    // --- END ---
     const [availableAssets, setAvailableAssets] = useState([]);
     const [selectedUserId, setSelectedUserId] = useState("");
     const [selectedAssets, setSelectedAssets] = useState([]);
@@ -42,14 +45,13 @@ export default function CreateAssetAssignmentPage() {
         }
     }, [location.state]);
 
+    // --- START: แก้ไข 2/4: useEffect นี้จะทำหน้าที่ 'ดึง' ข้อมูลอย่างเดียว ---
     useEffect(() => {
         const fetchAvailableAssets = async () => {
             if (!token) return;
             setIsLoading(true);
             try {
-                // --- START: ส่วนที่แก้ไข ---
                 const response = await axiosInstance.get("/assets", {
-                // --- END: ส่วนที่แก้ไข ---
                     headers: { Authorization: `Bearer ${token}` },
                     params: {
                         status: 'IN_WAREHOUSE',
@@ -57,11 +59,7 @@ export default function CreateAssetAssignmentPage() {
                         limit: 100
                     }
                 });
-
-                const selectedIds = new Set(selectedAssets.map(i => i.id));
-                const newAvailable = response.data.data.filter(asset => !selectedIds.has(asset.id));
-                setAvailableAssets(newAvailable);
-
+                setFetchedAssets(response.data.data);
             } catch (error) {
                 toast.error("Failed to fetch available assets.");
             } finally {
@@ -69,19 +67,25 @@ export default function CreateAssetAssignmentPage() {
             }
         };
         fetchAvailableAssets();
-    }, [token, debouncedAssetSearch, selectedAssets]);
+    }, [token, debouncedAssetSearch]);
+    // --- END ---
 
+    // --- START: แก้ไข 3/4: useEffect ใหม่นี้จะทำหน้าที่ 'กรอง' ข้อมูลโดยเฉพาะ ---
+    useEffect(() => {
+        const selectedIds = new Set(selectedAssets.map(i => i.id));
+        setAvailableAssets(fetchedAssets.filter(asset => !selectedIds.has(asset.id)));
+    }, [selectedAssets, fetchedAssets]);
+    // --- END ---
+
+    // --- START: แก้ไข 4/4: ทำให้ Logic การ Add/Remove ง่ายขึ้น ---
     const handleAddItem = (assetToAdd) => {
         setSelectedAssets(prev => [...prev, assetToAdd]);
-        setAvailableAssets(prev => prev.filter(asset => asset.id !== assetToAdd.id));
     };
 
     const handleRemoveItem = (assetToRemove) => {
-        setSelectedAssets(selectedAssets.filter(asset => asset.id !== assetToRemove.id));
-        if (!assetSearch) {
-             setAvailableAssets(prev => [assetToRemove, ...prev].sort((a, b) => a.assetCode.localeCompare(b.assetCode)));
-        }
+        setSelectedAssets(prev => prev.filter(asset => asset.id !== assetToRemove.id));
     };
+    // --- END ---
 
     const handleSubmit = async () => {
         if (!selectedUserId) {

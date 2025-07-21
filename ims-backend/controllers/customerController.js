@@ -31,7 +31,10 @@ customerController.getAllCustomers = async (req, res) => {
         if (req.query.all === 'true') {
             const allCustomers = await prisma.customer.findMany({
                 orderBy: { name: 'asc' },
-                include: { createdBy: { select: { name: true } } }
+                include: { createdBy: { select: { name: true } } },
+                // --- START: ส่วนที่แก้ไข ---
+                take: 1000 // จำกัดให้ดึงข้อมูลสูงสุด 1000 รายการ
+                // --- END ---
             });
             return res.status(200).json(allCustomers);
         }

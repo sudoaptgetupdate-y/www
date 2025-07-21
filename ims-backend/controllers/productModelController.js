@@ -44,7 +44,10 @@ exports.getAllProductModels = async (req, res) => {
         if (req.query.all === 'true') {
             const allProductModels = await prisma.productModel.findMany({
                 orderBy: { modelNumber: 'asc' },
-                include: includeRelations // Ensure relations are included here too
+                include: includeRelations, // Ensure relations are included here too
+                // --- START: ส่วนที่แก้ไข ---
+                take: 1000 // จำกัดให้ดึงข้อมูลสูงสุด 1000 รายการ
+                // --- END ---
             });
             return res.status(200).json(allProductModels);
         }

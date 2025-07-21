@@ -27,7 +27,12 @@ addressController.createAddress = async (req, res) => {
 addressController.getAllAddresses = async (req, res) => {
     try {
         if (req.query.all === 'true') {
-            const allAddresses = await prisma.address.findMany({ orderBy: { name: 'asc' } });
+            const allAddresses = await prisma.address.findMany({ 
+                orderBy: { name: 'asc' },
+                // --- START: ส่วนที่แก้ไข ---
+                take: 1000 // จำกัดให้ดึงข้อมูลสูงสุด 1000 รายการ
+                // --- END ---
+            });
             return res.status(200).json(allAddresses);
         }
 

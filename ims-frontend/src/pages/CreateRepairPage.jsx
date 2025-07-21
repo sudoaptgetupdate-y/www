@@ -125,17 +125,27 @@ export default function CreateRepairPage() {
                 toast.error("Failed to search for items.");
             }
         };
-        // --- START: ส่วนที่แก้ไข ---
         fetchItems();
-        // --- END: ส่วนที่แก้ไข ---
-    }, [debouncedItemSearch, token, selectedItems]);
+    }, [debouncedItemSearch, token]); // <-- แก้ไข: เอา selectedItems ออก
 
     const handleAddItem = (itemToAdd) => {
+        // --- START: ส่วนที่แก้ไข ---
         setSelectedItems(prev => [...prev, itemToAdd]);
+        // Only remove from available list if it's not a customer item
+        if (!itemToAdd.isCustomerItem) {
+            setAvailableItems(prev => prev.filter(item => item.id !== itemToAdd.id));
+        }
+        // --- END: ส่วนที่แก้ไข ---
     };
 
     const handleRemoveItem = (itemToRemove) => {
+        // --- START: ส่วนที่แก้ไข ---
         setSelectedItems(selectedItems.filter(item => item.id !== itemToRemove.id));
+        // Only add back if it's not a customer item and there's no search term
+        if (!itemToRemove.isCustomerItem && !itemSearch) {
+            setAvailableItems(prev => [itemToRemove, ...prev]);
+        }
+        // --- END: ส่วนที่แก้ไข ---
     };
 
     const handleSubmit = async () => {
