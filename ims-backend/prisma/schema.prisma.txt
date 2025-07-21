@@ -1,4 +1,4 @@
-// prisma/schema.prisma
+// ims-backend/prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -14,15 +14,18 @@ enum ItemType {
   SALE
   ASSET
 }
+
 enum Role {
   EMPLOYEE
   ADMIN
   SUPER_ADMIN
 }
+
 enum AccountStatus {
   ACTIVE
   DISABLED
 }
+
 enum ItemStatus {
   IN_STOCK
   SOLD
@@ -32,21 +35,46 @@ enum ItemStatus {
   IN_WAREHOUSE
   ASSIGNED
   DECOMMISSIONED
+  AWAITING_REPAIR // <-- เพิ่มใหม่
+  REPAIRING // <-- เพิ่มใหม่
+  RETURNED_TO_CUSTOMER // <-- เพิ่มใหม่
 }
+
 enum BorrowStatus {
   BORROWED
   RETURNED
   OVERDUE
 }
+
 enum SaleStatus {
   COMPLETED
   VOIDED
 }
+
 enum AssignmentStatus {
   ASSIGNED
   PARTIALLY_RETURNED
   RETURNED
 }
+
+// --- START: Enums ที่เพิ่มเข้ามาใหม่ ---
+enum RepairStatus {
+  REPAIRING
+  PARTIALLY_RETURNED
+  COMPLETED
+}
+
+enum RepairOutcome {
+  REPAIRED_SUCCESSFULLY
+  UNREPAIRABLE
+}
+
+enum ItemOwner {
+  COMPANY
+  CUSTOMER
+}
+// --- END: Enums ที่เพิ่มเข้ามาใหม่ ---
+
 
 // --- Models ---
 model User {
@@ -71,6 +99,8 @@ model User {
   approvedAssignments   AssetAssignment[] @relation("ApprovedAssignments")
   receivedAssignments   AssetAssignment[] @relation("ReceivedAssignments")
   assetHistory          AssetHistory[]
+
+  createdRepairs        Repair[] // <-- เพิ่มใหม่
 }
 
 model Customer {
@@ -90,6 +120,7 @@ model Customer {
 model InventoryItem {
   id                  Int                      @id @default(autoincrement())
   itemType            ItemType                 @default(SALE)
+  ownerType           ItemOwner                @default(COMPANY) // <-- เพิ่มใหม่
   assetCode           String?                  @unique
   serialNumber        String?                  @unique
   macAddress          String?                  @unique
@@ -106,11 +137,14 @@ model InventoryItem {
   saleId              Int?
   sale                Sale?                    @relation(fields: [saleId], references: [id])
   borrowingRecords    BorrowingOnItems[]
+  repairRecords       RepairOnItems[]          // <-- เพิ่มใหม่
 
   @@index([status])
   @@index([itemType])
+  @@index([ownerType]) // <-- เพิ่มใหม่
 }
 
+// ... (Model Borrowing, Category, Brand, ProductModel, Sale, AssetHistory, AssetAssignment ไม่เปลี่ยนแปลง) ...
 model Borrowing {
   id           Int       @id @default(autoincrement())
   borrowerId   Int
@@ -224,3 +258,50 @@ model AssetAssignmentOnItems {
   returnedAt      DateTime?
   @@id([assignmentId, inventoryItemId])
 }
+
+
+// --- START: Models ที่เพิ่มเข้ามาใหม่ ---
+model Address {
+  id              Int      @id @default(autoincrement())
+  name            String   @unique // เช่น "ศูนย์ซ่อม A", "คลังหลัก"
+  contactPerson   String?
+  phone           String?
+  address         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  sentRepairs     Repair[] @relation("SentFrom")
+  receivedRepairs Repair[] @relation("SentTo")
+}
+
+model Repair {
+  id              Int      @id @default(autoincrement())
+  repairDate      DateTime @default(now())
+  notes           String?  // อาการเสีย
+  status          RepairStatus @default(REPAIRING)
+  
+  createdById     Int
+  createdBy       User     @relation(fields: [createdById], references: [id])
+  
+  senderId        Int
+  sender          Address  @relation("SentFrom", fields: [senderId], references: [id])
+  
+  receiverId      Int
+  receiver        Address  @relation("SentTo", fields: [receiverId], references: [id])
+  
+  items           RepairOnItems[]
+}
+
+model RepairOnItems {
+  repairId        Int
+  repair          Repair    @relation(fields: [repairId], references: [id])
+  inventoryItemId Int
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  
+  sentAt          DateTime  @default(now())
+  returnedAt      DateTime?
+  repairOutcome   RepairOutcome? // ผลการซ่อม
+  
+  @@id([repairId, inventoryItemId])
+}
+// --- END: Models ที่เพิ่มเข้ามาใหม่ ---

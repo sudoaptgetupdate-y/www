@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LogOut, Menu, X, UserCircle, User, ArrowRightLeft, Building2, ShoppingCart, Settings, Package, Boxes, Tag, Users as UsersIcon, HardDrive, Layers } from "lucide-react"; // Renamed Users to UsersIcon to avoid conflict
+import { LogOut, Menu, X, UserCircle, User, ArrowRightLeft, Building2, ShoppingCart, Settings, Package, Boxes, Tag, Users as UsersIcon, HardDrive, Layers, Wrench, BookUser } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -63,6 +63,14 @@ const MainLayout = () => {
                         <NavItem to="/sales" handleclick={onNavLinkClick}><ShoppingCart size={18} /> Sales</NavItem>
                         <NavItem to="/borrowings" handleclick={onNavLinkClick}><ArrowRightLeft size={18} /> Borrowing</NavItem>
                         <NavItem to="/customers" handleclick={onNavLinkClick}><UsersIcon size={18} /> Customers</NavItem>
+                    </div>
+                </div>
+
+                <div>
+                    <p className="px-3 py-2 text-slate-400 text-xs font-bold uppercase">Repair</p>
+                    <div className="space-y-1">
+                        <NavItem to="/repairs" handleclick={onNavLinkClick}><Wrench size={18} /> Repair Orders</NavItem>
+                        <NavItem to="/addresses" handleclick={onNavLinkClick}><BookUser size={18} /> Address Book</NavItem>
                     </div>
                 </div>
 

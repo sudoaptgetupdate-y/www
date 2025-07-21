@@ -42,8 +42,11 @@ const CreateAssetAssignmentPage = lazy(() => import('./pages/CreateAssetAssignme
 const AssetAssignmentDetailPage = lazy(() => import('./pages/AssetAssignmentDetailPage.jsx'));
 const AssetHistoryPage = lazy(() => import('./pages/AssetHistoryPage.jsx'));
 const UserAssetHistoryPage = lazy(() => import('./pages/UserAssetHistoryPage.jsx'));
-const InventoryHistoryPage = lazy(() => import('./pages/InventoryHistoryPage.jsx')); // <-- เพิ่ม Import
-
+const InventoryHistoryPage = lazy(() => import('./pages/InventoryHistoryPage.jsx'));
+const AddressPage = lazy(() => import('./pages/AddressPage.jsx'));
+const RepairListPage = lazy(() => import('./pages/RepairListPage.jsx'));
+const CreateRepairPage = lazy(() => import('./pages/CreateRepairPage.jsx'));
+const RepairDetailPage = lazy(() => import('./pages/RepairDetailPage.jsx'));
 
 // Fallback component to show while lazy components are loading
 const Loading = () => (
@@ -82,9 +85,14 @@ const routes = [
   { path: 'brands', Page: BrandPage },
   { path: 'categories', Page: CategoryPage },
   // System
+  { path: 'repairs', Page: RepairListPage },
+  { path: 'repairs/new', Page: CreateRepairPage },
+  { path: 'repairs/:repairId', Page: RepairDetailPage },
   { path: 'users', Page: UserManagementPage },
   { path: 'users/:userId/assets', Page: UserAssetHistoryPage },
   { path: 'profile', Page: ProfilePage },
+  { path: 'addresses', Page: AddressPage },
+  
 ];
 
 const router = createBrowserRouter([

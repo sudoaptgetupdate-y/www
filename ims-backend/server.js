@@ -11,12 +11,14 @@ const categoryRoute = require('./routes/categoryRoute');
 const customerRoute = require('./routes/customerRoute');
 const authRoute = require('./routes/authRoute');
 const productModelRoute = require('./routes/productModelRoute');
-const inventoryRoute = require('./routes/inventoryRoute'); // <-- แก้ไขชื่อ
+const inventoryRoute = require('./routes/inventoryRoute');
 const brandRoute = require('./routes/brandRoute');
 const saleRoute = require('./routes/saleRoute');
 const dashboardRoute = require('./routes/dashboardRoute');
 const userRoute = require('./routes/userRoute');
 const borrowingRoute = require('./routes/borrowingRoute');
+const addressRoute = require('./routes/addressRoute');
+const repairRoute = require('./routes/repairRoute');
 
 const app = express();
 
@@ -37,9 +39,8 @@ app.use('/api/sales', saleRoute);
 app.use('/api/dashboard', dashboardRoute);
 app.use('/api/users', userRoute);
 app.use('/api/borrowings', borrowingRoute);
-
-// ลบ Route เดิมออก
-// app.use('/api/inventory-items', inventoryItemRoute); 
+app.use('/api/addresses', addressRoute);
+app.use('/api/repairs', repairRoute);
 
 const port = process.env.PORT || 5001;
 app.listen(port, () => console.log(`Server is running on port ${port}`));
