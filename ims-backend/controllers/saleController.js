@@ -63,6 +63,9 @@ saleController.createSale = async (req, res, next) => {
                 data: { status: 'SOLD', saleId: newSale.id },
             });
 
+            // --- START: นี่คือส่วนที่แก้ไข ---
+            // ลบการสร้าง AssetHistory ที่ซ้ำซ้อนออกไปจากตรงนี้
+            /*
             const historyEvents = inventoryItemIds.map(itemId => ({
                 inventoryItemId: itemId,
                 userId: soldById,
@@ -70,6 +73,8 @@ saleController.createSale = async (req, res, next) => {
                 details: `Item sold to ${customer.name}. Sale ID: ${newSale.id}`
             }));
             await tx.assetHistory.createMany({ data: historyEvents });
+            */
+            // --- END: นี่คือส่วนที่แก้ไข ---
 
             return tx.sale.findUnique({
                 where: { id: newSale.id },
@@ -87,6 +92,8 @@ saleController.createSale = async (req, res, next) => {
         next(error);
     }
 };
+
+// ... (โค้ดส่วนที่เหลือของไฟล์เหมือนเดิม ไม่ต้องเปลี่ยนแปลง)
 
 saleController.getAllSales = async (req, res, next) => {
     try {
@@ -226,14 +233,6 @@ saleController.voidSale = async (req, res, next) => {
                         saleId: null
                     },
                 });
-
-                const historyEvents = itemIdsToUpdate.map(itemId => ({
-                    inventoryItemId: itemId,
-                    userId: voidedById,
-                    type: HistoryEventType.UPDATE,
-                    details: `Sale ID ${saleId} voided. Item returned to stock.`
-                }));
-                await tx.assetHistory.createMany({ data: historyEvents });
             }
 
             return await tx.sale.update({

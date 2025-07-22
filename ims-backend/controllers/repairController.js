@@ -8,7 +8,6 @@ repairController.createRepairOrder = async (req, res, next) => {
     const { senderId, receiverId, notes, items } = req.body;
     const createdById = req.user.id;
 
-    // --- START: Input Validation ---
     if (typeof senderId !== 'number' || typeof receiverId !== 'number') {
         const err = new Error('Sender ID and Receiver ID must be numbers.');
         err.statusCode = 400;
@@ -19,7 +18,6 @@ repairController.createRepairOrder = async (req, res, next) => {
         err.statusCode = 400;
         return next(err);
     }
-    // --- END: Input Validation ---
 
     try {
         const newRepairOrder = await prisma.$transaction(async (tx) => {
@@ -31,7 +29,9 @@ repairController.createRepairOrder = async (req, res, next) => {
                         data: {
                             productModelId: item.productModelId,
                             serialNumber: item.serialNumber,
-                            ownerType: ItemOwner.CUSTOMER,
+                            // --- START: นี่คือจุดที่แก้ไขและสำคัญที่สุด ---
+                            ownerType: ItemOwner.CUSTOMER, // บังคับให้เป็นของลูกค้าเสมอ
+                            // --- END: นี่คือจุดที่แก้ไขและสำคัญที่สุด ---
                             status: ItemStatus.REPAIRING,
                             addedById: createdById,
                             itemType: ItemType.SALE 
@@ -83,6 +83,7 @@ repairController.createRepairOrder = async (req, res, next) => {
     }
 };
 
+// ... (โค้ดส่วนที่เหลือของไฟล์เหมือนเดิม)
 repairController.getAllRepairOrders = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -190,7 +191,6 @@ repairController.returnItemsFromRepair = async (req, res, next) => {
     const { itemsToReturn } = req.body;
     const actorId = req.user.id;
 
-    // --- START: Input Validation ---
     const id = parseInt(repairId);
     if (isNaN(id)) {
         const err = new Error('Invalid Repair Order ID.');
@@ -210,7 +210,6 @@ repairController.returnItemsFromRepair = async (req, res, next) => {
             return next(err);
         }
     }
-    // --- END: Input Validation ---
 
     try {
         await prisma.$transaction(async (tx) => {

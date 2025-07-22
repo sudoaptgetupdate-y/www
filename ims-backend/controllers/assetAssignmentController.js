@@ -66,12 +66,14 @@ assetAssignmentController.createAssignment = async (req, res, next) => {
                 data: { status: 'ASSIGNED' },
             });
 
+            // --- START: แก้ไขส่วนนี้ ---
             const historyEvents = inventoryItemIds.map(itemId => ({
                 inventoryItemId: itemId,
                 userId: approvedById,
                 type: HistoryEventType.ASSIGN,
-                details: `Assigned to ${assignee.name}.`
+                details: `Assigned to ${assignee.name}. Assignment ID: ${createdAssignment.id}`
             }));
+            // --- END: แก้ไขส่วนนี้ ---
             await tx.assetHistory.createMany({
                 data: historyEvents
             });
@@ -127,12 +129,14 @@ assetAssignmentController.returnItems = async (req, res, next) => {
                 data: { status: 'IN_WAREHOUSE' },
             });
 
+            // --- START: แก้ไขส่วนนี้ ---
             const historyEvents = itemIdsToReturn.map(itemId => ({
                 inventoryItemId: itemId,
                 userId: actorId,
                 type: HistoryEventType.RETURN,
-                details: `Returned from ${assignment.assignee?.name || 'N/A'}.`
+                details: `Returned from ${assignment.assignee?.name || 'N/A'}. Assignment ID: ${id}`
             }));
+            // --- END: แก้ไขส่วนนี้ ---
             await tx.assetHistory.createMany({
                 data: historyEvents
             });
@@ -161,6 +165,7 @@ assetAssignmentController.returnItems = async (req, res, next) => {
     }
 };
 
+// ... (โค้ดส่วนที่เหลือของไฟล์เหมือนเดิม)
 assetAssignmentController.getAllAssignments = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;

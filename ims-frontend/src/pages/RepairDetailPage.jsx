@@ -175,14 +175,20 @@ export default function RepairDetailPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {repairOrder.items.map(item => (
+                            {repairOrder.items.map(item => {
+                                // --- START: นี่คือ Logic ที่แก้ไข ---
+                                const isSold = item.inventoryItem?.saleId !== null;
+                                const displayOwner = isSold ? 'CUSTOMER' : item.inventoryItem?.ownerType;
+                                // --- END: นี่คือ Logic ที่แก้ไข ---
+
+                                return (
                                 <tr key={item.inventoryItemId} className="border-b">
                                     <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
                                     <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
                                     <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
                                     <td className="p-2">{item.inventoryItem?.macAddress || 'N/A'}</td>
                                     <td className="p-2">
-                                        <StatusBadge status={item.inventoryItem?.ownerType} />
+                                        <StatusBadge status={displayOwner} />
                                     </td>
                                     <td className="p-2">
                                         {item.returnedAt ? (
@@ -192,7 +198,7 @@ export default function RepairDetailPage() {
                                         )}
                                     </td>
                                 </tr>
-                            ))}
+                            )})}
                         </tbody>
                     </table>
                 </CardContent>

@@ -7,8 +7,22 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
-import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import StatusBadge
+import { 
+    ArrowLeft, PlusCircle, Edit, ArchiveRestore, ArchiveX, 
+    ArrowRightLeft, CornerUpLeft, Wrench, ShieldCheck, Package
+} from "lucide-react";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+
+const eventConfig = {
+    CREATE: { icon: <PlusCircle className="h-4 w-4" />, label: 'Created' },
+    UPDATE: { icon: <Edit className="h-4 w-4" />, label: 'Updated' },
+    ASSIGN: { icon: <ArrowRightLeft className="h-4 w-4" />, label: 'Assigned' },
+    RETURN: { icon: <CornerUpLeft className="h-4 w-4" />, label: 'Returned' },
+    DECOMMISSION: { icon: <ArchiveX className="h-4 w-4" />, label: 'Decommissioned' },
+    REINSTATE: { icon: <ArchiveRestore className="h-4 w-4" />, label: 'Reinstated' },
+    REPAIR_SENT: { icon: <Wrench className="h-4 w-4" />, label: 'Repair Sent' },
+    REPAIR_RETURNED: { icon: <ShieldCheck className="h-4 w-4" />, label: 'Repair Return' },
+};
 
 export default function AssetHistoryPage() {
     const { assetId } = useParams();
@@ -37,6 +51,17 @@ export default function AssetHistoryPage() {
         fetchData();
     }, [assetId, token]);
 
+    // --- START: เพิ่มฟังก์ชันนี้ ---
+    const getTransactionLink = (details) => {
+        if (!details) return null;
+        const match = details.match(/Assignment ID: (\d+)/);
+        if (match && match[1]) {
+            return `/asset-assignments/${match[1]}`;
+        }
+        return null;
+    };
+    // --- END: เพิ่มฟังก์ชันนี้ ---
+
     if (loading) return <p>Loading history...</p>;
     if (!asset) return <p>Asset not found.</p>;
 
@@ -62,22 +87,37 @@ export default function AssetHistoryPage() {
                         <thead>
                             <tr className="border-b">
                                 <th className="p-2 text-left">Date</th>
-                                <th className="p-2 text-left">Event</th>
                                 <th className="p-2 text-left">Details</th>
                                 <th className="p-2 text-left">Handled By</th>
+                                <th className="p-2 text-center w-40">Event</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {history.length > 0 ? history.map((h) => (
-                                <tr key={h.id} className="border-b">
-                                    <td className="p-2">{new Date(h.createdAt).toLocaleString()}</td>
-                                    <td className="p-2">
-                                        <StatusBadge status={h.type} />
-                                    </td>
-                                    <td className="p-2">{h.details}</td>
-                                    <td className="p-2">{h.user?.name || 'System'}</td>
-                                </tr>
-                            )) : (
+                            {history.length > 0 ? history.map((h) => {
+                                // --- START: แก้ไขส่วนนี้ ---
+                                const link = getTransactionLink(h.details);
+                                const eventLabel = eventConfig[h.type]?.label || h.type.replace(/_/g, ' ');
+                                const eventIcon = eventConfig[h.type]?.icon;
+
+                                return (
+                                    <tr key={h.id} className="border-b">
+                                        <td className="p-2">{new Date(h.createdAt).toLocaleString()}</td>
+                                        <td className="p-2">{h.details}</td>
+                                        <td className="p-2">{h.user?.name || 'System'}</td>
+                                        <td className="p-2 text-center">
+                                            <StatusBadge
+                                                status={h.type}
+                                                className="w-36"
+                                                {...(link && { onClick: () => navigate(link) })}
+                                            >
+                                                {eventIcon}
+                                                <span className="ml-1.5">{eventLabel}</span>
+                                            </StatusBadge>
+                                        </td>
+                                    </tr>
+                                );
+                                // --- END: แก้ไขส่วนนี้ ---
+                            }) : (
                                 <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">No history found for this asset.</td></tr>
                             )}
                         </tbody>

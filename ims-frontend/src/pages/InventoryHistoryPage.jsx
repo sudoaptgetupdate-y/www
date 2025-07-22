@@ -7,25 +7,26 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-// --- START: แก้ไขบรรทัดนี้ ---
 import { 
     ArrowLeft, ShoppingCart, ArrowRightLeft, CornerUpLeft, Package, 
     ArchiveX, Wrench, ShieldCheck, History as HistoryIcon, PlusCircle, Edit, ArchiveRestore 
 } from "lucide-react";
-// --- END: แก้ไขบรรทัดนี้ ---
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const eventConfig = {
-    SALE: { icon: <ShoppingCart className="h-4 w-4" />, label: 'Sold', variant: 'success' },
-    VOID: { icon: <ArchiveX className="h-4 w-4" />, label: 'Voided', variant: 'destructive' },
-    BORROW: { icon: <ArrowRightLeft className="h-4 w-4" />, label: 'Borrowed', variant: 'warning' },
-    RETURN: { icon: <CornerUpLeft className="h-4 w-4" />, label: 'Returned', variant: 'success' },
-    REPAIR_SENT: { icon: <Wrench className="h-4 w-4" />, label: 'Repair Sent', variant: 'info' },
-    REPAIR_RETURNED: { icon: <ShieldCheck className="h-4 w-4" />, label: 'Repair Return', variant: 'success' },
-    CREATE: { icon: <PlusCircle className="h-4 w-4" />, label: 'Created', variant: 'success' },
-    UPDATE: { icon: <Edit className="h-4 w-4" />, label: 'Updated', variant: 'info' },
-    DECOMMISSION: { icon: <ArchiveX className="h-4 w-4" />, label: 'Decommissioned', variant: 'destructive' },
-    REINSTATE: { icon: <ArchiveRestore className="h-4 w-4" />, label: 'Reinstated', variant: 'success' },
+    SALE: { icon: <ShoppingCart className="h-4 w-4" />, label: 'Sold' },
+    VOID: { icon: <ArchiveX className="h-4 w-4" />, label: 'Voided' },
+    BORROW: { icon: <ArrowRightLeft className="h-4 w-4" />, label: 'Borrowed' },
+    RETURN: { icon: <CornerUpLeft className="h-4 w-4" />, label: 'Returned' },
+    REPAIR_SENT: { icon: <Wrench className="h-4 w-4" />, label: 'Repair Sent' },
+    REPAIR_RETURNED: { icon: <ShieldCheck className="h-4 w-4" />, label: 'Repair Return' },
+    CREATE: { icon: <PlusCircle className="h-4 w-4" />, label: 'Created' },
+    UPDATE: { icon: <Edit className="h-4 w-4" />, label: 'Updated' },
+    DECOMMISSION: { icon: <ArchiveX className="h-4 w-4" />, label: 'Decommissioned' },
+    REINSTATE: { icon: <ArchiveRestore className="h-4 w-4" />, label: 'Reinstated' },
+    DEFECTIVE: { icon: <ArchiveX className="h-4 w-4" />, label: 'Defective' },
+    IN_STOCK: { icon: <ShieldCheck className="h-4 w-4" />, label: 'In Stock' },
+    RESERVED: { icon: <ArchiveRestore className="h-4 w-4" />, label: 'Reserved' }
 };
 
 
@@ -61,6 +62,7 @@ export default function InventoryHistoryPage() {
             case 'VOID':
                 return `/sales/${id}`;
             case 'BORROWING':
+            case 'BORROW':
                 return `/borrowings/${id}`;
             case 'REPAIR':
                 return `/repairs/${id}`;
@@ -106,7 +108,26 @@ export default function InventoryHistoryPage() {
                         <tbody>
                             {history.length > 0 ? history.map((h, index) => {
                                 const link = h.transactionId ? getTransactionLink(h.transactionType, h.transactionId) : null;
-                                const eventLabel = eventConfig[h.type]?.label || h.type.replace(/_/g, ' ');
+                                
+                                // --- START: อัปเดต Logic ตรงนี้ ---
+                                const getDisplayStatus = (historyItem) => {
+                                    if (historyItem.type === 'UPDATE') {
+                                        const details = historyItem.details.toLowerCase();
+                                        if (details.includes('sold to')) return 'SALE';
+                                        if (details.includes('voided')) return 'VOID';
+                                        if (details.includes('marked as defective')) return 'DEFECTIVE';
+                                        if (details.includes('returned to stock from defective')) return 'IN_STOCK';
+                                        if (details.includes('marked as reserved')) return 'RESERVED';
+                                        if (details.includes('unreserved and returned to stock')) return 'IN_STOCK';
+                                    }
+                                    return historyItem.type;
+                                };
+
+                                const displayStatus = getDisplayStatus(h);
+                                // --- END: อัปเดต Logic ตรงนี้ ---
+
+                                const eventLabel = eventConfig[displayStatus]?.label || displayStatus.replace(/_/g, ' ');
+                                const eventIcon = eventConfig[displayStatus]?.icon;
 
                                 return (
                                 <tr key={index} className="border-b">
@@ -115,11 +136,11 @@ export default function InventoryHistoryPage() {
                                     <td className="p-2">{h.user || '-'}</td>
                                     <td className="p-2 text-center">
                                          <StatusBadge
-                                            status={h.type}
+                                            status={displayStatus}
                                             className="w-36"
                                             {...(link && { onClick: () => navigate(link) })}
                                         >
-                                            {eventConfig[h.type]?.icon}
+                                            {eventIcon}
                                             <span className="ml-1.5">{eventLabel}</span>
                                         </StatusBadge>
                                     </td>

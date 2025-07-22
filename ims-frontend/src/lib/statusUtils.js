@@ -19,11 +19,15 @@ const STATUS_CONFIG = {
   ACTIVE: { label: "Active", variant: "success" },
   DISABLED: { label: "Disabled", variant: "destructive" },
 
+  // Owner Types
+  COMPANY: { label: "Company", variant: "default" },
+  CUSTOMER: { label: "Customer", variant: "info" },
+
   // Inventory & Asset Statuses
   IN_STOCK: { label: "In Stock", variant: "success" },
   IN_WAREHOUSE: { label: "In Warehouse", variant: "success" },
   SOLD: { label: "Sold", variant: "secondary" },
-  RESERVED: { label: "Reserved", variant: "info" },
+  RESERVED: { label: "Reserved", variant: "warning" },
   DEFECTIVE: { label: "Defective", variant: "destructive" },
   
   // Transaction Types
@@ -33,8 +37,10 @@ const STATUS_CONFIG = {
   // Sale Statuses
   COMPLETED: { label: "Completed", variant: "success" },
   VOIDED: { label: "Voided", variant: "destructive" },
+  VOID: { label: "Voided", variant: "destructive" },
 
   // Borrowing Statuses
+  BORROW: { label: "Borrowed", variant: "warning" },
   BORROWED: { label: "Borrowed", variant: "warning" },
   RETURNED: { label: "Returned", variant: "secondary" },
   OVERDUE: { label: "Overdue", variant: "destructive" },
@@ -48,7 +54,6 @@ const STATUS_CONFIG = {
   UNREPAIRABLE: { label: "Failed", variant: "destructive" },
   RETURNED_TO_CUSTOMER: { label: "Closed", variant: "secondary" },
 
-  // --- START: แก้ไขตาม yêu cầuสำหรับ Asset History ---
   // Asset Statuses & History Events
   ASSIGNED: { label: "Assigned", variant: "warning" },
   DECOMMISSIONED: { label: "Decommissioned", variant: "destructive" },
@@ -62,7 +67,6 @@ const STATUS_CONFIG = {
   REINSTATE: { label: "Reinstated", variant: "success" },
   REPAIR_SENT: { label: "Repair Sent", variant: "info" },
   REPAIR_RETURNED: { label: "Repair Return", variant: "success" },
-  // --- END: แก้ไขตาม yêu cầuสำหรับ Asset History ---
 
   // Default for unknown statuses
   DEFAULT: { label: "Unknown", variant: "outline" },

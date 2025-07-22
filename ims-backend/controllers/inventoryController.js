@@ -1,6 +1,6 @@
 // ims-backend/controllers/inventoryController.js
 
-const { PrismaClient, ItemType, HistoryEventType } = require('@prisma/client');
+const { PrismaClient, ItemType, HistoryEventType, ItemOwner } = require('@prisma/client');
 const prisma = new PrismaClient();
 const inventoryController = {};
 
@@ -11,7 +11,6 @@ inventoryController.addInventoryItem = async (req, res, next) => {
         const { serialNumber, macAddress, productModelId } = req.body;
         const userId = req.user.id;
 
-        // --- START: Input Validation ---
         if (typeof productModelId !== 'number') {
             const err = new Error('Product Model ID is required and must be a number.');
             err.statusCode = 400;
@@ -22,11 +21,11 @@ inventoryController.addInventoryItem = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: Input Validation ---
 
         const newItem = await prisma.inventoryItem.create({
             data: {
                 itemType: ItemType.SALE,
+                ownerType: ItemOwner.COMPANY, // ระบุให้ชัดเจนว่าเป็นของบริษัทเสมอ
                 serialNumber: serialNumber || null,
                 macAddress: macAddress || null,
                 productModelId,
@@ -61,7 +60,13 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         const categoryIdFilter = req.query.categoryId || 'All';
         const brandIdFilter = req.query.brandId || 'All';
 
-        let where = { itemType: ItemType.SALE };
+        // --- START: นี่คือส่วนที่แก้ไข ---
+        // เพิ่มเงื่อนไข `ownerType: 'COMPANY'` เพื่อกรองเอาเฉพาะสินค้าของบริษัทเท่านั้น
+        let where = { 
+            itemType: ItemType.SALE,
+            ownerType: 'COMPANY' 
+        };
+        // --- END: นี่คือส่วนที่แก้ไข ---
 
         if (searchTerm) {
             where.OR = [
@@ -115,6 +120,7 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
     }
 };
 
+// ... (โค้ดส่วนที่เหลือของไฟล์เหมือนเดิมทั้งหมด)
 inventoryController.getInventoryItemById = async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -325,9 +331,26 @@ inventoryController.getInventoryItemHistory = async (req, res, next) => {
 
         const history = [];
 
-        // --- START: แก้ไข Logic การดึงข้อมูล ---
+        const assetHistoryEvents = await prisma.assetHistory.findMany({
+            where: { 
+                inventoryItemId: itemId,
+                type: { notIn: ['RETURN', 'REPAIR_SENT', 'REPAIR_RETURNED'] }
+            },
+            include: { user: { select: { name: true } } },
+            orderBy: { createdAt: 'asc' }
+        });
 
-        // 1. ดึงข้อมูล Transaction ที่มีความเฉพาะเจาะจงก่อน (Sale, Borrow, Repair)
+        assetHistoryEvents.forEach(event => {
+            history.push({
+                type: event.type,
+                date: event.createdAt,
+                details: event.details,
+                user: event.user?.name || 'System',
+                transactionId: null,
+                transactionType: 'SYSTEM'
+            });
+        });
+
         const saleRecord = await prisma.sale.findFirst({
             where: { itemsSold: { some: { id: itemId } } },
             include: { customer: true, soldBy: true, voidedBy: true }
@@ -405,32 +428,7 @@ inventoryController.getInventoryItemHistory = async (req, res, next) => {
                 });
             }
         });
-
-        // 2. ดึงข้อมูล Event ทั่วไปจาก AssetHistory โดยไม่เอา Event ที่จัดการไปแล้ว
-        const handledEventTypes = ['RETURN', 'REPAIR_SENT', 'REPAIR_RETURNED'];
         
-        const assetHistoryEvents = await prisma.assetHistory.findMany({
-            where: { 
-                inventoryItemId: itemId,
-                type: { notIn: handledEventTypes }
-            },
-            include: { user: { select: { name: true } } },
-            orderBy: { createdAt: 'asc' }
-        });
-
-        assetHistoryEvents.forEach(event => {
-            history.push({
-                type: event.type,
-                date: event.createdAt,
-                details: event.details,
-                user: event.user?.name || 'System',
-                transactionId: null,
-                transactionType: 'SYSTEM'
-            });
-        });
-        
-        // --- END: แก้ไข Logic การดึงข้อมูล ---
-
         const sortedHistory = history.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         res.status(200).json({
