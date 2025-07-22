@@ -5,9 +5,22 @@ const prisma = new PrismaClient();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-exports.register = async (req, res) => {
+exports.register = async (req, res, next) => {
     try {
         const { email, password, name, username } = req.body;
+
+        // --- Input Validation ---
+        if (!email || !password || !name || !username) {
+            const err = new Error('Email, password, name, and username are required.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (password.length < 6) {
+            const err = new Error('Password must be at least 6 characters long.');
+            err.statusCode = 400;
+            return next(err);
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = await prisma.user.create({
             data: {
@@ -21,47 +34,53 @@ exports.register = async (req, res) => {
         delete userToReturn.password;
         res.status(201).json(userToReturn);
     } catch (error) {
-        if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'This email or username is already in use.' });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not register the user.' });
+        next(error); // ส่งต่อ error ไปยัง Middleware
     }
 };
 
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
     try {
         const { username, password } = req.body;
+
+        if (!username || !password) {
+            const err = new Error('Username and password are required.');
+            err.statusCode = 400;
+            return next(err);
+        }
+
         const user = await prisma.user.findUnique({
             where: { username },
         });
 
         if (!user) {
-            return res.status(400).json({ error: 'Invalid credentials' });
+            const err = new Error('Invalid credentials');
+            err.statusCode = 400;
+            return next(err);
         }
         
         if (user.accountStatus !== 'ACTIVE') {
-            return res.status(403).json({ error: 'This account has been disabled.' });
+            const err = new Error('This account has been disabled.');
+            err.statusCode = 403;
+            return next(err);
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
-            return res.status(400).json({ error: 'Invalid credentials' });
+            const err = new Error('Invalid credentials');
+            err.statusCode = 400;
+            return next(err);
         }
 
-        // --- START: ส่วนที่แก้ไข ---
-        // เพิ่ม email เข้าไปใน payload ที่จะส่งกลับไปให้หน้าบ้าน
         const payload = {
             user: {
                 id: user.id,
                 username: user.username,
                 name: user.name,
                 role: user.role,
-                email: user.email, // <-- เพิ่มบรรทัดนี้
+                email: user.email,
             },
         };
-        // --- END ---
 
         const token = jwt.sign(
             payload,
@@ -76,7 +95,6 @@ exports.login = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Login failed' });
+        next(error); // ส่งต่อ error ไปยัง Middleware
     }
 };

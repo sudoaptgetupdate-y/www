@@ -5,6 +5,10 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 
+// --- START: Import middleware ใหม่ ---
+const errorHandler = require('./middlewares/errorHandlerMiddleware');
+// --- END: Import middleware ใหม่ ---
+
 // --- START: Import routes ใหม่ ---
 const addressRoute = require('./routes/addressRoute');
 const repairRoute = require('./routes/repairRoute');
@@ -48,6 +52,11 @@ app.use('/api/borrowings', borrowingRoute);
 app.use('/api/addresses', addressRoute);
 app.use('/api/repairs', repairRoute);
 // --- END: ลงทะเบียน routes ใหม่ ---
+
+// --- START: เพิ่ม Error Handling Middleware (ต้องอยู่หลังสุดเสมอ) ---
+app.use(errorHandler);
+// --- END: เพิ่ม Error Handling Middleware ---
+
 
 const port = process.env.PORT || 5001;
 app.listen(port, () => console.log(`Server is running on port ${port}`));

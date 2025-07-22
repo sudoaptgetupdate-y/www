@@ -1,11 +1,11 @@
 // controllers/dashboardController.js
-const { PrismaClient, ItemType } = require('@prisma/client'); // --- 1. เพิ่ม ItemType ---
+const { PrismaClient, ItemType } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-exports.getDashboardStats = async (req, res) => {
+exports.getDashboardStats = async (req, res, next) => { // <-- เพิ่ม next
     try {
         const soldItems = await prisma.inventoryItem.findMany({
-            where: { status: 'SOLD', itemType: ItemType.SALE }, // --- 2. กรองเฉพาะของขาย ---
+            where: { status: 'SOLD', itemType: ItemType.SALE },
             include: {
                 productModel: {
                     select: {
@@ -20,17 +20,15 @@ exports.getDashboardStats = async (req, res) => {
         }, 0);
 
         const itemsInStock = await prisma.inventoryItem.count({
-            where: { status: 'IN_STOCK', itemType: ItemType.SALE }, // --- 3. กรองเฉพาะของขาย ---
+            where: { status: 'IN_STOCK', itemType: ItemType.SALE },
         });
 
-        // --- START: 4. เพิ่มการนับข้อมูลทรัพย์สิน ---
         const totalAssets = await prisma.inventoryItem.count({
             where: { itemType: ItemType.ASSET }
         });
         const assignedAssets = await prisma.inventoryItem.count({
             where: { itemType: ItemType.ASSET, status: 'ASSIGNED' }
         });
-        // --- END ---
 
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -57,7 +55,7 @@ exports.getDashboardStats = async (req, res) => {
         });
 
         const stockStatus = await prisma.inventoryItem.groupBy({
-            where: { itemType: ItemType.SALE }, // --- 5. กรอง Pie Chart ให้แสดงเฉพาะของขาย ---
+            where: { itemType: ItemType.SALE },
             by: ['status'],
             _count: { id: true },
         });
@@ -65,24 +63,22 @@ exports.getDashboardStats = async (req, res) => {
         res.status(200).json({
             totalRevenue,
             itemsInStock,
-            totalAssets, // --- 6. ส่งข้อมูลใหม่กลับไป ---
-            assignedAssets, // --- 6. ส่งข้อมูลใหม่กลับไป ---
+            totalAssets,
+            assignedAssets,
             salesChartData,
             recentSales,
             stockStatus,
         });
 
     } catch (error) {
-        console.error("Dashboard Error:", error);
-        res.status(500).json({ error: 'Could not fetch dashboard statistics.' });
+        next(error); // <-- ส่ง error ไปที่ Middleware
     }
 };
 
-// ... (getEmployeeDashboardStats เหมือนเดิม) ...
-exports.getEmployeeDashboardStats = async (req, res) => {
+exports.getEmployeeDashboardStats = async (req, res, next) => { // <-- เพิ่ม next
     try {
         const itemsInStock = await prisma.inventoryItem.count({
-            where: { status: 'IN_STOCK', itemType: ItemType.SALE }, // --- กรองเฉพาะของขาย ---
+            where: { status: 'IN_STOCK', itemType: ItemType.SALE },
         });
         
         const defectiveItems = await prisma.inventoryItem.count({
@@ -110,7 +106,6 @@ exports.getEmployeeDashboardStats = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Employee Dashboard Error:", error);
-        res.status(500).json({ error: 'Could not fetch employee dashboard statistics.' });
+        next(error); // <-- ส่ง error ไปที่ Middleware
     }
 };

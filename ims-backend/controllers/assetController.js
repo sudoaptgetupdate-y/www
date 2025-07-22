@@ -4,11 +4,30 @@ const { PrismaClient, ItemType, HistoryEventType } = require('@prisma/client');
 const prisma = new PrismaClient();
 const assetController = {};
 
-// ... (ฟังก์ชัน create, update, delete, getById, decommission, reinstate, getAssetHistory ไม่เปลี่ยนแปลง) ...
-assetController.createAsset = async (req, res) => {
+const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+
+assetController.createAsset = async (req, res, next) => {
     try {
         const { serialNumber, macAddress, productModelId, assetCode } = req.body;
         const userId = req.user.id;
+
+        // --- START: Input Validation ---
+        if (typeof assetCode !== 'string' || assetCode.trim() === '') {
+            const err = new Error('Asset Code is required and must be a string.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (typeof productModelId !== 'number') {
+            const err = new Error('Product Model ID is required and must be a number.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
+            const err = new Error('Invalid MAC Address format.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
 
         const newAsset = await prisma.inventoryItem.create({
             data: {
@@ -33,25 +52,49 @@ assetController.createAsset = async (req, res) => {
 
         res.status(201).json(newAsset);
     } catch (error) {
-        if (error.code === 'P2002') {
-            const target = Array.isArray(error.meta.target) ? error.meta.target.join(', ') : error.meta.target;
-            return res.status(400).json({ error: `The following fields must be unique: ${target}` });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not create the asset' });
+        next(error);
     }
 };
 
-assetController.updateAsset = async (req, res) => {
+assetController.updateAsset = async (req, res, next) => {
     const { id } = req.params;
     const actorId = req.user.id;
     try {
         const { assetCode, serialNumber, macAddress, status, productModelId } = req.body;
+
+        // --- START: Input Validation ---
+        const assetId = parseInt(id);
+        if (isNaN(assetId)) {
+            const err = new Error('Invalid Asset ID.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (typeof assetCode !== 'string' || assetCode.trim() === '') {
+            const err = new Error('Asset Code is required and must be a string.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (typeof productModelId !== 'number') {
+            const err = new Error('Product Model ID is required and must be a number.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
+            const err = new Error('Invalid MAC Address format.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
         
-        const originalAsset = await prisma.inventoryItem.findUnique({ where: { id: parseInt(id) } });
+        const originalAsset = await prisma.inventoryItem.findUnique({ where: { id: assetId } });
+        if (!originalAsset) {
+            const err = new Error('The asset you are trying to update was not found.');
+            err.statusCode = 404;
+            throw err;
+        }
 
         const updatedAsset = await prisma.inventoryItem.update({
-            where: { id: parseInt(id), itemType: 'ASSET' },
+            where: { id: assetId, itemType: 'ASSET' },
             data: {
                 assetCode,
                 serialNumber: serialNumber || null,
@@ -64,7 +107,7 @@ assetController.updateAsset = async (req, res) => {
         const details = `Asset details updated.`;
         await prisma.assetHistory.create({
             data: {
-                inventoryItemId: parseInt(id),
+                inventoryItemId: assetId,
                 userId: actorId,
                 type: HistoryEventType.UPDATE,
                 details: details
@@ -73,50 +116,49 @@ assetController.updateAsset = async (req, res) => {
 
         res.status(200).json(updatedAsset);
     } catch (error) {
-        if (error.code === 'P2002') {
-            const target = Array.isArray(error.meta.target) ? error.meta.target.join(', ') : error.meta.target;
-            return res.status(400).json({ error: `The following fields must be unique: ${target}` });
-        }
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The asset you are trying to update was not found.' });
-        }
-        res.status(500).json({ error: 'Could not update the asset' });
+        next(error);
     }
 };
 
-assetController.deleteAsset = async (req, res) => {
+assetController.deleteAsset = async (req, res, next) => {
     const { id } = req.params;
     try {
+        const assetId = parseInt(id);
+        if (isNaN(assetId)) {
+            const err = new Error('Invalid Asset ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const assetToDelete = await prisma.inventoryItem.findFirst({
-            where: { id: parseInt(id), itemType: 'ASSET' },
+            where: { id: assetId, itemType: 'ASSET' },
             include: { assignmentRecords: { where: { returnedAt: null } } }
         });
 
         if (!assetToDelete) {
-            return res.status(404).json({ error: 'Asset not found.' });
+            const err = new Error('Asset not found.');
+            err.statusCode = 404;
+            throw err;
         }
         if (assetToDelete.assignmentRecords.length > 0) {
-            return res.status(400).json({ error: 'Cannot delete asset. It is currently ASSIGNED.' });
+            const err = new Error('Cannot delete asset. It is currently ASSIGNED.');
+            err.statusCode = 400;
+            throw err;
         }
 
         await prisma.$transaction(async (tx) => {
-            await tx.assetAssignmentOnItems.deleteMany({ where: { inventoryItemId: parseInt(id) } });
-            await tx.assetHistory.deleteMany({ where: { inventoryItemId: parseInt(id) } });
-            await tx.inventoryItem.delete({ where: { id: parseInt(id) } });
+            await tx.assetAssignmentOnItems.deleteMany({ where: { inventoryItemId: assetId } });
+            await tx.assetHistory.deleteMany({ where: { inventoryItemId: assetId } });
+            await tx.inventoryItem.delete({ where: { id: assetId } });
         });
 
         res.status(204).send();
     } catch (error) {
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The asset you are trying to delete was not found.' });
-        }
-        console.error("Delete Asset Error:", error);
-        res.status(500).json({ error: 'Could not delete the asset.' });
+        next(error);
     }
 };
 
-// --- START: แก้ไขฟังก์ชัน getAllAssets ---
-assetController.getAllAssets = async (req, res) => {
+assetController.getAllAssets = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -180,17 +222,22 @@ assetController.getAllAssets = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error fetching assets:", error);
-        res.status(500).json({ error: 'Could not fetch assets' });
+        next(error);
     }
 };
-// --- END: แก้ไขฟังก์ชัน getAllAssets ---
 
-assetController.getAssetById = async (req, res) => {
+assetController.getAssetById = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const assetId = parseInt(id);
+        if (isNaN(assetId)) {
+            const err = new Error('Invalid Asset ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const item = await prisma.inventoryItem.findFirst({
-            where: { id: parseInt(id), itemType: ItemType.ASSET },
+            where: { id: assetId, itemType: ItemType.ASSET },
             include: { 
                 productModel: { include: { category: true, brand: true } },
                 addedBy: { select: { name: true } },
@@ -205,7 +252,9 @@ assetController.getAssetById = async (req, res) => {
             }
         });
         if (!item) {
-            return res.status(404).json({ error: 'Asset not found' });
+            const err = new Error('Asset not found');
+            err.statusCode = 404;
+            throw err;
         }
         
         const currentHolder = item.assignmentRecords[0]?.assignment.assignee.name || null;
@@ -213,33 +262,44 @@ assetController.getAssetById = async (req, res) => {
 
         res.status(200).json(finalItem);
     } catch (error) {
-        res.status(500).json({ error: 'Could not fetch the asset' });
+        next(error);
     }
 };
 
-assetController.decommissionAsset = async (req, res) => {
+assetController.decommissionAsset = async (req, res, next) => {
     const { id } = req.params;
     const actorId = req.user.id;
 
     try {
-        const asset = await prisma.inventoryItem.findFirst({ where: { id: parseInt(id), itemType: 'ASSET' } });
+        const assetId = parseInt(id);
+        if (isNaN(assetId)) {
+            const err = new Error('Invalid Asset ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        const asset = await prisma.inventoryItem.findFirst({ where: { id: assetId, itemType: 'ASSET' } });
 
         if (!asset) {
-            return res.status(404).json({ error: 'Asset not found.' });
+            const err = new Error('Asset not found.');
+            err.statusCode = 404;
+            throw err;
         }
         
         if (!['IN_WAREHOUSE', 'DEFECTIVE'].includes(asset.status)) {
-            return res.status(400).json({ error: 'Only assets in the warehouse or marked as defective can be decommissioned.' });
+            const err = new Error('Only assets in the warehouse or marked as defective can be decommissioned.');
+            err.statusCode = 400;
+            throw err;
         }
 
         await prisma.$transaction([
             prisma.inventoryItem.update({
-                where: { id: parseInt(id) },
+                where: { id: assetId },
                 data: { status: 'DECOMMISSIONED' },
             }),
             prisma.assetHistory.create({
                 data: {
-                    inventoryItemId: parseInt(id),
+                    inventoryItemId: assetId,
                     userId: actorId,
                     type: HistoryEventType.DECOMMISSION,
                     details: `Asset status changed from ${asset.status} to DECOMMISSIONED.`
@@ -249,33 +309,43 @@ assetController.decommissionAsset = async (req, res) => {
         
         res.status(200).json({ message: 'Asset decommissioned successfully.' });
     } catch (error) {
-        console.error("Decommission Error:", error);
-        res.status(500).json({ error: 'Could not decommission the asset.' });
+        next(error);
     }
 };
 
-assetController.reinstateAsset = async (req, res) => {
+assetController.reinstateAsset = async (req, res, next) => {
     const { id } = req.params;
     const actorId = req.user.id;
 
     try {
-        const asset = await prisma.inventoryItem.findFirst({ where: { id: parseInt(id), itemType: 'ASSET' } });
+        const assetId = parseInt(id);
+        if (isNaN(assetId)) {
+            const err = new Error('Invalid Asset ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        const asset = await prisma.inventoryItem.findFirst({ where: { id: assetId, itemType: 'ASSET' } });
 
         if (!asset) {
-            return res.status(404).json({ error: 'Asset not found.' });
+            const err = new Error('Asset not found.');
+            err.statusCode = 404;
+            throw err;
         }
         if (asset.status !== 'DECOMMISSIONED') {
-            return res.status(400).json({ error: 'Only decommissioned assets can be reinstated.' });
+            const err = new Error('Only decommissioned assets can be reinstated.');
+            err.statusCode = 400;
+            throw err;
         }
 
         await prisma.$transaction([
             prisma.inventoryItem.update({
-                where: { id: parseInt(id) },
+                where: { id: assetId },
                 data: { status: 'IN_WAREHOUSE' },
             }),
             prisma.assetHistory.create({
                 data: {
-                    inventoryItemId: parseInt(id),
+                    inventoryItemId: assetId,
                     userId: actorId,
                     type: HistoryEventType.REINSTATE,
                     details: 'Asset was reinstated to warehouse.'
@@ -285,16 +355,22 @@ assetController.reinstateAsset = async (req, res) => {
         
         res.status(200).json({ message: 'Asset reinstated successfully.' });
     } catch (error) {
-        console.error("Reinstate Error:", error);
-        res.status(500).json({ error: 'Could not reinstate the asset.' });
+        next(error);
     }
 };
 
-assetController.getAssetHistory = async (req, res) => {
+assetController.getAssetHistory = async (req, res, next) => {
     const { id } = req.params;
     try {
+        const assetId = parseInt(id);
+        if (isNaN(assetId)) {
+            const err = new Error('Invalid Asset ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const history = await prisma.assetHistory.findMany({
-            where: { inventoryItemId: parseInt(id) },
+            where: { inventoryItemId: assetId },
             include: {
                 user: { select: { name: true } }
             },
@@ -302,8 +378,7 @@ assetController.getAssetHistory = async (req, res) => {
         });
         res.status(200).json(history);
     } catch (error) {
-        console.error("Error fetching asset history:", error);
-        res.status(500).json({ error: 'Could not fetch asset history.' });
+        next(error);
     }
 };
 

@@ -4,13 +4,22 @@ const { PrismaClient, ItemStatus, ItemOwner, RepairStatus, RepairOutcome, ItemTy
 const prisma = new PrismaClient();
 const repairController = {};
 
-repairController.createRepairOrder = async (req, res) => {
+repairController.createRepairOrder = async (req, res, next) => {
     const { senderId, receiverId, notes, items } = req.body;
     const createdById = req.user.id;
 
-    if (!senderId || !receiverId || !items || items.length === 0) {
-        return res.status(400).json({ error: 'Sender, Receiver, and at least one item are required.' });
+    // --- START: Input Validation ---
+    if (typeof senderId !== 'number' || typeof receiverId !== 'number') {
+        const err = new Error('Sender ID and Receiver ID must be numbers.');
+        err.statusCode = 400;
+        return next(err);
     }
+    if (!Array.isArray(items) || items.length === 0) {
+        const err = new Error('Items must be a non-empty array.');
+        err.statusCode = 400;
+        return next(err);
+    }
+    // --- END: Input Validation ---
 
     try {
         const newRepairOrder = await prisma.$transaction(async (tx) => {
@@ -70,13 +79,11 @@ repairController.createRepairOrder = async (req, res) => {
 
         res.status(201).json(newRepairOrder);
     } catch (error) {
-        console.error("Create Repair Error:", error);
-        res.status(500).json({ error: 'Could not create repair order.' });
+        next(error);
     }
 };
 
-// --- START: ส่วนที่แก้ไข ---
-repairController.getAllRepairOrders = async (req, res) => {
+repairController.getAllRepairOrders = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -137,16 +144,22 @@ repairController.getAllRepairOrders = async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ error: 'Could not fetch repair orders.' });
+        next(error);
     }
 };
-// --- END ---
 
-repairController.getRepairOrderById = async (req, res) => {
+repairController.getRepairOrderById = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const repairId = parseInt(id);
+        if (isNaN(repairId)) {
+            const err = new Error('Invalid Repair Order ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const repairOrder = await prisma.repair.findUnique({
-            where: { id: parseInt(id) },
+            where: { id: repairId },
             include: {
                 sender: true,
                 receiver: true,
@@ -161,30 +174,50 @@ repairController.getRepairOrderById = async (req, res) => {
         });
 
         if (!repairOrder) {
-            return res.status(404).json({ error: 'Repair order not found.' });
+            const err = new Error('Repair order not found.');
+            err.statusCode = 404;
+            throw err;
         }
 
         res.status(200).json(repairOrder);
     } catch (error) {
-        res.status(500).json({ error: 'Could not fetch the repair order.' });
+        next(error);
     }
 };
 
-repairController.returnItemsFromRepair = async (req, res) => {
+repairController.returnItemsFromRepair = async (req, res, next) => {
     const { id: repairId } = req.params;
     const { itemsToReturn } = req.body;
     const actorId = req.user.id;
 
-    if (!itemsToReturn || itemsToReturn.length === 0) {
-        return res.status(400).json({ error: 'At least one item to return is required.' });
+    // --- START: Input Validation ---
+    const id = parseInt(repairId);
+    if (isNaN(id)) {
+        const err = new Error('Invalid Repair Order ID.');
+        err.statusCode = 400;
+        return next(err);
     }
+    if (!Array.isArray(itemsToReturn) || itemsToReturn.length === 0) {
+        const err = new Error('itemsToReturn must be a non-empty array.');
+        err.statusCode = 400;
+        return next(err);
+    }
+    const validOutcomes = Object.values(RepairOutcome);
+    for (const item of itemsToReturn) {
+        if (typeof item.inventoryItemId !== 'number' || !validOutcomes.includes(item.repairOutcome)) {
+            const err = new Error('Each item in itemsToReturn must have a numeric inventoryItemId and a valid repairOutcome.');
+            err.statusCode = 400;
+            return next(err);
+        }
+    }
+    // --- END: Input Validation ---
 
     try {
         await prisma.$transaction(async (tx) => {
             const now = new Date();
 
             const repairOrder = await tx.repair.findUnique({
-                where: { id: parseInt(repairId) },
+                where: { id: id },
                 include: { receiver: true }
             });
 
@@ -193,7 +226,7 @@ repairController.returnItemsFromRepair = async (req, res) => {
 
                 const repairItemRecord = await tx.repairOnItems.findUnique({
                     where: {
-                        repairId_inventoryItemId: { repairId: parseInt(repairId), inventoryItemId: inventoryItemId }
+                        repairId_inventoryItemId: { repairId: id, inventoryItemId: inventoryItemId }
                     },
                     include: { inventoryItem: true }
                 });
@@ -204,7 +237,7 @@ repairController.returnItemsFromRepair = async (req, res) => {
                 
                 await tx.repairOnItems.update({
                     where: {
-                        repairId_inventoryItemId: { repairId: parseInt(repairId), inventoryItemId: inventoryItemId }
+                        repairId_inventoryItemId: { repairId: id, inventoryItemId: inventoryItemId }
                     },
                     data: { returnedAt: now, repairOutcome: repairOutcome },
                 });
@@ -238,21 +271,20 @@ repairController.returnItemsFromRepair = async (req, res) => {
             }
 
             const remainingItems = await tx.repairOnItems.count({
-                where: { repairId: parseInt(repairId), returnedAt: null }
+                where: { repairId: id, returnedAt: null }
             });
 
             const newRepairStatus = remainingItems === 0 ? RepairStatus.COMPLETED : RepairStatus.PARTIALLY_RETURNED;
             
             await tx.repair.update({
-                where: { id: parseInt(repairId) },
+                where: { id: id },
                 data: { status: newRepairStatus },
             });
         });
 
         res.status(200).json({ message: 'Items have been returned successfully.' });
     } catch (error) {
-        console.error("Return Items Error:", error);
-        res.status(500).json({ error: error.message || 'Could not process the return.' });
+        next(error);
     }
 };
 

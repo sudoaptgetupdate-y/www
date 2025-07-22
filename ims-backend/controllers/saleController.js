@@ -4,13 +4,22 @@ const prisma = new PrismaClient();
 
 const saleController = {};
 
-saleController.createSale = async (req, res) => {
+saleController.createSale = async (req, res, next) => {
     const { customerId, inventoryItemIds } = req.body;
     const soldById = req.user.id; 
 
-    if (!customerId || !inventoryItemIds || inventoryItemIds.length === 0) {
-        return res.status(400).json({ error: 'Customer ID and at least one Item ID are required.' });
+    // --- START: Input Validation ---
+    if (typeof customerId !== 'number') {
+        const err = new Error('Customer ID must be a number.');
+        err.statusCode = 400;
+        return next(err);
     }
+    if (!Array.isArray(inventoryItemIds) || inventoryItemIds.length === 0 || inventoryItemIds.some(id => typeof id !== 'number')) {
+        const err = new Error('inventoryItemIds must be a non-empty array of numbers.');
+        err.statusCode = 400;
+        return next(err);
+    }
+    // --- END: Input Validation ---
 
     try {
         const sale = await prisma.$transaction(async (tx) => {
@@ -23,11 +32,17 @@ saleController.createSale = async (req, res) => {
             });
 
             if (itemsToSell.length !== inventoryItemIds.length) {
-                throw new Error('One or more items are not available for sale or not found.');
+                const err = new Error('One or more items are not available for sale or not found.');
+                err.statusCode = 400;
+                throw err;
             }
 
             const customer = await tx.customer.findUnique({ where: { id: customerId } });
-            if (!customer) throw new Error('Customer not found.');
+            if (!customer) {
+                const err = new Error('Customer not found.');
+                err.statusCode = 404;
+                throw err;
+            }
 
             const subtotal = itemsToSell.reduce((sum, item) => sum + (item.productModel?.sellingPrice || 0), 0);
             const vatAmount = subtotal * 0.07;
@@ -69,12 +84,11 @@ saleController.createSale = async (req, res) => {
         res.status(201).json(sale);
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message || 'Could not complete the sale.' });
+        next(error);
     }
 };
 
-saleController.getAllSales = async (req, res) => {
+saleController.getAllSales = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -114,13 +128,10 @@ saleController.getAllSales = async (req, res) => {
             prisma.sale.count({ where })
         ]);
         
-        // --- START: ส่วนที่แก้ไข ---
-        // เพิ่มการกรองข้อมูลที่ไม่สมบูรณ์ออกไป
         const completeSalesData = sales.filter(sale => sale.customer && sale.soldBy);
-        // --- END ---
 
         res.status(200).json({
-            data: completeSalesData, // <-- ใช้ข้อมูลที่กรองแล้ว
+            data: completeSalesData,
             pagination: {
                 totalItems,
                 totalPages: Math.ceil(totalItems / limit),
@@ -129,17 +140,23 @@ saleController.getAllSales = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Could not fetch sales.' });
+        next(error);
     }
 };
 
 
-saleController.getSaleById = async (req, res) => {
+saleController.getSaleById = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const saleId = parseInt(id);
+        if (isNaN(saleId)) {
+            const err = new Error('Invalid Sale ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const sale = await prisma.sale.findUnique({
-            where: { id: parseInt(id) },
+            where: { id: saleId },
             include: {
                 customer: true,
                 soldBy: { select: { id: true, name: true, email: true } },
@@ -158,30 +175,46 @@ saleController.getSaleById = async (req, res) => {
         });
 
         if (!sale) {
-            return res.status(404).json({ error: 'Sale not found' });
+            const err = new Error('Sale not found');
+            err.statusCode = 404;
+            throw err;
         }
 
         res.status(200).json(sale);
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Could not fetch the sale.' });
+        next(error);
     }
 };
 
-saleController.voidSale = async (req, res) => {
+saleController.voidSale = async (req, res, next) => {
     const { id } = req.params;
     const voidedById = req.user.id;
 
     try {
+        const saleId = parseInt(id);
+        if (isNaN(saleId)) {
+            const err = new Error('Invalid Sale ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const voidedSale = await prisma.$transaction(async (tx) => {
             const saleToVoid = await tx.sale.findUnique({
-                where: { id: parseInt(id) },
+                where: { id: saleId },
                 include: { itemsSold: true },
             });
 
-            if (!saleToVoid) throw new Error('Sale not found.');
-            if (saleToVoid.status === 'VOIDED') throw new Error('This sale has already been voided.');
+            if (!saleToVoid) {
+                const err = new Error('Sale not found.');
+                err.statusCode = 404;
+                throw err;
+            }
+            if (saleToVoid.status === 'VOIDED') {
+                const err = new Error('This sale has already been voided.');
+                err.statusCode = 400;
+                throw err;
+            }
 
             const itemIdsToUpdate = saleToVoid.itemsSold.map(item => item.id);
 
@@ -198,13 +231,13 @@ saleController.voidSale = async (req, res) => {
                     inventoryItemId: itemId,
                     userId: voidedById,
                     type: HistoryEventType.UPDATE,
-                    details: `Sale ID ${id} voided. Item returned to stock.`
+                    details: `Sale ID ${saleId} voided. Item returned to stock.`
                 }));
                 await tx.assetHistory.createMany({ data: historyEvents });
             }
 
             return await tx.sale.update({
-                where: { id: parseInt(id) },
+                where: { id: saleId },
                 data: {
                     status: 'VOIDED',
                     voidedAt: new Date(),
@@ -216,23 +249,46 @@ saleController.voidSale = async (req, res) => {
         res.status(200).json({ message: 'Sale has been voided successfully.', sale: voidedSale });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message || 'Could not void the sale.' });
+        next(error);
     }
 };
 
-saleController.updateSale = async (req, res) => {
+saleController.updateSale = async (req, res, next) => {
     const { id } = req.params;
     const { customerId, inventoryItemIds } = req.body;
 
     try {
+        const saleId = parseInt(id);
+        if (isNaN(saleId)) {
+            const err = new Error('Invalid Sale ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        // --- START: Input Validation ---
+        if (typeof customerId !== 'number') {
+            const err = new Error('Customer ID must be a number.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (!Array.isArray(inventoryItemIds) || inventoryItemIds.some(itemId => typeof itemId !== 'number')) {
+            const err = new Error('inventoryItemIds must be an array of numbers.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
+
         const updatedSale = await prisma.$transaction(async (tx) => {
             const originalSale = await tx.sale.findUnique({
-                where: { id: parseInt(id) },
+                where: { id: saleId },
                 include: { itemsSold: true },
             });
 
-            if (!originalSale) throw new Error("Sale not found.");
+            if (!originalSale) {
+                const err = new Error("Sale not found.");
+                err.statusCode = 404;
+                throw err;
+            }
             
             const originalItemIds = originalSale.itemsSold.map(item => item.id);
             if (originalItemIds.length > 0) {
@@ -247,7 +303,9 @@ saleController.updateSale = async (req, res) => {
                 include: { productModel: { select: { sellingPrice: true } } },
             });
             if (itemsToSell.length !== inventoryItemIds.length) {
-                throw new Error('One or more new items are not available for sale.');
+                const err = new Error('One or more new items are not available for sale.');
+                err.statusCode = 400;
+                throw err;
             }
             const subtotal = itemsToSell.reduce((sum, item) => sum + (item.productModel?.sellingPrice || 0), 0);
             const vatAmount = subtotal * 0.07;
@@ -256,12 +314,12 @@ saleController.updateSale = async (req, res) => {
             if (inventoryItemIds.length > 0) {
                 await tx.inventoryItem.updateMany({
                     where: { id: { in: inventoryItemIds } },
-                    data: { status: 'SOLD', saleId: parseInt(id) },
+                    data: { status: 'SOLD', saleId: saleId },
                 });
             }
 
             return await tx.sale.update({
-                where: { id: parseInt(id) },
+                where: { id: saleId },
                 data: {
                     customerId: customerId,
                     subtotal: subtotal,
@@ -275,8 +333,7 @@ saleController.updateSale = async (req, res) => {
         res.status(200).json(updatedSale);
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message || "Could not update the sale." });
+        next(error);
     }
 };
 

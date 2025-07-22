@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 
 const userController = {};
 
-userController.getAllUsers = async (req, res) => {
+userController.getAllUsers = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -52,29 +52,56 @@ userController.getAllUsers = async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ error: 'Could not fetch users.' });
+        next(error);
     }
 };
 
-userController.getUserById = async (req, res) => {
+userController.getUserById = async (req, res, next) => {
     const { id } = req.params;
     try {
+        const userId = parseInt(id);
+        if (isNaN(userId)) {
+            const err = new Error('Invalid User ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const user = await prisma.user.findUnique({
-            where: { id: parseInt(id) },
+            where: { id: userId },
             select: { id: true, name: true, username: true, email: true, role: true }
         });
         if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+            const err = new Error('User not found');
+            err.statusCode = 404;
+            throw err;
         }
         res.status(200).json(user);
     } catch (error) {
-        res.status(500).json({ error: 'Could not fetch user.' });
+        next(error);
     }
 };
 
-userController.createUser = async (req, res) => {
+userController.createUser = async (req, res, next) => {
     const { email, password, name, role, username } = req.body;
     try {
+        // --- START: Input Validation ---
+        if (!email || !password || !name || !username) {
+            const err = new Error('Email, password, name, and username are required.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (password.length < 6) {
+            const err = new Error('Password must be at least 6 characters long.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (!['ADMIN', 'EMPLOYEE', 'SUPER_ADMIN'].includes(role)) {
+            const err = new Error('Invalid role specified.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = await prisma.user.create({
             data: {
@@ -88,70 +115,89 @@ userController.createUser = async (req, res) => {
         const { password: _, ...userToReturn } = newUser;
         res.status(201).json(userToReturn);
     } catch (error) {
-        if (error.code === 'P2002') {
-            const field = error.meta.target?.[0] || 'fields';
-            return res.status(400).json({ error: `This ${field} is already in use.` });
-        }
-        res.status(500).json({ error: 'Could not create the user.' });
+        next(error);
     }
 };
 
-userController.updateUser = async (req, res) => {
+userController.updateUser = async (req, res, next) => {
     const { id } = req.params;
     const { name, email, role, username } = req.body;
     try {
+        const userId = parseInt(id);
+        if (isNaN(userId)) {
+            const err = new Error('Invalid User ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        // --- START: Input Validation ---
+        if (role && !['ADMIN', 'EMPLOYEE', 'SUPER_ADMIN'].includes(role)) {
+             const err = new Error('Invalid role specified.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
+
         const updatedUser = await prisma.user.update({
-            where: { id: parseInt(id) },
+            where: { id: userId },
             data: { name, email, role, username },
         });
         const { password, ...userToReturn } = updatedUser;
         res.status(200).json(userToReturn);
     } catch (error) {
-        if (error.code === 'P2002') {
-            const field = error.meta.target?.[0] || 'fields';
-            return res.status(400).json({ error: `This ${field} is already in use.` });
-        }
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The user you are trying to update was not found.' });
-        }
-        res.status(500).json({ error: 'Could not update the user.' });
+        next(error);
     }
 };
 
-userController.updateUserStatus = async (req, res) => {
+userController.updateUserStatus = async (req, res, next) => {
     const { id } = req.params;
     const { accountStatus } = req.body;
     try {
+        const userId = parseInt(id);
+        if (isNaN(userId)) {
+            const err = new Error('Invalid User ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        // --- START: Input Validation ---
+        if (!['ACTIVE', 'DISABLED'].includes(accountStatus)) {
+            const err = new Error('Invalid account status specified.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
+
         const updatedUser = await prisma.user.update({
-            where: { id: parseInt(id) },
+            where: { id: userId },
             data: { accountStatus },
             select: { id: true, name: true, accountStatus: true }
         });
         res.status(200).json(updatedUser);
     } catch (error) {
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The user you are trying to update was not found.' });
-        }
-        res.status(500).json({ error: 'Could not update user status.' });
+        next(error);
     }
 };
 
-userController.deleteUser = async (req, res) => {
+userController.deleteUser = async (req, res, next) => {
     const { id } = req.params;
     try {
+        const userId = parseInt(id);
+        if (isNaN(userId)) {
+            const err = new Error('Invalid User ID.');
+            err.statusCode = 400;
+            throw err;
+        }
         await prisma.user.delete({
-            where: { id: parseInt(id) }
+            where: { id: userId }
         });
         res.status(204).send();
     } catch (error) {
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The user you are trying to delete was not found.' });
-        }
-        res.status(500).json({ error: 'Could not delete user.' });
+        next(error);
     }
 };
 
-userController.updateMyProfile = async (req, res) => {
+userController.updateMyProfile = async (req, res, next) => {
     const { id } = req.user;
     const { name, username, email } = req.body;
 
@@ -169,32 +215,38 @@ userController.updateMyProfile = async (req, res) => {
         res.status(200).json(userToReturn);
         
     } catch (error) {
-        if (error.code === 'P2002') {
-            const field = error.meta.target?.[0] || 'fields';
-            return res.status(400).json({ error: `This ${field} is already in use.` });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not update your profile.' });
+        next(error);
     }
 };
 
-userController.changeMyPassword = async (req, res) => {
+userController.changeMyPassword = async (req, res, next) => {
     const { id } = req.user;
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-        return res.status(400).json({ error: 'Please provide both current and new passwords.' });
+        const err = new Error('Please provide both current and new passwords.');
+        err.statusCode = 400;
+        return next(err);
+    }
+    if (newPassword.length < 6) {
+        const err = new Error('New password must be at least 6 characters long.');
+        err.statusCode = 400;
+        return next(err);
     }
 
     try {
         const user = await prisma.user.findUnique({ where: { id: parseInt(id) } });
         if (!user) {
-            return res.status(404).json({ error: 'User not found.' });
+            const err = new Error('User not found.');
+            err.statusCode = 404;
+            throw err;
         }
 
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) {
-            return res.status(400).json({ error: 'Invalid current password.' });
+            const err = new Error('Invalid current password.');
+            err.statusCode = 400;
+            throw err;
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -207,16 +259,21 @@ userController.changeMyPassword = async (req, res) => {
         res.status(200).json({ message: 'Password changed successfully.' });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Could not change password.' });
+        next(error);
     }
 };
 
-userController.getUserAssets = async (req, res) => {
+userController.getUserAssets = async (req, res, next) => {
     const { id: userId } = req.params;
     try {
+        const id = parseInt(userId);
+        if (isNaN(id)) {
+            const err = new Error('Invalid User ID.');
+            err.statusCode = 400;
+            throw err;
+        }
         const history = await prisma.assetAssignmentOnItems.findMany({
-            where: { assignment: { assigneeId: parseInt(userId) } },
+            where: { assignment: { assigneeId: id } },
             include: {
                 inventoryItem: { include: { productModel: true } }
             },
@@ -224,12 +281,11 @@ userController.getUserAssets = async (req, res) => {
         });
         res.status(200).json(history);
     } catch (error) {
-        console.error("Could not fetch user's asset history:", error);
-        res.status(500).json({ error: "Could not fetch user's asset history." });
+        next(error);
     }
 };
 
-userController.getMyAssets = async (req, res) => {
+userController.getMyAssets = async (req, res, next) => {
     const { id: userId } = req.user;
     try {
         const assets = await prisma.inventoryItem.findMany({
@@ -249,23 +305,28 @@ userController.getMyAssets = async (req, res) => {
         });
         res.status(200).json(assets);
     } catch (error) {
-        console.error("Could not fetch user's assets:", error);
-        res.status(500).json({ error: "Could not fetch user's assets." });
+        next(error);
     }
 };
 
-userController.getUserAssetSummary = async (req, res) => {
+userController.getUserAssetSummary = async (req, res, next) => {
     const { id: userId } = req.params;
     try {
+        const id = parseInt(userId);
+        if (isNaN(id)) {
+            const err = new Error('Invalid User ID.');
+            err.statusCode = 400;
+            throw err;
+        }
         const currentlyAssigned = await prisma.assetAssignmentOnItems.count({
             where: { 
-                assignment: { assigneeId: parseInt(userId) },
+                assignment: { assigneeId: id },
                 returnedAt: null
             }
         });
 
         const totalEverAssigned = await prisma.assetAssignmentOnItems.count({
-            where: { assignment: { assigneeId: parseInt(userId) } }
+            where: { assignment: { assigneeId: id } }
         });
 
         res.status(200).json({
@@ -273,8 +334,7 @@ userController.getUserAssetSummary = async (req, res) => {
             totalEverAssigned
         });
     } catch (error) {
-        console.error("Could not fetch user's asset summary:", error);
-        res.status(500).json({ error: "Could not fetch user's asset summary." });
+        next(error);
     }
 };
 

@@ -4,10 +4,25 @@ const { PrismaClient, ItemType, HistoryEventType } = require('@prisma/client');
 const prisma = new PrismaClient();
 const inventoryController = {};
 
-inventoryController.addInventoryItem = async (req, res) => {
+const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+
+inventoryController.addInventoryItem = async (req, res, next) => {
     try {
         const { serialNumber, macAddress, productModelId } = req.body;
         const userId = req.user.id;
+
+        // --- START: Input Validation ---
+        if (typeof productModelId !== 'number') {
+            const err = new Error('Product Model ID is required and must be a number.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
+            const err = new Error('Invalid MAC Address format.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
 
         const newItem = await prisma.inventoryItem.create({
             data: {
@@ -31,16 +46,11 @@ inventoryController.addInventoryItem = async (req, res) => {
 
         res.status(201).json(newItem);
     } catch (error) {
-        if (error.code === 'P2002') {
-            const target = Array.isArray(error.meta.target) ? error.meta.target.join(', ') : error.meta.target;
-            return res.status(400).json({ error: `The following fields must be unique: ${target}` });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not add the item to inventory' });
+        next(error);
     }
 };
 
-inventoryController.getAllInventoryItems = async (req, res) => {
+inventoryController.getAllInventoryItems = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -101,39 +111,66 @@ inventoryController.getAllInventoryItems = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error fetching inventory items:", error);
-        res.status(500).json({ error: 'Could not fetch inventory items' });
+        next(error);
     }
 };
 
-inventoryController.getInventoryItemById = async (req, res) => {
+inventoryController.getInventoryItemById = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const itemId = parseInt(id);
+        if (isNaN(itemId)) {
+            const err = new Error('Invalid Item ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const item = await prisma.inventoryItem.findFirst({
-            where: { id: parseInt(id), itemType: ItemType.SALE },
+            where: { id: itemId, itemType: ItemType.SALE },
             include: { 
                 productModel: { include: { category: true, brand: true } },
                 addedBy: { select: { name: true } }
             }
         });
         if (!item) {
-            return res.status(404).json({ error: 'Inventory item not found' });
+            const err = new Error('Inventory item not found');
+            err.statusCode = 404;
+            throw err;
         }
         res.status(200).json(item);
     } catch (error) {
-        res.status(500).json({ error: 'Could not fetch the item' });
+        next(error);
     }
 };
 
-inventoryController.updateInventoryItem = async (req, res) => {
+inventoryController.updateInventoryItem = async (req, res, next) => {
     const { id } = req.params;
     const actorId = req.user.id;
     try {
         const { serialNumber, macAddress, status, productModelId } = req.body;
         
+        const itemId = parseInt(id);
+        if (isNaN(itemId)) {
+            const err = new Error('Invalid Item ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+        // --- START: Input Validation ---
+        if (typeof productModelId !== 'number') {
+            const err = new Error('Product Model ID is required and must be a number.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
+            const err = new Error('Invalid MAC Address format.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
+        
         const [updatedItem] = await prisma.$transaction([
             prisma.inventoryItem.update({
-                where: { id: parseInt(id), itemType: 'SALE' },
+                where: { id: itemId, itemType: 'SALE' },
                 data: {
                     serialNumber: serialNumber || null,
                     macAddress: macAddress || null,
@@ -143,7 +180,7 @@ inventoryController.updateInventoryItem = async (req, res) => {
             }),
             prisma.assetHistory.create({
                 data: {
-                    inventoryItemId: parseInt(id),
+                    inventoryItemId: itemId,
                     userId: actorId,
                     type: HistoryEventType.UPDATE,
                     details: `Item details updated.`
@@ -153,69 +190,80 @@ inventoryController.updateInventoryItem = async (req, res) => {
 
         res.status(200).json(updatedItem);
     } catch (error) {
-        if (error.code === 'P2002') {
-            const target = Array.isArray(error.meta.target) ? error.meta.target.join(', ') : error.meta.target;
-            return res.status(400).json({ error: `The following fields must be unique: ${target}` });
-        }
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The item you are trying to update was not found.' });
-        }
-        res.status(500).json({ error: 'Could not update the item' });
+        next(error);
     }
 };
 
-inventoryController.deleteInventoryItem = async (req, res) => {
+inventoryController.deleteInventoryItem = async (req, res, next) => {
     const { id } = req.params;
     try {
+        const itemId = parseInt(id);
+        if (isNaN(itemId)) {
+            const err = new Error('Invalid Item ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const itemToDelete = await prisma.inventoryItem.findFirst({
-            where: { id: parseInt(id), itemType: 'SALE' },
+            where: { id: itemId, itemType: 'SALE' },
             include: { borrowingRecords: { where: { returnedAt: null } } }
         });
 
         if (!itemToDelete) {
-            return res.status(404).json({ error: 'Item not found.' });
+             const err = new Error('Item not found.');
+             err.statusCode = 404;
+             throw err;
         }
         if (itemToDelete.status === 'SOLD' || itemToDelete.borrowingRecords.length > 0) {
             let reason = itemToDelete.status === 'SOLD' ? 'SOLD' : 'actively BORROWED';
-            return res.status(400).json({ error: `Cannot delete item. It is currently ${reason}.` });
+            const err = new Error(`Cannot delete item. It is currently ${reason}.`);
+            err.statusCode = 400;
+            throw err;
         }
 
         await prisma.$transaction(async (tx) => {
-            await tx.assetHistory.deleteMany({ where: { inventoryItemId: parseInt(id) } });
-            await tx.borrowingOnItems.deleteMany({ where: { inventoryItemId: parseInt(id) } });
-            await tx.inventoryItem.delete({ where: { id: parseInt(id) } });
+            await tx.assetHistory.deleteMany({ where: { inventoryItemId: itemId } });
+            await tx.borrowingOnItems.deleteMany({ where: { inventoryItemId: itemId } });
+            await tx.inventoryItem.delete({ where: { id: itemId } });
         });
 
         res.status(204).send();
     } catch (error) {
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The item you are trying to delete was not found.' });
-        }
-        console.error("Delete Item Error:", error);
-        res.status(500).json({ error: 'Could not delete the item.' });
+        next(error);
     }
 };
 
-const updateItemStatus = async (res, req, expectedStatus, newStatus, eventType, details) => {
+const updateItemStatus = async (res, req, next, expectedStatus, newStatus, eventType, details) => {
     const { id } = req.params;
     const actorId = req.user.id;
     try {
-        const item = await prisma.inventoryItem.findFirst({ where: { id: parseInt(id), itemType: 'SALE' } });
+        const itemId = parseInt(id);
+        if (isNaN(itemId)) {
+            const err = new Error('Invalid Item ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        const item = await prisma.inventoryItem.findFirst({ where: { id: itemId, itemType: 'SALE' } });
         if (!item) {
-            return res.status(404).json({ error: 'Item not found.' });
+            const err = new Error('Item not found.');
+            err.statusCode = 404;
+            throw err;
         }
         if (Array.isArray(expectedStatus) ? !expectedStatus.includes(item.status) : item.status !== expectedStatus) {
-            return res.status(400).json({ error: `Only items with status [${Array.isArray(expectedStatus) ? expectedStatus.join(', ') : expectedStatus}] can perform this action.` });
+            const err = new Error(`Only items with status [${Array.isArray(expectedStatus) ? expectedStatus.join(', ') : expectedStatus}] can perform this action.`);
+            err.statusCode = 400;
+            throw err;
         }
 
         const [updatedItem] = await prisma.$transaction([
             prisma.inventoryItem.update({
-                where: { id: parseInt(id) },
+                where: { id: itemId },
                 data: { status: newStatus },
             }),
             prisma.assetHistory.create({
                 data: {
-                    inventoryItemId: parseInt(id),
+                    inventoryItemId: itemId,
                     userId: actorId,
                     type: eventType,
                     details: details || `Status changed to ${newStatus}.`
@@ -225,47 +273,54 @@ const updateItemStatus = async (res, req, expectedStatus, newStatus, eventType, 
 
         res.status(200).json(updatedItem);
     } catch (error) {
-        console.error(`Error updating status to ${newStatus}:`, error);
-        res.status(500).json({ error: `Could not update item status.` });
+        next(error);
     }
 };
 
-inventoryController.decommissionItem = (req, res) => {
-    updateItemStatus(res, req, ['IN_STOCK', 'DEFECTIVE'], 'DECOMMISSIONED', HistoryEventType.DECOMMISSION, 'Item decommissioned.');
+inventoryController.decommissionItem = (req, res, next) => {
+    updateItemStatus(res, req, next, ['IN_STOCK', 'DEFECTIVE'], 'DECOMMISSIONED', HistoryEventType.DECOMMISSION, 'Item decommissioned.');
 };
 
-inventoryController.reinstateItem = (req, res) => {
-    updateItemStatus(res, req, 'DECOMMISSIONED', 'IN_STOCK', HistoryEventType.REINSTATE, 'Item reinstated to stock.');
+inventoryController.reinstateItem = (req, res, next) => {
+    updateItemStatus(res, req, next, 'DECOMMISSIONED', 'IN_STOCK', HistoryEventType.REINSTATE, 'Item reinstated to stock.');
 };
 
-inventoryController.markAsReserved = (req, res) => {
-    updateItemStatus(res, req, 'IN_STOCK', 'RESERVED', HistoryEventType.UPDATE, 'Item marked as reserved.');
+inventoryController.markAsReserved = (req, res, next) => {
+    updateItemStatus(res, req, next, 'IN_STOCK', 'RESERVED', HistoryEventType.UPDATE, 'Item marked as reserved.');
 };
 
-inventoryController.unreserveItem = (req, res) => {
-    updateItemStatus(res, req, 'RESERVED', 'IN_STOCK', HistoryEventType.UPDATE, 'Item unreserved and returned to stock.');
+inventoryController.unreserveItem = (req, res, next) => {
+    updateItemStatus(res, req, next, 'RESERVED', 'IN_STOCK', HistoryEventType.UPDATE, 'Item unreserved and returned to stock.');
 };
 
-inventoryController.markAsDefective = (req, res) => {
-    updateItemStatus(res, req, ['IN_STOCK', 'RESERVED'], 'DEFECTIVE', HistoryEventType.UPDATE, 'Item marked as defective.');
+inventoryController.markAsDefective = (req, res, next) => {
+    updateItemStatus(res, req, next, ['IN_STOCK', 'RESERVED'], 'DEFECTIVE', HistoryEventType.UPDATE, 'Item marked as defective.');
 };
 
-inventoryController.markAsInStock = (req, res) => {
-    updateItemStatus(res, req, 'DEFECTIVE', 'IN_STOCK', HistoryEventType.UPDATE, 'Item returned to stock from defective status.');
+inventoryController.markAsInStock = (req, res, next) => {
+    updateItemStatus(res, req, next, 'DEFECTIVE', 'IN_STOCK', HistoryEventType.UPDATE, 'Item returned to stock from defective status.');
 };
 
-inventoryController.getInventoryItemHistory = async (req, res) => {
+inventoryController.getInventoryItemHistory = async (req, res, next) => {
     const { id } = req.params;
-    const itemId = parseInt(id);
-
+    
     try {
+        const itemId = parseInt(id);
+        if (isNaN(itemId)) {
+            const err = new Error('Invalid Item ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const item = await prisma.inventoryItem.findUnique({
             where: { id: itemId },
             include: { productModel: true }
         });
 
         if (!item) {
-            return res.status(404).json({ error: 'Item not found.' });
+            const err = new Error('Item not found.');
+            err.statusCode = 404;
+            throw err;
         }
 
         const history = [];
@@ -365,16 +420,17 @@ inventoryController.getInventoryItemHistory = async (req, res) => {
             }
         });
         
+        // --- นี่คือส่วนที่ขาดไป ---
         const sortedHistory = history.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         res.status(200).json({
             itemDetails: item,
             history: sortedHistory
         });
+        // --- จบส่วนที่ขาดไป ---
 
     } catch (error) {
-        console.error("Error fetching item history:", error);
-        res.status(500).json({ error: 'Could not fetch item history.' });
+        next(error);
     }
 };
 

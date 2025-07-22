@@ -3,13 +3,27 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const borrowingController = {};
 
-borrowingController.createBorrowing = async (req, res) => {
+borrowingController.createBorrowing = async (req, res, next) => {
     const { customerId, inventoryItemIds, dueDate, notes } = req.body;
     const approvedById = req.user.id;
 
-    if (!customerId || !inventoryItemIds || inventoryItemIds.length === 0) {
-        return res.status(400).json({ error: 'Customer ID and at least one Item ID are required.' });
+    // --- START: Input Validation ---
+    if (typeof customerId !== 'number') {
+        const err = new Error('Customer ID must be a number.');
+        err.statusCode = 400;
+        return next(err);
     }
+    if (!Array.isArray(inventoryItemIds) || inventoryItemIds.length === 0 || inventoryItemIds.some(id => typeof id !== 'number')) {
+        const err = new Error('inventoryItemIds must be a non-empty array of numbers.');
+        err.statusCode = 400;
+        return next(err);
+    }
+    if (dueDate && isNaN(Date.parse(dueDate))) {
+        const err = new Error('Invalid due date format.');
+        err.statusCode = 400;
+        return next(err);
+    }
+    // --- END: Input Validation ---
 
     try {
         const newBorrowing = await prisma.$transaction(async (tx) => {
@@ -18,7 +32,9 @@ borrowingController.createBorrowing = async (req, res) => {
             });
 
             if (itemsToBorrow.length !== inventoryItemIds.length) {
-                throw new Error('One or more items are not available or not found.');
+                const err = new Error('One or more items are not available or not found.');
+                err.statusCode = 400;
+                throw err;
             }
 
             const createdBorrowing = await tx.borrowing.create({
@@ -56,24 +72,33 @@ borrowingController.createBorrowing = async (req, res) => {
         res.status(201).json(newBorrowing);
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message || 'Could not complete the borrowing process.' });
+        next(error);
     }
 };
 
-borrowingController.returnItems = async (req, res) => {
+borrowingController.returnItems = async (req, res, next) => {
     const { borrowingId } = req.params;
     const { itemIdsToReturn } = req.body;
 
-    if (!itemIdsToReturn || itemIdsToReturn.length === 0) {
-         return res.status(400).json({ error: 'At least one Item ID is required to return.' });
+    // --- START: Input Validation ---
+    const id = parseInt(borrowingId);
+    if (isNaN(id)) {
+        const err = new Error('Invalid Borrowing ID.');
+        err.statusCode = 400;
+        return next(err);
     }
+    if (!Array.isArray(itemIdsToReturn) || itemIdsToReturn.length === 0 || itemIdsToReturn.some(item => typeof item !== 'number')) {
+        const err = new Error('itemIdsToReturn must be a non-empty array of numbers.');
+        err.statusCode = 400;
+        return next(err);
+    }
+    // --- END: Input Validation ---
 
     try {
         await prisma.$transaction(async (tx) => {
             await tx.borrowingOnItems.updateMany({
                 where: {
-                    borrowingId: parseInt(borrowingId),
+                    borrowingId: id,
                     inventoryItemId: { in: itemIdsToReturn },
                 },
                 data: { returnedAt: new Date() },
@@ -86,14 +111,14 @@ borrowingController.returnItems = async (req, res) => {
 
             const remainingItems = await tx.borrowingOnItems.count({
                 where: {
-                    borrowingId: parseInt(borrowingId),
+                    borrowingId: id,
                     returnedAt: null
                 }
             });
 
             if (remainingItems === 0) {
                 await tx.borrowing.update({
-                    where: { id: parseInt(borrowingId) },
+                    where: { id: id },
                     data: {
                         status: 'RETURNED',
                         returnDate: new Date(),
@@ -105,12 +130,11 @@ borrowingController.returnItems = async (req, res) => {
         res.status(200).json({ message: 'Items returned successfully.' });
 
     } catch (error) {
-         console.error(error);
-        res.status(500).json({ error: error.message || 'Could not process the return.' });
+        next(error);
     }
 };
 
-borrowingController.getAllBorrowings = async (req, res) => {
+borrowingController.getAllBorrowings = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -155,18 +179,19 @@ borrowingController.getAllBorrowings = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Could not fetch borrowings.' });
+        next(error);
     }
 };
 
-borrowingController.getBorrowingById = async (req, res) => {
+borrowingController.getBorrowingById = async (req, res, next) => {
     try {
         const { borrowingId } = req.params;
         
         const id = parseInt(borrowingId);
         if (isNaN(id)) {
-            return res.status(400).json({ error: "Invalid Borrowing ID provided." });
+            const err = new Error("Invalid Borrowing ID provided.");
+            err.statusCode = 400;
+            throw err;
         }
 
         const borrowing = await prisma.borrowing.findUnique({
@@ -189,7 +214,9 @@ borrowingController.getBorrowingById = async (req, res) => {
         });
 
         if (!borrowing) {
-            return res.status(404).json({ error: 'Borrowing record not found' });
+            const err = new Error('Borrowing record not found');
+            err.statusCode = 404;
+            throw err;
         }
 
         const formattedBorrowing = {
@@ -204,8 +231,7 @@ borrowingController.getBorrowingById = async (req, res) => {
         res.status(200).json(formattedBorrowing);
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Could not fetch the borrowing record.' });
+        next(error);
     }
 };
 

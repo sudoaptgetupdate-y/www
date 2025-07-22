@@ -2,13 +2,22 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-exports.createCategory = async (req, res) => {
+exports.createCategory = async (req, res, next) => {
     try {
         const { name, requiresMacAddress, requiresSerialNumber } = req.body;
 
-        if (!name || name.trim() === "") {
-            return res.status(400).json({ error: 'Name is required and cannot be empty' });
+        // --- START: Input Validation ---
+        if (typeof name !== 'string' || name.trim() === "") {
+            const err = new Error('Name is required and cannot be empty');
+            err.statusCode = 400;
+            return next(err);
         }
+        if (typeof requiresMacAddress !== 'boolean' || typeof requiresSerialNumber !== 'boolean') {
+            const err = new Error('Invalid data format for switch values. They must be boolean.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
 
         const newCategory = await prisma.category.create({
             data: {
@@ -20,17 +29,12 @@ exports.createCategory = async (req, res) => {
 
         res.status(201).json(newCategory);
     } catch (error) {
-        if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'This category name already exists.' });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not create the category' });
+        next(error);
     }
 };
 
-exports.getAllCategories = async (req, res) => {
+exports.getAllCategories = async (req, res, next) => {
     try {
-        // ลบเงื่อนไข ?all=true ออกไปทั้งหมด
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const searchTerm = req.query.search || '';
@@ -60,38 +64,62 @@ exports.getAllCategories = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Could not fetch categories' });
+        next(error);
     }
 };
 
-exports.getCategoryById = async (req, res) => {
+exports.getCategoryById = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const categoryId = parseInt(id);
+        if (isNaN(categoryId)) {
+            const err = new Error('Invalid Category ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const category = await prisma.category.findUnique({
-            where: { id: parseInt(id) },
+            where: { id: categoryId },
         });
 
         if (!category) {
-            return res.status(404).json({ error: 'Category not found' });
+            const err = new Error('Category not found');
+            err.statusCode = 404;
+            throw err;
         }
         res.status(200).json(category);
     } catch (error) {
-        res.status(500).json({ error: 'Could not fetch the category' });
+        next(error);
     }
 };
 
-exports.updateCategory = async (req, res) => {
+exports.updateCategory = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { name, requiresMacAddress, requiresSerialNumber } = req.body;
 
-        if (typeof requiresMacAddress !== 'boolean' || typeof requiresSerialNumber !== 'boolean') {
-            return res.status(400).json({ error: 'Invalid data format for switch values.' });
+        const categoryId = parseInt(id);
+        if (isNaN(categoryId)) {
+            const err = new Error('Invalid Category ID.');
+            err.statusCode = 400;
+            throw err;
         }
 
+        // --- START: Input Validation ---
+        if (typeof name !== 'string' || name.trim() === "") {
+            const err = new Error('Name is required and cannot be empty');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (typeof requiresMacAddress !== 'boolean' || typeof requiresSerialNumber !== 'boolean') {
+            const err = new Error('Invalid data format for switch values. They must be boolean.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
+
         const updatedCategory = await prisma.category.update({
-            where: { id: parseInt(id) },
+            where: { id: categoryId },
             data: { 
                 name: name,
                 requiresMacAddress: requiresMacAddress,
@@ -100,26 +128,24 @@ exports.updateCategory = async (req, res) => {
         });
         res.status(200).json(updatedCategory);
     } catch (error) {
-        if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'This category name already exists.' });
-        }
-        console.error("Error updating category:", error);
-        res.status(500).json({ error: 'Could not update the category' });
+        next(error);
     }
 };
 
-exports.deleteCategory = async (req, res) => {
+exports.deleteCategory = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const categoryId = parseInt(id);
+        if (isNaN(categoryId)) {
+            const err = new Error('Invalid Category ID.');
+            err.statusCode = 400;
+            throw err;
+        }
         await prisma.category.delete({
-            where: { id: parseInt(id) },
+            where: { id: categoryId },
         });
         res.status(204).send();
     } catch (error) {
-        if (error.code === 'P2003') {
-            return res.status(400).json({ error: 'Cannot delete this category because it is being used by product models.' });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not delete the category' });
+        next(error);
     }
 };

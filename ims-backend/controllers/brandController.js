@@ -3,31 +3,27 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // สร้าง Brand ใหม่
-exports.createBrand = async (req, res) => {
+exports.createBrand = async (req, res, next) => {
     try {
         const { name } = req.body;
-        if (!name || name.trim() === "") {
-            return res.status(400).json({ error: 'Name is required and cannot be empty' });
+        // --- Input Validation ---
+        if (typeof name !== 'string' || name.trim() === "") {
+            const err = new Error('Name is required and cannot be empty');
+            err.statusCode = 400;
+            return next(err);
         }
         const newBrand = await prisma.brand.create({
             data: { name },
         });
         res.status(201).json(newBrand);
     } catch (error) {
-        if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'This brand name already exists.' });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not create the brand' });
+        next(error);
     }
 };
 
-// ดู Brand ทั้งหมด (แก้ไขให้รองรับ all และ pagination)
-exports.getAllBrands = async (req, res) => {
+// ดู Brand ทั้งหมด
+exports.getAllBrands = async (req, res, next) => {
     try {
-        // ลบเงื่อนไข ?all=true ออกไปทั้งหมด
-        // ฟังก์ชันจะรองรับการค้นหาและแบ่งหน้าเป็นหลัก
-
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const searchTerm = req.query.search || '';
@@ -57,70 +53,78 @@ exports.getAllBrands = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Could not fetch brands' });
+        next(error);
     }
 };
 
+// --- ฟังก์ชันอื่นๆ ---
 
-// --- ฟังก์ชันอื่นๆ เหมือนเดิม ---
-
-exports.getBrandById = async (req, res) => {
+exports.getBrandById = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const brandId = parseInt(id);
+        if (isNaN(brandId)) {
+            const err = new Error('Invalid Brand ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const brand = await prisma.brand.findUnique({
-            where: { id: parseInt(id) },
+            where: { id: brandId },
         });
 
         if (!brand) {
-            return res.status(404).json({ error: 'Brand not found' });
+            const err = new Error('Brand not found');
+            err.statusCode = 404;
+            throw err;
         }
         res.status(200).json(brand);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Could not fetch the brand' });
+        next(error);
     }
 };
 
-exports.updateBrand = async (req, res) => {
+exports.updateBrand = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { name } = req.body;
-        if (!name || name.trim() === "") {
-            return res.status(400).json({ error: 'Name is required and cannot be empty' });
+        
+        const brandId = parseInt(id);
+        if (isNaN(brandId)) {
+            const err = new Error('Invalid Brand ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        if (typeof name !== 'string' || name.trim() === "") {
+            const err = new Error('Name is required and cannot be empty');
+            err.statusCode = 400;
+            return next(err);
         }
         const updatedBrand = await prisma.brand.update({
-            where: { id: parseInt(id) },
+            where: { id: brandId },
             data: { name },
         });
         res.status(200).json(updatedBrand);
     } catch (error) {
-        if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'This brand name already exists.' });
-        }
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The brand you are trying to update was not found.' });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not update the brand' });
+        next(error);
     }
 };
 
-exports.deleteBrand = async (req, res) => {
+exports.deleteBrand = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const brandId = parseInt(id);
+        if (isNaN(brandId)) {
+            const err = new Error('Invalid Brand ID.');
+            err.statusCode = 400;
+            throw err;
+        }
         await prisma.brand.delete({
-            where: { id: parseInt(id) },
+            where: { id: brandId },
         });
         res.status(204).send(); // No Content
     } catch (error) {
-        if (error.code === 'P2003') {
-            return res.status(400).json({ error: 'Cannot delete this brand because it is being used by product models.' });
-        }
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The brand you are trying to delete was not found.' });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not delete the brand' });
+        next(error);
     }
 };

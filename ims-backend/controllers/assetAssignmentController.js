@@ -4,13 +4,24 @@ const { PrismaClient, HistoryEventType, AssignmentStatus } = require('@prisma/cl
 const prisma = new PrismaClient();
 const assetAssignmentController = {};
 
-assetAssignmentController.createAssignment = async (req, res) => {
+const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+
+assetAssignmentController.createAssignment = async (req, res, next) => {
     const { assigneeId, inventoryItemIds, notes } = req.body;
     const approvedById = req.user.id;
 
-    if (!assigneeId || !inventoryItemIds || inventoryItemIds.length === 0) {
-        return res.status(400).json({ error: 'Assignee ID and at least one Item ID are required.' });
+    // --- START: Input Validation ---
+    if (typeof assigneeId !== 'number') {
+        const err = new Error('Assignee ID must be a number.');
+        err.statusCode = 400;
+        return next(err);
     }
+    if (!Array.isArray(inventoryItemIds) || inventoryItemIds.length === 0 || inventoryItemIds.some(id => typeof id !== 'number')) {
+        const err = new Error('inventoryItemIds must be a non-empty array of numbers.');
+        err.statusCode = 400;
+        return next(err);
+    }
+    // --- END: Input Validation ---
 
     try {
         const newAssignment = await prisma.$transaction(async (tx) => {
@@ -23,9 +34,15 @@ assetAssignmentController.createAssignment = async (req, res) => {
             });
             const assignee = await tx.user.findUnique({ where: { id: assigneeId } });
 
-            if (!assignee) throw new Error('Assignee not found.');
+            if (!assignee) {
+                const err = new Error('Assignee not found.');
+                err.statusCode = 404;
+                throw err;
+            }
             if (itemsToAssign.length !== inventoryItemIds.length) {
-                throw new Error('One or more assets are not available or not found in the warehouse.');
+                const err = new Error('One or more assets are not available or not found in the warehouse.');
+                err.statusCode = 400;
+                throw err;
             }
 
             const createdAssignment = await tx.assetAssignment.create({
@@ -65,28 +82,41 @@ assetAssignmentController.createAssignment = async (req, res) => {
         res.status(201).json(newAssignment);
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message || 'Could not complete the assignment process.' });
+        next(error);
     }
 };
 
-assetAssignmentController.returnItems = async (req, res) => {
+assetAssignmentController.returnItems = async (req, res, next) => {
     const { assignmentId } = req.params;
     const { itemIdsToReturn } = req.body;
     const actorId = req.user.id;
 
-    if (!itemIdsToReturn || itemIdsToReturn.length === 0) {
-         return res.status(400).json({ error: 'At least one Item ID is required to return.' });
+    // --- START: Input Validation ---
+    const id = parseInt(assignmentId);
+    if (isNaN(id)) {
+        const err = new Error('Invalid Assignment ID.');
+        err.statusCode = 400;
+        return next(err);
     }
+    if (!Array.isArray(itemIdsToReturn) || itemIdsToReturn.length === 0 || itemIdsToReturn.some(item => typeof item !== 'number')) {
+        const err = new Error('itemIdsToReturn must be a non-empty array of numbers.');
+        err.statusCode = 400;
+        return next(err);
+    }
+    // --- END: Input Validation ---
 
     try {
         await prisma.$transaction(async (tx) => {
-            const assignment = await tx.assetAssignment.findUnique({ where: { id: parseInt(assignmentId) }, include: { assignee: true } });
-            if (!assignment) throw new Error('Assignment record not found.');
+            const assignment = await tx.assetAssignment.findUnique({ where: { id: id }, include: { assignee: true } });
+            if (!assignment) {
+                const err = new Error('Assignment record not found.');
+                err.statusCode = 404;
+                throw err;
+            }
 
             await tx.assetAssignmentOnItems.updateMany({
                 where: {
-                    assignmentId: parseInt(assignmentId),
+                    assignmentId: id,
                     inventoryItemId: { in: itemIdsToReturn },
                 },
                 data: { returnedAt: new Date() },
@@ -109,7 +139,7 @@ assetAssignmentController.returnItems = async (req, res) => {
 
             const remainingItems = await tx.assetAssignmentOnItems.count({
                 where: {
-                    assignmentId: parseInt(assignmentId),
+                    assignmentId: id,
                     returnedAt: null
                 }
             });
@@ -117,7 +147,7 @@ assetAssignmentController.returnItems = async (req, res) => {
             let newStatus = remainingItems === 0 ? AssignmentStatus.RETURNED : AssignmentStatus.PARTIALLY_RETURNED;
             
             await tx.assetAssignment.update({
-                where: { id: parseInt(assignmentId) },
+                where: { id: id },
                 data: {
                     status: newStatus,
                     returnDate: newStatus === AssignmentStatus.RETURNED ? new Date() : null,
@@ -127,13 +157,11 @@ assetAssignmentController.returnItems = async (req, res) => {
 
         res.status(200).json({ message: 'Assets returned successfully.' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message || 'Could not process the return.' });
+        next(error);
     }
 };
 
-// --- START: ส่วนที่แก้ไข ---
-assetAssignmentController.getAllAssignments = async (req, res) => {
+assetAssignmentController.getAllAssignments = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -201,18 +229,18 @@ assetAssignmentController.getAllAssignments = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Could not fetch assignments.' });
+        next(error);
     }
 };
-// --- END ---
 
-assetAssignmentController.getAssignmentById = async (req, res) => {
+assetAssignmentController.getAssignmentById = async (req, res, next) => {
     const { assignmentId } = req.params;
     try {
         const id = parseInt(assignmentId);
         if (isNaN(id)) {
-            return res.status(400).json({ error: "Invalid Assignment ID." });
+            const err = new Error("Invalid Assignment ID.");
+            err.statusCode = 400;
+            throw err;
         }
 
         const assignment = await prisma.assetAssignment.findUnique({
@@ -233,13 +261,14 @@ assetAssignmentController.getAssignmentById = async (req, res) => {
         });
 
         if (!assignment) {
-            return res.status(404).json({ error: 'Assignment record not found' });
+            const err = new Error('Assignment record not found');
+            err.statusCode = 404;
+            throw err;
         }
         
         res.status(200).json(assignment);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Could not fetch the assignment record.' });
+        next(error);
     }
 };
 

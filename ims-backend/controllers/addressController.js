@@ -5,26 +5,28 @@ const prisma = new PrismaClient();
 const addressController = {};
 
 // POST /api/addresses - สร้างที่อยู่ใหม่
-addressController.createAddress = async (req, res) => {
+addressController.createAddress = async (req, res, next) => {
     try {
         const { name, contactPerson, phone, address } = req.body;
-        if (!name) {
-            return res.status(400).json({ error: 'Name is required.' });
+        
+        // --- Input Validation ---
+        if (typeof name !== 'string' || name.trim() === '') {
+            const err = new Error('Name is required and cannot be empty.');
+            err.statusCode = 400;
+            return next(err);
         }
+
         const newAddress = await prisma.address.create({
             data: { name, contactPerson, phone, address },
         });
         res.status(201).json(newAddress);
     } catch (error) {
-        if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'This address name already exists.' });
-        }
-        res.status(500).json({ error: 'Could not create the address.' });
+        next(error);
     }
 };
 
 // GET /api/addresses - ดึงข้อมูลที่อยู่ทั้งหมด
-addressController.getAllAddresses = async (req, res) => {
+addressController.getAllAddresses = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -54,59 +56,77 @@ addressController.getAllAddresses = async (req, res) => {
             },
         });
     } catch (error) {
-        res.status(500).json({ error: 'Could not fetch addresses.' });
+        next(error);
     }
 };
 
 // GET /api/addresses/:id - ดึงข้อมูลที่อยู่เดียว
-addressController.getAddressById = async (req, res) => {
+addressController.getAddressById = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const address = await prisma.address.findUnique({ where: { id: parseInt(id) } });
+        const addressId = parseInt(id);
+        if (isNaN(addressId)) {
+            const err = new Error('Invalid Address ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        const address = await prisma.address.findUnique({ where: { id: addressId } });
         if (!address) {
-            return res.status(404).json({ error: 'Address not found.' });
+            const err = new Error('Address not found.');
+            err.statusCode = 404;
+            throw err;
         }
         res.status(200).json(address);
     } catch (error) {
-        res.status(500).json({ error: 'Could not fetch the address.' });
+        next(error);
     }
 };
 
 // PUT /api/addresses/:id - อัปเดตที่อยู่
-addressController.updateAddress = async (req, res) => {
+addressController.updateAddress = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { name, contactPerson, phone, address } = req.body;
+        
+        const addressId = parseInt(id);
+        if (isNaN(addressId)) {
+            const err = new Error('Invalid Address ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+        
+        // --- Input Validation ---
+        if (typeof name !== 'string' || name.trim() === '') {
+            const err = new Error('Name is required and cannot be empty.');
+            err.statusCode = 400;
+            return next(err);
+        }
+
         const updatedAddress = await prisma.address.update({
-            where: { id: parseInt(id) },
+            where: { id: addressId },
             data: { name, contactPerson, phone, address },
         });
         res.status(200).json(updatedAddress);
     } catch (error) {
-        if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'This address name already exists.' });
-        }
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The address you are trying to update was not found.' });
-        }
-        res.status(500).json({ error: 'Could not update the address.' });
+        next(error);
     }
 };
 
 // DELETE /api/addresses/:id - ลบที่อยู่
-addressController.deleteAddress = async (req, res) => {
+addressController.deleteAddress = async (req, res, next) => {
     try {
         const { id } = req.params;
-        await prisma.address.delete({ where: { id: parseInt(id) } });
+        const addressId = parseInt(id);
+        if (isNaN(addressId)) {
+            const err = new Error('Invalid Address ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+        await prisma.address.delete({ where: { id: addressId } });
         res.status(204).send();
     } catch (error) {
-        if (error.code === 'P2003') { // Foreign key constraint
-            return res.status(400).json({ error: 'Cannot delete this address as it is currently in use in a repair order.' });
-        }
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The address you are trying to delete was not found.' });
-        }
-        res.status(500).json({ error: 'Could not delete the address.' });
+        next(error);
     }
 };
 

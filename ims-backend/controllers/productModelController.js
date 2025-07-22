@@ -3,10 +3,28 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // --- Create a new Product Model ---
-exports.createProductModel = async (req, res) => {
+exports.createProductModel = async (req, res, next) => {
     try {
         const { modelNumber, description, sellingPrice, categoryId, brandId } = req.body;
         const userId = req.user.id;
+
+        // --- START: Input Validation ---
+        if (typeof modelNumber !== 'string' || modelNumber.trim() === '') {
+            const err = new Error('Model Number is required and cannot be empty.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (typeof sellingPrice !== 'number' || sellingPrice < 0) {
+            const err = new Error('Selling Price must be a non-negative number.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (typeof categoryId !== 'number' || typeof brandId !== 'number') {
+            const err = new Error('Category ID and Brand ID must be numbers.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
 
         const newProductModel = await prisma.productModel.create({
             data: {
@@ -20,16 +38,12 @@ exports.createProductModel = async (req, res) => {
         });
         res.status(201).json(newProductModel);
     } catch (error) {
-        if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'This model number already exists for this brand.' });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not create the product model' });
+        next(error);
     }
 };
 
 // --- Get all Product Models (Paginated or All) ---
-exports.getAllProductModels = async (req, res) => {
+exports.getAllProductModels = async (req, res, next) => {
     try {
         const includeRelations = {
             category: true,
@@ -76,17 +90,23 @@ exports.getAllProductModels = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Could not fetch product models' });
+        next(error);
     }
 };
 
 // --- Get a single Product Model by ID ---
-exports.getProductModelById = async (req, res) => {
+exports.getProductModelById = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const modelId = parseInt(id);
+        if (isNaN(modelId)) {
+            const err = new Error('Invalid Product Model ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const productModel = await prisma.productModel.findUnique({
-            where: { id: parseInt(id) },
+            where: { id: modelId },
             include: { 
                 category: true, 
                 brand: true,
@@ -95,22 +115,49 @@ exports.getProductModelById = async (req, res) => {
         });
 
         if (!productModel) {
-            return res.status(404).json({ error: 'Product Model not found' });
+            const err = new Error('Product Model not found');
+            err.statusCode = 404;
+            throw err;
         }
         res.status(200).json(productModel);
     } catch (error) {
-        res.status(500).json({ error: 'Could not fetch the product model' });
+        next(error);
     }
 };
 
 // --- Update a Product Model ---
-exports.updateProductModel = async (req, res) => {
+exports.updateProductModel = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { modelNumber, description, sellingPrice, categoryId, brandId } = req.body;
 
+        const modelId = parseInt(id);
+        if (isNaN(modelId)) {
+            const err = new Error('Invalid Product Model ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        // --- START: Input Validation ---
+        if (typeof modelNumber !== 'string' || modelNumber.trim() === '') {
+            const err = new Error('Model Number is required and cannot be empty.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (typeof sellingPrice !== 'number' || sellingPrice < 0) {
+            const err = new Error('Selling Price must be a non-negative number.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (typeof categoryId !== 'number' || typeof brandId !== 'number') {
+            const err = new Error('Category ID and Brand ID must be numbers.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
+
         const updatedProductModel = await prisma.productModel.update({
-            where: { id: parseInt(id) },
+            where: { id: modelId },
             data: {
                 modelNumber,
                 description,
@@ -121,33 +168,25 @@ exports.updateProductModel = async (req, res) => {
         });
         res.status(200).json(updatedProductModel);
     } catch (error) {
-        if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'This model number already exists for this brand.' });
-        }
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The product model you are trying to update was not found.' });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not update the product model' });
+        next(error);
     }
 };
 
 // --- Delete a Product Model ---
-exports.deleteProductModel = async (req, res) => {
+exports.deleteProductModel = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const modelId = parseInt(id);
+        if (isNaN(modelId)) {
+            const err = new Error('Invalid Product Model ID.');
+            err.statusCode = 400;
+            throw err;
+        }
         await prisma.productModel.delete({
-            where: { id: parseInt(id) },
+            where: { id: modelId },
         });
         res.status(204).send();
     } catch (error) {
-         if (error.code === 'P2003') { // Foreign key constraint failed
-            return res.status(400).json({ error: 'Cannot delete this model because it is linked to inventory items.' });
-        }
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The product model you are trying to delete was not found.' });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not delete the product model' });
+        next(error);
     }
 };

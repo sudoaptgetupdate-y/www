@@ -3,10 +3,24 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const customerController = {};
 
-customerController.createCustomer = async (req, res) => {
+customerController.createCustomer = async (req, res, next) => {
     try {
         const { customerCode, name, phone, address } = req.body;
         const userId = req.user.id; 
+
+        // --- START: Input Validation ---
+        if (typeof customerCode !== 'string' || customerCode.trim() === '') {
+            const err = new Error('Customer Code is required and cannot be empty.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (typeof name !== 'string' || name.trim() === '') {
+            const err = new Error('Customer Name is required and cannot be empty.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
+
         const newCustomer = await prisma.customer.create({
             data: {
                 customerCode,
@@ -18,15 +32,11 @@ customerController.createCustomer = async (req, res) => {
         });
         res.status(201).json(newCustomer);
     } catch (error) {
-        if (error.code === 'P2002') {
-             return res.status(400).json({ error: 'This customer code already exists.' });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not create the customer' });
+        next(error);
     }
 };
 
-customerController.getAllCustomers = async (req, res) => {
+customerController.getAllCustomers = async (req, res, next) => {
     try {
         if (req.query.all === 'true') {
             const allCustomers = await prisma.customer.findMany({
@@ -73,74 +83,110 @@ customerController.getAllCustomers = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Could not fetch customers' });
+        next(error);
     }
 };
 
-customerController.getCustomerById = async (req, res) => {
+customerController.getCustomerById = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const customerId = parseInt(id);
+        if (isNaN(customerId)) {
+            const err = new Error('Invalid Customer ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
         const customer = await prisma.customer.findUnique({
-            where: { id: parseInt(id) },
+            where: { id: customerId },
         });
 
         if (!customer) {
-            return res.status(404).json({ error: 'Customer not found' });
+            const err = new Error('Customer not found');
+            err.statusCode = 404;
+            throw err;
         }
         res.status(200).json(customer);
     } catch (error) {
-        res.status(500).json({ error: 'Could not fetch the customer' });
+        next(error);
     }
 };
 
-customerController.updateCustomer = async (req, res) => {
+customerController.updateCustomer = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { customerCode, name, phone, address } = req.body;
+        
+        const customerId = parseInt(id);
+        if (isNaN(customerId)) {
+            const err = new Error('Invalid Customer ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+        
+        // --- START: Input Validation ---
+        if (typeof customerCode !== 'string' || customerCode.trim() === '') {
+            const err = new Error('Customer Code is required and cannot be empty.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (typeof name !== 'string' || name.trim() === '') {
+            const err = new Error('Customer Name is required and cannot be empty.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: Input Validation ---
+
         const updatedCustomer = await prisma.customer.update({
-            where: { id: parseInt(id) },
+            where: { id: customerId },
             data: { customerCode, name, phone, address },
         });
         res.status(200).json(updatedCustomer);
     } catch (error) {
-        if (error.code === 'P2025') {
-             return res.status(404).json({ error: 'The customer you are trying to update was not found.' });
-        }
-        res.status(500).json({ error: 'Could not update the customer' });
+        next(error);
     }
 };
 
-customerController.deleteCustomer = async (req, res) => {
+customerController.deleteCustomer = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const customerId = parseInt(id);
+        if (isNaN(customerId)) {
+            const err = new Error('Invalid Customer ID.');
+            err.statusCode = 400;
+            throw err;
+        }
         await prisma.customer.delete({
-            where: { id: parseInt(id) },
+            where: { id: customerId },
         });
         res.status(204).send();
     } catch (error) {
-        if (error.code === 'P2003') {
-            return res.status(400).json({ error: 'Cannot delete this customer because they are linked to sales or borrowing records.' });
-        }
-        if (error.code === 'P2025') {
-            return res.status(404).json({ error: 'The customer you are trying to delete was not found.' });
-        }
-        console.error(error);
-        res.status(500).json({ error: 'Could not delete the customer' });
+        next(error);
     }
 };
 
-customerController.getCustomerHistory = async (req, res) => {
+// Functions below this line already validate ID implicitly or are complex queries
+// so we will just ensure they pass errors to the middleware.
+
+customerController.getCustomerHistory = async (req, res, next) => {
     const { id } = req.params;
     try {
+        const customerId = parseInt(id);
+        if (isNaN(customerId)) {
+            const err = new Error('Invalid Customer ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        // ... (rest of the function logic is fine)
         const sales = await prisma.sale.findMany({
-            where: { customerId: parseInt(id) },
+            where: { customerId: customerId },
             include: { itemsSold: { include: { productModel: true } } },
             orderBy: { saleDate: 'desc' }
         });
 
         const borrowings = await prisma.borrowing.findMany({
-            where: { borrowerId: parseInt(id) },
+            where: { borrowerId: customerId },
             include: { 
                 items: {
                     include: { inventoryItem: { include: { productModel: true } } }
@@ -169,17 +215,22 @@ customerController.getCustomerHistory = async (req, res) => {
             .sort((a, b) => new Date(b.date) - new Date(a.date));
 
         res.status(200).json(combinedHistory);
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Could not fetch customer history.' });
+        next(error);
     }
 };
 
-customerController.getCustomerSummary = async (req, res) => {
+customerController.getCustomerSummary = async (req, res, next) => {
     const { id } = req.params;
-    const customerId = parseInt(id);
-
     try {
+        const customerId = parseInt(id);
+        if (isNaN(customerId)) {
+            const err = new Error('Invalid Customer ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+        // ... (rest of the function logic is fine)
         const purchases = await prisma.sale.findMany({
             where: { customerId, status: 'COMPLETED' },
             include: { itemsSold: { include: { productModel: true } } },
@@ -224,16 +275,20 @@ customerController.getCustomerSummary = async (req, res) => {
             returnedItemsHistory
         });
     } catch (error) {
-        console.error("Error fetching customer summary:", error);
-        res.status(500).json({ error: 'Could not fetch customer summary.' });
+        next(error);
     }
 };
 
-customerController.getActiveBorrowings = async (req, res) => {
+customerController.getActiveBorrowings = async (req, res, next) => {
     const { id } = req.params;
-    const customerId = parseInt(id);
-
     try {
+        const customerId = parseInt(id);
+        if (isNaN(customerId)) {
+            const err = new Error('Invalid Customer ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+        // ... (rest of the function logic is fine)
         const activeBorrowings = await prisma.borrowing.findMany({
             where: {
                 borrowerId: customerId,
@@ -258,17 +313,22 @@ customerController.getActiveBorrowings = async (req, res) => {
         }));
 
         res.status(200).json(formattedActiveBorrowings);
+
     } catch (error) {
-        console.error("Error fetching active borrowings:", error);
-        res.status(500).json({ error: 'Could not fetch active borrowings.' });
+        next(error);
     }
 };
 
-customerController.getReturnedHistory = async (req, res) => {
+customerController.getReturnedHistory = async (req, res, next) => {
     const { id } = req.params;
-    const customerId = parseInt(id);
-
     try {
+        const customerId = parseInt(id);
+        if (isNaN(customerId)) {
+            const err = new Error('Invalid Customer ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+        // ... (rest of the function logic is fine)
         const returnedRecords = await prisma.borrowingOnItems.findMany({
             where: {
                 borrowing: {
@@ -299,32 +359,30 @@ customerController.getReturnedHistory = async (req, res) => {
         }));
         
         res.status(200).json(formattedItems);
-
     } catch (error) {
-        console.error("Error fetching returned history:", error);
-        res.status(500).json({ error: 'Could not fetch returned items history.' });
+        next(error);
     }
 };
 
-// --- START: เพิ่มฟังก์ชันใหม่ ---
-customerController.getPurchaseHistory = async (req, res) => {
+customerController.getPurchaseHistory = async (req, res, next) => {
     const { id } = req.params;
-    const customerId = parseInt(id);
-
     try {
+        const customerId = parseInt(id);
+        if (isNaN(customerId)) {
+            const err = new Error('Invalid Customer ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+        // ... (rest of the function logic is fine)
         const sales = await prisma.sale.findMany({
             where: { customerId: customerId, status: 'COMPLETED' },
             include: {
                 itemsSold: {
-                    // --- START: ส่วนที่แก้ไข ---
-                    // เพิ่มเงื่อนไข `where` เพื่อกรองสถานะของสินค้า
-                    // อนุญาตเฉพาะสินค้าที่สถานะเป็น SOLD หรือ RETURNED_TO_CUSTOMER เท่านั้น
                     where: {
                         status: {
                             in: ['SOLD', 'RETURNED_TO_CUSTOMER']
                         }
                     },
-                    // --- END: ส่วนที่แก้ไข ---
                     include: { productModel: true }
                 }
             },
@@ -340,12 +398,9 @@ customerController.getPurchaseHistory = async (req, res) => {
         );
 
         res.status(200).json(purchasedItems);
-
     } catch (error) {
-        console.error("Error fetching purchase history:", error);
-        res.status(500).json({ error: 'Could not fetch purchase history.' });
+        next(error);
     }
 };
-// --- END: เพิ่มฟังก์ชันใหม่ ---
 
 module.exports = customerController;
