@@ -38,16 +38,8 @@ customerController.createCustomer = async (req, res, next) => {
 
 customerController.getAllCustomers = async (req, res, next) => {
     try {
-        if (req.query.all === 'true') {
-            const allCustomers = await prisma.customer.findMany({
-                orderBy: { name: 'asc' },
-                include: { createdBy: { select: { name: true } } },
-                take: 1000
-            });
-            return res.status(200).json(allCustomers);
-        }
-
         const page = parseInt(req.query.page) || 1;
+        // **ปรับปรุง: หากมีการส่ง limit มา ให้ใช้ค่านั้น ถ้าไม่ ให้ใช้ค่า default ที่ 10**
         const limit = parseInt(req.query.limit) || 10;
         const searchTerm = req.query.search || '';
         const skip = (page - 1) * limit;
@@ -66,7 +58,7 @@ customerController.getAllCustomers = async (req, res, next) => {
             prisma.customer.findMany({
                 where,
                 skip: skip,
-                take: limit,
+                take: limit, // **ใช้ limit ที่คำนวณไว้เสมอ**
                 orderBy: { createdAt: 'desc' },
                 include: { createdBy: { select: { name: true } } }
             }),
