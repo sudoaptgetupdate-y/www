@@ -325,23 +325,9 @@ inventoryController.getInventoryItemHistory = async (req, res, next) => {
 
         const history = [];
 
-        const assetHistoryEvents = await prisma.assetHistory.findMany({
-            where: { inventoryItemId: itemId },
-            include: { user: { select: { name: true } } },
-            orderBy: { createdAt: 'asc' }
-        });
+        // --- START: แก้ไข Logic การดึงข้อมูล ---
 
-        assetHistoryEvents.forEach(event => {
-            history.push({
-                type: event.type,
-                date: event.createdAt,
-                details: event.details,
-                user: event.user?.name || 'System',
-                transactionId: null,
-                transactionType: 'SYSTEM'
-            });
-        });
-
+        // 1. ดึงข้อมูล Transaction ที่มีความเฉพาะเจาะจงก่อน (Sale, Borrow, Repair)
         const saleRecord = await prisma.sale.findFirst({
             where: { itemsSold: { some: { id: itemId } } },
             include: { customer: true, soldBy: true, voidedBy: true }
@@ -419,15 +405,38 @@ inventoryController.getInventoryItemHistory = async (req, res, next) => {
                 });
             }
         });
+
+        // 2. ดึงข้อมูล Event ทั่วไปจาก AssetHistory โดยไม่เอา Event ที่จัดการไปแล้ว
+        const handledEventTypes = ['RETURN', 'REPAIR_SENT', 'REPAIR_RETURNED'];
         
-        // --- นี่คือส่วนที่ขาดไป ---
+        const assetHistoryEvents = await prisma.assetHistory.findMany({
+            where: { 
+                inventoryItemId: itemId,
+                type: { notIn: handledEventTypes }
+            },
+            include: { user: { select: { name: true } } },
+            orderBy: { createdAt: 'asc' }
+        });
+
+        assetHistoryEvents.forEach(event => {
+            history.push({
+                type: event.type,
+                date: event.createdAt,
+                details: event.details,
+                user: event.user?.name || 'System',
+                transactionId: null,
+                transactionType: 'SYSTEM'
+            });
+        });
+        
+        // --- END: แก้ไข Logic การดึงข้อมูล ---
+
         const sortedHistory = history.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         res.status(200).json({
             itemDetails: item,
             history: sortedHistory
         });
-        // --- จบส่วนที่ขาดไป ---
 
     } catch (error) {
         next(error);

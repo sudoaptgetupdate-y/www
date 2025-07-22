@@ -5,8 +5,8 @@ import { cva } from "class-variance-authority";
 
 import { cn } from "@/lib/utils"
 
+// นำ interactive ออกจาก variants
 const badgeVariants = cva(
-  // Base styles for all badges
   "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
@@ -25,16 +25,9 @@ const badgeVariants = cva(
         info: 
           "border-transparent bg-sky-500 text-primary-foreground shadow",
       },
-      // --- START: เพิ่ม variant ใหม่สำหรับ interactivity ---
-      interactive: {
-        true: "cursor-pointer hover:opacity-80",
-        false: "cursor-default",
-      },
-      // --- END ---
     },
     defaultVariants: {
       variant: "default",
-      interactive: false, // --- ค่าเริ่มต้นคือแสดงผลเฉยๆ ---
     },
   }
 )
@@ -42,10 +35,20 @@ const badgeVariants = cva(
 function Badge({
   className,
   variant,
-  interactive, // --- รับ prop ใหม่ ---
+  interactive, // ยังคงรับ prop นี้เข้ามา
   ...props
 }) {
-  return (<div className={cn(badgeVariants({ variant, interactive }), className)} {...props} />);
+  return (
+    <div
+      className={cn(
+        badgeVariants({ variant }), // ใช้ variant สำหรับสี
+        // เพิ่ม class ตามเงื่อนไขของ interactive ตรงนี้
+        interactive ? "cursor-pointer hover:opacity-80" : "cursor-default",
+        className
+      )}
+      {...props}
+    />
+  );
 }
 
 export { Badge, badgeVariants }

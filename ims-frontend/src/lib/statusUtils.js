@@ -22,21 +22,23 @@ const STATUS_CONFIG = {
   // Inventory & Asset Statuses
   IN_STOCK: { label: "In Stock", variant: "success" },
   IN_WAREHOUSE: { label: "In Warehouse", variant: "success" },
-  ASSIGNED: { label: "Assigned", variant: "warning" },
   SOLD: { label: "Sold", variant: "secondary" },
-  BORROWED: { label: "Borrowed", variant: "warning" },
   RESERVED: { label: "Reserved", variant: "info" },
   DEFECTIVE: { label: "Defective", variant: "destructive" },
-  DECOMMISSIONED: { label: "Decommissioned", variant: "secondary" },
-
+  
+  // Transaction Types
+  SALE: { label: "Sale", variant: "success" },
+  BORROWING: { label: "Borrowing", variant: "warning" },
+  
   // Sale Statuses
   COMPLETED: { label: "Completed", variant: "success" },
   VOIDED: { label: "Voided", variant: "destructive" },
 
   // Borrowing Statuses
+  BORROWED: { label: "Borrowed", variant: "warning" },
   RETURNED: { label: "Returned", variant: "secondary" },
   OVERDUE: { label: "Overdue", variant: "destructive" },
-
+  
   // Assignment & Repair Statuses
   PARTIALLY_RETURNED: { label: "Partial Return", variant: "info" },
   REPAIRING: { label: "Repairing", variant: "warning" },
@@ -45,6 +47,22 @@ const STATUS_CONFIG = {
   REPAIRED_SUCCESSFULLY: { label: "Success", variant: "success" },
   UNREPAIRABLE: { label: "Failed", variant: "destructive" },
   RETURNED_TO_CUSTOMER: { label: "Closed", variant: "secondary" },
+
+  // --- START: แก้ไขตาม yêu cầuสำหรับ Asset History ---
+  // Asset Statuses & History Events
+  ASSIGNED: { label: "Assigned", variant: "warning" },
+  DECOMMISSIONED: { label: "Decommissioned", variant: "destructive" },
+  
+  // History Event Types
+  CREATE: { label: "Created", variant: "success" },
+  UPDATE: { label: "Updated", variant: "info" },
+  ASSIGN: { label: "Assigned", variant: "warning" },
+  RETURN: { label: "Returned", variant: "success" },
+  DECOMMISSION: { label: "Decommissioned", variant: "destructive" },
+  REINSTATE: { label: "Reinstated", variant: "success" },
+  REPAIR_SENT: { label: "Repair Sent", variant: "info" },
+  REPAIR_RETURNED: { label: "Repair Return", variant: "success" },
+  // --- END: แก้ไขตาม yêu cầuสำหรับ Asset History ---
 
   // Default for unknown statuses
   DEFAULT: { label: "Unknown", variant: "outline" },

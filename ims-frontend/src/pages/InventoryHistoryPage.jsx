@@ -7,16 +7,25 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, ShoppingCart, ArrowRightLeft, CornerUpLeft, Package, ArchiveX, Wrench, ShieldCheck } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+// --- START: แก้ไขบรรทัดนี้ ---
+import { 
+    ArrowLeft, ShoppingCart, ArrowRightLeft, CornerUpLeft, Package, 
+    ArchiveX, Wrench, ShieldCheck, History as HistoryIcon, PlusCircle, Edit, ArchiveRestore 
+} from "lucide-react";
+// --- END: แก้ไขบรรทัดนี้ ---
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const eventConfig = {
     SALE: { icon: <ShoppingCart className="h-4 w-4" />, label: 'Sold', variant: 'success' },
     VOID: { icon: <ArchiveX className="h-4 w-4" />, label: 'Voided', variant: 'destructive' },
     BORROW: { icon: <ArrowRightLeft className="h-4 w-4" />, label: 'Borrowed', variant: 'warning' },
-    RETURN: { icon: <CornerUpLeft className="h-4 w-4" />, label: 'Returned', variant: 'info' },
-    REPAIR_SENT: { icon: <Wrench className="h-4 w-4" />, label: 'Sent to Repair', variant: 'info' },
+    RETURN: { icon: <CornerUpLeft className="h-4 w-4" />, label: 'Returned', variant: 'success' },
+    REPAIR_SENT: { icon: <Wrench className="h-4 w-4" />, label: 'Repair Sent', variant: 'info' },
     REPAIR_RETURNED: { icon: <ShieldCheck className="h-4 w-4" />, label: 'Repair Return', variant: 'success' },
+    CREATE: { icon: <PlusCircle className="h-4 w-4" />, label: 'Created', variant: 'success' },
+    UPDATE: { icon: <Edit className="h-4 w-4" />, label: 'Updated', variant: 'info' },
+    DECOMMISSION: { icon: <ArchiveX className="h-4 w-4" />, label: 'Decommissioned', variant: 'destructive' },
+    REINSTATE: { icon: <ArchiveRestore className="h-4 w-4" />, label: 'Reinstated', variant: 'success' },
 };
 
 
@@ -52,12 +61,11 @@ export default function InventoryHistoryPage() {
             case 'VOID':
                 return `/sales/${id}`;
             case 'BORROWING':
-                // Note: The 'RETURN' event for borrowing shares the same transaction ID
                 return `/borrowings/${id}`;
             case 'REPAIR':
                 return `/repairs/${id}`;
             default:
-                return '#';
+                return null;
         }
     };
 
@@ -97,23 +105,23 @@ export default function InventoryHistoryPage() {
                         </thead>
                         <tbody>
                             {history.length > 0 ? history.map((h, index) => {
-                                const config = eventConfig[h.type] || { label: h.type, variant: 'secondary', icon: null };
-                                // Handle cases where transactionType might be missing for older events
-                                const link = h.transactionId ? getTransactionLink(h.transactionType, h.transactionId) : '#';
+                                const link = h.transactionId ? getTransactionLink(h.transactionType, h.transactionId) : null;
+                                const eventLabel = eventConfig[h.type]?.label || h.type.replace(/_/g, ' ');
+
                                 return (
                                 <tr key={index} className="border-b">
                                     <td className="p-2">{new Date(h.date).toLocaleString()}</td>
                                     <td className="p-2">{h.details}</td>
                                     <td className="p-2">{h.user || '-'}</td>
                                     <td className="p-2 text-center">
-                                         <Badge 
-                                            variant={config.variant} 
-                                            className="w-36 justify-center cursor-pointer"
-                                            onClick={() => link !== '#' && navigate(link)}
+                                         <StatusBadge
+                                            status={h.type}
+                                            className="w-36"
+                                            {...(link && { onClick: () => navigate(link) })}
                                         >
-                                            {config.icon}
-                                            <span className="ml-1.5">{config.label}</span>
-                                        </Badge>
+                                            {eventConfig[h.type]?.icon}
+                                            <span className="ml-1.5">{eventLabel}</span>
+                                        </StatusBadge>
                                     </td>
                                 </tr>
                             )}) : (
