@@ -1,10 +1,9 @@
-// controllers/assetAssignmentController.js
-const { PrismaClient, ItemType, ItemStatus, AssignmentStatus } = require('@prisma/client');
-const prisma = new PrismaClient();
+// ims-backend/controllers/assetAssignmentController.js
 
+const { PrismaClient, HistoryEventType, AssignmentStatus } = require('@prisma/client');
+const prisma = new PrismaClient();
 const assetAssignmentController = {};
 
-// ... (createAssignment, returnItems functions are the same) ...
 assetAssignmentController.createAssignment = async (req, res) => {
     const { assigneeId, inventoryItemIds, notes } = req.body;
     const approvedById = req.user.id;
@@ -22,7 +21,9 @@ assetAssignmentController.createAssignment = async (req, res) => {
                     itemType: 'ASSET'
                 }
             });
+            const assignee = await tx.user.findUnique({ where: { id: assigneeId } });
 
+            if (!assignee) throw new Error('Assignee not found.');
             if (itemsToAssign.length !== inventoryItemIds.length) {
                 throw new Error('One or more assets are not available or not found in the warehouse.');
             }
@@ -48,12 +49,18 @@ assetAssignmentController.createAssignment = async (req, res) => {
                 data: { status: 'ASSIGNED' },
             });
 
+            // --- START: ส่วนที่แก้ไข ---
+            // สร้าง Event Log สำหรับ AssetHistory
+            const historyEvents = inventoryItemIds.map(itemId => ({
+                inventoryItemId: itemId,
+                userId: approvedById,
+                type: HistoryEventType.ASSIGN,
+                details: `Assigned to ${assignee.name}.`
+            }));
             await tx.assetHistory.createMany({
-                data: inventoryItemIds.map(itemId => ({
-                    inventoryItemId: itemId,
-                    assignedToId: assigneeId,
-                }))
+                data: historyEvents
             });
+            // --- END: ส่วนที่แก้ไข ---
 
             return createdAssignment;
         });
@@ -69,6 +76,7 @@ assetAssignmentController.createAssignment = async (req, res) => {
 assetAssignmentController.returnItems = async (req, res) => {
     const { assignmentId } = req.params;
     const { itemIdsToReturn } = req.body;
+    const actorId = req.user.id;
 
     if (!itemIdsToReturn || itemIdsToReturn.length === 0) {
          return res.status(400).json({ error: 'At least one Item ID is required to return.' });
@@ -76,6 +84,9 @@ assetAssignmentController.returnItems = async (req, res) => {
 
     try {
         await prisma.$transaction(async (tx) => {
+            const assignment = await tx.assetAssignment.findUnique({ where: { id: parseInt(assignmentId) }, include: { assignee: true } });
+            if (!assignment) throw new Error('Assignment record not found.');
+
             await tx.assetAssignmentOnItems.updateMany({
                 where: {
                     assignmentId: parseInt(assignmentId),
@@ -89,15 +100,18 @@ assetAssignmentController.returnItems = async (req, res) => {
                 data: { status: 'IN_WAREHOUSE' },
             });
 
-            await tx.assetHistory.updateMany({
-                where: {
-                    inventoryItemId: { in: itemIdsToReturn },
-                    returnedAt: null
-                },
-                data: {
-                    returnedAt: new Date()
-                }
+            // --- START: ส่วนที่แก้ไข ---
+            // สร้าง Event Log สำหรับการ Return
+            const historyEvents = itemIdsToReturn.map(itemId => ({
+                inventoryItemId: itemId,
+                userId: actorId,
+                type: HistoryEventType.RETURN,
+                details: `Returned from ${assignment.assignee.name}.`
+            }));
+            await tx.assetHistory.createMany({
+                data: historyEvents
             });
+            // --- END: ส่วนที่แก้ไข ---
 
             const remainingItems = await tx.assetAssignmentOnItems.count({
                 where: {
@@ -124,8 +138,6 @@ assetAssignmentController.returnItems = async (req, res) => {
     }
 };
 
-
-// --- START: ส่วนที่แก้ไข ---
 assetAssignmentController.getAllAssignments = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -140,7 +152,7 @@ assetAssignmentController.getAllAssignments = async (req, res) => {
                 include: {
                     assignee: { select: { id: true, name: true } },
                     approvedBy: { select: { id: true, name: true } },
-                    items: { // ดึงข้อมูล items เพื่อมานับ
+                    items: {
                         select: {
                             returnedAt: true
                         }
@@ -150,7 +162,6 @@ assetAssignmentController.getAllAssignments = async (req, res) => {
             prisma.assetAssignment.count()
         ]);
         
-        // จัดรูปแบบข้อมูลใหม่เพื่อเพิ่มจำนวน item
         const formattedAssignments = assignments.map(a => {
             const totalItemCount = a.items.length;
             const returnedItemCount = a.items.filter(item => item.returnedAt !== null).length;
@@ -176,7 +187,6 @@ assetAssignmentController.getAllAssignments = async (req, res) => {
         res.status(500).json({ error: 'Could not fetch assignments.' });
     }
 };
-// --- END ---
 
 assetAssignmentController.getAssignmentById = async (req, res) => {
     const { assignmentId } = req.params;
