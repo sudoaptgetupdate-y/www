@@ -34,7 +34,6 @@ const ProductModelPage = lazy(() => import('./pages/ProductModelPage.jsx'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
 const AssetPage = lazy(() => import('./pages/AssetPage.jsx'));
 const CreateAssetPage = lazy(() => import('./pages/CreateAssetPage.jsx'));
-const AssignAssetPage = lazy(() => import('./pages/AssignAssetPage.jsx'));
 const AssetDetailPage = lazy(() => import('./pages/AssetDetailPage.jsx'));
 const EditAssetPage = lazy(() => import('./pages/EditAssetPage.jsx'));
 const AssetAssignmentPage = lazy(() => import('./pages/AssetAssignmentPage.jsx'));
@@ -43,10 +42,12 @@ const AssetAssignmentDetailPage = lazy(() => import('./pages/AssetAssignmentDeta
 const AssetHistoryPage = lazy(() => import('./pages/AssetHistoryPage.jsx'));
 const UserAssetHistoryPage = lazy(() => import('./pages/UserAssetHistoryPage.jsx'));
 const InventoryHistoryPage = lazy(() => import('./pages/InventoryHistoryPage.jsx'));
+// --- START: Import หน้าใหม่ ---
 const AddressPage = lazy(() => import('./pages/AddressPage.jsx'));
 const RepairListPage = lazy(() => import('./pages/RepairListPage.jsx'));
 const CreateRepairPage = lazy(() => import('./pages/CreateRepairPage.jsx'));
 const RepairDetailPage = lazy(() => import('./pages/RepairDetailPage.jsx'));
+// --- END: Import หน้าใหม่ ---
 
 // Fallback component to show while lazy components are loading
 const Loading = () => (
@@ -75,24 +76,25 @@ const routes = [
   { path: 'asset-assignments/new', Page: CreateAssetAssignmentPage },
   { path: 'asset-assignments/:assignmentId', Page: AssetAssignmentDetailPage },
   // Products & Master Data
-  { path: 'inventory', Page: InventoryPage }, // For Saleable Items
-  { path: 'inventory/:itemId/history', Page: InventoryHistoryPage }, // <-- เพิ่มบรรทัดนี้
-  { path: 'assets', Page: AssetPage }, // For Master Asset List
-  { path: 'assets/new', Page: CreateAssetPage }, // For creating a master asset item
+  { path: 'inventory', Page: InventoryPage },
+  { path: 'inventory/:itemId/history', Page: InventoryHistoryPage },
+  { path: 'assets', Page: AssetPage },
+  { path: 'assets/new', Page: CreateAssetPage },
   { path: 'assets/:assetId/history', Page: AssetHistoryPage },
-  { path: 'assets/edit/:assetId', Page: EditAssetPage }, // For editing a master asset item
+  { path: 'assets/edit/:assetId', Page: EditAssetPage },
   { path: 'product-models', Page: ProductModelPage },
   { path: 'brands', Page: BrandPage },
   { path: 'categories', Page: CategoryPage },
+  // --- START: เพิ่ม Route ใหม่ ---
   // System
   { path: 'repairs', Page: RepairListPage },
   { path: 'repairs/new', Page: CreateRepairPage },
   { path: 'repairs/:repairId', Page: RepairDetailPage },
+  { path: 'addresses', Page: AddressPage },
+  // --- END: เพิ่ม Route ใหม่ ---
   { path: 'users', Page: UserManagementPage },
   { path: 'users/:userId/assets', Page: UserAssetHistoryPage },
   { path: 'profile', Page: ProfilePage },
-  { path: 'addresses', Page: AddressPage },
-  
 ];
 
 const router = createBrowserRouter([

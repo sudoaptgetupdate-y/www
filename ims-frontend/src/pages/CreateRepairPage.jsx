@@ -13,8 +13,11 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { ProductModelCombobox } from "@/components/ui/ProductModelCombobox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Trash2, PlusCircle } from "lucide-react";
+import { Trash2, PlusCircle, UserPlus, History, Truck } from "lucide-react";
 import { AddressCombobox } from "@/components/ui/AddressCombobox";
+import { CustomerCombobox } from "@/components/ui/CustomerCombobox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import CustomerFormDialog from "@/components/dialogs/CustomerFormDialog";
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -50,7 +53,7 @@ const CustomerItemDialog = ({ onAddItem }) => {
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <Button type="button" variant="outline" onClick={() => setIsOpen(true)}>
-                <PlusCircle className="mr-2" /> Register Customer's Item
+                <PlusCircle className="mr-2" /> Register External Item
             </Button>
             <DialogContent>
                 <DialogHeader>
@@ -79,54 +82,101 @@ export default function CreateRepairPage() {
     const navigate = useNavigate();
     const token = useAuthStore((state) => state.token);
 
-    const [availableItems, setAvailableItems] = useState([]);
-    const [selectedItems, setSelectedItems] = useState([]);
-    const [itemSearch, setItemSearch] = useState("");
+    const [repairType, setRepairType] = useState('INTERNAL'); // INTERNAL or CUSTOMER
     
+    // States for Customer Repair
+    const [selectedCustomerId, setSelectedCustomerId] = useState("");
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [purchaseHistory, setPurchaseHistory] = useState([]);
+    const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
+
+    // States for Internal Repair
+    const [internalItems, setInternalItems] = useState([]);
+    const [itemSearch, setItemSearch] = useState("");
+    const debouncedItemSearch = useDebounce(itemSearch, 500);
+
+    // Common States
+    const [selectedItems, setSelectedItems] = useState([]);
     const [senderId, setSenderId] = useState("");
     const [receiverId, setReceiverId] = useState("");
     const [notes, setNotes] = useState("");
 
-    const debouncedItemSearch = useDebounce(itemSearch, 500);
-
+    // --- START: ส่วนที่แก้ไข ---
+    // useEffect to reset states when repairType changes
     useEffect(() => {
+        setSelectedItems([]); // Always clear selected items
+        if (repairType === 'INTERNAL') {
+            // Reset customer-related states
+            setSelectedCustomerId("");
+            setSelectedCustomer(null);
+            setPurchaseHistory([]);
+        } else if (repairType === 'CUSTOMER') {
+            // Reset internal-related states
+            setItemSearch("");
+            setInternalItems([]);
+        }
+    }, [repairType]);
+    // --- END: ส่วนที่แก้ไข ---
+
+    // Fetch internal items for internal repair
+    useEffect(() => {
+        if (repairType !== 'INTERNAL' || !token) return;
+
         const fetchItems = async () => {
-            if (!token) return;
             const params = { search: debouncedItemSearch, limit: 100 };
             try {
-                // Fetch from both inventory and assets
                 const [invRes, assetRes] = await Promise.all([
                     axiosInstance.get('/inventory', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'IN_STOCK' } }),
                     axiosInstance.get('/assets', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'IN_WAREHOUSE' } })
                 ]);
-                const combinedItems = [...invRes.data.data, ...assetRes.data.data];
-
+                const combined = [...invRes.data.data, ...assetRes.data.data];
                 const selectedIds = new Set(selectedItems.map(i => i.id));
-                setAvailableItems(combinedItems.filter(item => !selectedIds.has(item.id)));
+                setInternalItems(combined.filter(item => !selectedIds.has(item.id)));
             } catch (error) {
                 toast.error("Failed to search for items.");
             }
         };
         fetchItems();
-    }, [debouncedItemSearch, token]);
+    }, [repairType, debouncedItemSearch, token, selectedItems]);
 
+    // Fetch customer's purchase history
+    useEffect(() => {
+        if (repairType !== 'CUSTOMER' || !selectedCustomerId || !token) {
+            setPurchaseHistory([]);
+            return;
+        }
+
+        const fetchHistory = async () => {
+            try {
+                const [customerRes, historyRes] = await Promise.all([
+                    axiosInstance.get(`/customers/${selectedCustomerId}`, { headers: { Authorization: `Bearer ${token}` } }),
+                    axiosInstance.get(`/customers/${selectedCustomerId}/purchase-history`, { headers: { Authorization: `Bearer ${token}` } })
+                ]);
+                setSelectedCustomer(customerRes.data);
+                const selectedIds = new Set(selectedItems.map(i => i.id));
+                setPurchaseHistory(historyRes.data.filter(item => !selectedIds.has(item.id)));
+            } catch (error) {
+                toast.error("Failed to fetch customer's purchase history.");
+            }
+        };
+        fetchHistory();
+    }, [repairType, selectedCustomerId, token, selectedItems]);
+    
     const handleAddItem = (itemToAdd) => {
         setSelectedItems(prev => [...prev, itemToAdd]);
-        if (!itemToAdd.isCustomerItem) {
-            setAvailableItems(prev => prev.filter(item => item.id !== itemToAdd.id));
-        }
     };
 
     const handleRemoveItem = (itemToRemove) => {
         setSelectedItems(selectedItems.filter(item => item.id !== itemToRemove.id));
-        if (!itemToRemove.isCustomerItem && !itemSearch) {
-            setAvailableItems(prev => [itemToRemove, ...prev]);
-        }
     };
 
     const handleSubmit = async () => {
         if (!senderId || !receiverId || selectedItems.length === 0) {
             toast.error("Please select a sender, receiver, and at least one item.");
+            return;
+        }
+        if (repairType === 'CUSTOMER' && !selectedCustomerId) {
+            toast.error("Please select a customer.");
             return;
         }
 
@@ -152,68 +202,88 @@ export default function CreateRepairPage() {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
-                <CardHeader>
-                    <CardTitle>Select Items to Send for Repair</CardTitle>
-                    <CardDescription>Search for company-owned items or register an item for a customer.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex gap-4 mb-4">
-                        <Input
-                            placeholder="Search company items by S/N, Asset Code, etc..."
-                            value={itemSearch}
-                            onChange={(e) => setItemSearch(e.target.value)}
-                            className="flex-grow"
-                        />
-                        <CustomerItemDialog onAddItem={handleAddItem} />
-                    </div>
-                    <div className="h-96 overflow-y-auto border rounded-md">
-                        <table className="w-full text-sm">
-                            <thead className="sticky top-0 bg-slate-100">
-                                <tr className="border-b">
-                                    <th className="p-2 text-left">Identifier</th>
-                                    <th className="p-2 text-left">Product</th>
-                                    <th className="p-2 text-left">Type</th>
-                                    <th className="p-2 text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {availableItems.map(item => (
-                                    <tr key={item.id} className="border-b">
-                                        <td className="p-2 font-semibold">{item.assetCode || item.serialNumber}</td>
-                                        <td className="p-2">{item.productModel.modelNumber}</td>
-                                        <td className="p-2">{item.itemType}</td>
-                                        <td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>Add</Button></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="lg:col-span-2 space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Step 1: Choose Repair Type</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <RadioGroup value={repairType} onValueChange={setRepairType} className="flex gap-4">
+                            <Label htmlFor="internal" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary w-full">
+                                <RadioGroupItem value="INTERNAL" id="internal" className="sr-only" />
+                                <Truck className="mb-3 h-6 w-6" />
+                                Internal Repair
+                            </Label>
+                             <Label htmlFor="customer" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary w-full">
+                                <RadioGroupItem value="CUSTOMER" id="customer" className="sr-only" />
+                                <UserPlus className="mb-3 h-6 w-6" />
+                                For Customer
+                            </Label>
+                        </RadioGroup>
+                    </CardContent>
+                </Card>
+
+                {repairType === 'INTERNAL' && (
+                     <Card>
+                        <CardHeader><CardTitle>Step 2: Select Company-Owned Items</CardTitle></CardHeader>
+                        <CardContent>
+                            <Input placeholder="Search company items by S/N, Asset Code..." value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} />
+                             <div className="mt-4 h-96 overflow-y-auto border rounded-md">
+                                <table className="w-full text-sm">
+                                    <thead className="sticky top-0 bg-slate-100">
+                                        <tr className="border-b"><th className="p-2 text-left">Identifier</th><th className="p-2 text-left">Product</th><th className="p-2 text-left">Type</th><th className="p-2 text-center">Action</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {internalItems.map(item => (
+                                            <tr key={item.id} className="border-b"><td className="p-2 font-semibold">{item.assetCode || item.serialNumber}</td><td className="p-2">{item.productModel.modelNumber}</td><td className="p-2">{item.itemType}</td><td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>Add</Button></td></tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {repairType === 'CUSTOMER' && (
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Step 2: Select Customer & Item</CardTitle>
+                            <div className="flex items-center gap-2 pt-2">
+                                <div className="flex-grow"><CustomerCombobox selectedValue={selectedCustomerId} onSelect={setSelectedCustomerId} /></div>
+                                <Button variant="outline" size="sm" onClick={() => setIsCustomerFormOpen(true)}><UserPlus className="mr-2" />New</Button>
+                            </div>
+                        </CardHeader>
+                        {selectedCustomerId && (
+                             <CardContent>
+                                <div className="flex gap-4 mb-4">
+                                     <CustomerItemDialog onAddItem={handleAddItem} />
+                                </div>
+                                 <p className="text-sm text-muted-foreground mb-2 text-center">Or select from customer's purchase history below:</p>
+                                <div className="h-80 overflow-y-auto border rounded-md">
+                                    <table className="w-full text-sm">
+                                        <thead className="sticky top-0 bg-slate-100">
+                                            <tr className="border-b"><th className="p-2 text-left">Product</th><th className="p-2 text-left">Serial No.</th><th className="p-2 text-left">Purchase Date</th><th className="p-2 text-center">Action</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            {purchaseHistory.map(item => (
+                                                <tr key={item.id} className="border-b"><td className="p-2">{item.productModel.modelNumber}</td><td className="p-2">{item.serialNumber}</td><td className="p-2">{new Date(item.purchaseDate).toLocaleDateString()}</td><td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>Add</Button></td></tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardContent>
+                        )}
+                    </Card>
+                )}
+            </div>
             <Card>
-                <CardHeader><CardTitle>Repair Order Summary</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Step 3: Repair Order Summary</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label>From (Sender)</Label>
-                            <AddressCombobox
-                                selectedValue={senderId}
-                                onSelect={setSenderId}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>To (Receiver)</Label>
-                            <AddressCombobox
-                                selectedValue={receiverId}
-                                onSelect={setReceiverId}
-                            />
-                        </div>
+                        <div className="space-y-2"><Label>From (Sender)</Label><AddressCombobox selectedValue={senderId} onSelect={setSenderId} /></div>
+                        <div className="space-y-2"><Label>To (Receiver)</Label><AddressCombobox selectedValue={receiverId} onSelect={setReceiverId} /></div>
                     </div>
-                    <div className="space-y-2">
-                        <Label>Notes / Problem Description</Label>
-                        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
-                    </div>
+                    <div className="space-y-2"><Label>Notes / Problem Description</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
                     <Separator />
                     <div className="space-y-2">
                         <h4 className="text-sm font-medium">Selected Items ({selectedItems.length})</h4>
@@ -231,11 +301,16 @@ export default function CreateRepairPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button className="w-full" size="lg" onClick={handleSubmit}>
-                        Create Repair Order
-                    </Button>
+                    <Button className="w-full" size="lg" onClick={handleSubmit}>Create Repair Order</Button>
                 </CardFooter>
             </Card>
+
+            <CustomerFormDialog 
+                open={isCustomerFormOpen}
+                onOpenChange={setIsCustomerFormOpen}
+                isEditMode={false}
+                onSuccess={() => {}} // We don't need to refresh the main list here
+            />
         </div>
     );
 }

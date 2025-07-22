@@ -5,17 +5,17 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
+import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- 1. Import StatusBadge
 
 const SkeletonRow = () => (
     <tr className="border-b">
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2 text-center"><div className="h-6 w-24 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
+        <td className="p-2 text-center"><div className="h-6 w-32 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
         <td className="p-2 text-center"><div className="h-5 w-24 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
         <td className="p-2 text-center"><div className="h-8 w-[76px] bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
     </tr>
@@ -34,14 +34,7 @@ export default function RepairListPage() {
         handleItemsPerPageChange
     } = usePaginatedFetch("/repairs");
 
-    const getStatusVariant = (status) => {
-        switch (status) {
-            case 'REPAIRING': return 'warning';
-            case 'COMPLETED': return 'success';
-            case 'PARTIALLY_RETURNED': return 'info';
-            default: return 'outline';
-        }
-    };
+    // 2. ลบ getStatusVariant ทิ้งไปได้เลย
 
     return (
         <Card>
@@ -75,7 +68,8 @@ export default function RepairListPage() {
                                     <td className="p-2">{r.receiver.name}</td>
                                     <td className="p-2">{new Date(r.repairDate).toLocaleDateString()}</td>
                                     <td className="p-2 text-center">
-                                        <Badge variant={getStatusVariant(r.status)} className="w-32 justify-center">{r.status}</Badge>
+                                        {/* 3. เปลี่ยนมาใช้ StatusBadge */}
+                                        <StatusBadge status={r.status} className="w-32" />
                                     </td>
                                     <td className="p-2 text-center">{r.returnedItemCount}/{r.totalItemCount} Returned</td>
                                     <td className="p-2 text-center">

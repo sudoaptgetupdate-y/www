@@ -32,9 +32,7 @@ customerController.getAllCustomers = async (req, res) => {
             const allCustomers = await prisma.customer.findMany({
                 orderBy: { name: 'asc' },
                 include: { createdBy: { select: { name: true } } },
-                // --- START: ส่วนที่แก้ไข ---
-                take: 1000 // จำกัดให้ดึงข้อมูลสูงสุด 1000 รายการ
-                // --- END ---
+                take: 1000
             });
             return res.status(200).json(allCustomers);
         }
@@ -308,15 +306,25 @@ customerController.getReturnedHistory = async (req, res) => {
     }
 };
 
+// --- START: เพิ่มฟังก์ชันใหม่ ---
 customerController.getPurchaseHistory = async (req, res) => {
     const { id } = req.params;
     const customerId = parseInt(id);
 
     try {
         const sales = await prisma.sale.findMany({
-            where: { customerId },
+            where: { customerId: customerId, status: 'COMPLETED' },
             include: {
                 itemsSold: {
+                    // --- START: ส่วนที่แก้ไข ---
+                    // เพิ่มเงื่อนไข `where` เพื่อกรองสถานะของสินค้า
+                    // อนุญาตเฉพาะสินค้าที่สถานะเป็น SOLD หรือ RETURNED_TO_CUSTOMER เท่านั้น
+                    where: {
+                        status: {
+                            in: ['SOLD', 'RETURNED_TO_CUSTOMER']
+                        }
+                    },
+                    // --- END: ส่วนที่แก้ไข ---
                     include: { productModel: true }
                 }
             },
@@ -338,5 +346,6 @@ customerController.getPurchaseHistory = async (req, res) => {
         res.status(500).json({ error: 'Could not fetch purchase history.' });
     }
 };
+// --- END: เพิ่มฟังก์ชันใหม่ ---
 
 module.exports = customerController;

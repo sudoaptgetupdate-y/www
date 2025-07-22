@@ -1,0 +1,61 @@
+// src/lib/statusUtils.js
+
+/**
+ * @typedef {'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'} BadgeVariant
+ */
+
+/**
+ * @typedef {Object} StatusConfig
+ * @property {string} label - The text to display on the badge.
+ * @property {BadgeVariant} variant - The color variant of the badge.
+ */
+
+/**
+ * A centralized map for all status types across the application.
+ * @type {Object.<string, StatusConfig>}
+ */
+const STATUS_CONFIG = {
+  // General & User Statuses
+  ACTIVE: { label: "Active", variant: "success" },
+  DISABLED: { label: "Disabled", variant: "destructive" },
+
+  // Inventory & Asset Statuses
+  IN_STOCK: { label: "In Stock", variant: "success" },
+  IN_WAREHOUSE: { label: "In Warehouse", variant: "success" },
+  ASSIGNED: { label: "Assigned", variant: "warning" },
+  SOLD: { label: "Sold", variant: "secondary" },
+  BORROWED: { label: "Borrowed", variant: "warning" },
+  RESERVED: { label: "Reserved", variant: "info" },
+  DEFECTIVE: { label: "Defective", variant: "destructive" },
+  DECOMMISSIONED: { label: "Decommissioned", variant: "secondary" },
+
+  // Sale Statuses
+  COMPLETED: { label: "Completed", variant: "success" },
+  VOIDED: { label: "Voided", variant: "destructive" },
+
+  // Borrowing Statuses
+  RETURNED: { label: "Returned", variant: "secondary" },
+  OVERDUE: { label: "Overdue", variant: "destructive" },
+
+  // Assignment & Repair Statuses
+  PARTIALLY_RETURNED: { label: "Partial Return", variant: "info" },
+  REPAIRING: { label: "Repairing", variant: "warning" },
+
+  // Repair Outcomes & Status
+  REPAIRED_SUCCESSFULLY: { label: "Success", variant: "success" },
+  UNREPAIRABLE: { label: "Failed", variant: "destructive" },
+  RETURNED_TO_CUSTOMER: { label: "Closed", variant: "secondary" },
+
+  // Default for unknown statuses
+  DEFAULT: { label: "Unknown", variant: "outline" },
+};
+
+/**
+ * Gets the display properties (label and variant) for a given status.
+ * @param {string} status - The status string (e.g., 'IN_STOCK', 'COMPLETED').
+ * @returns {StatusConfig} The configuration for the badge.
+ */
+export const getStatusProperties = (status) => {
+  // Return specific config or a formatted version of the status itself
+  return STATUS_CONFIG[status] || { label: status.replace(/_/g, ' '), variant: 'default' };
+};

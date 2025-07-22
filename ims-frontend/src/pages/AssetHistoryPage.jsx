@@ -7,15 +7,8 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, User, CornerUpLeft, Wrench, ShieldCheck } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-
-const eventConfig = {
-    ASSIGN: { icon: <User className="h-4 w-4" />, label: 'Assigned', variant: 'warning' },
-    RETURN: { icon: <CornerUpLeft className="h-4 w-4" />, label: 'Returned', variant: 'info' },
-    REPAIR_SENT: { icon: <Wrench className="h-4 w-4" />, label: 'Sent to Repair', variant: 'info' },
-    REPAIR_RETURNED: { icon: <ShieldCheck className="h-4 w-4" />, label: 'Repair Return', variant: 'success' },
-};
+import { ArrowLeft } from "lucide-react";
+import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import StatusBadge
 
 export default function AssetHistoryPage() {
     const { assetId } = useParams();
@@ -44,17 +37,6 @@ export default function AssetHistoryPage() {
         fetchData();
     }, [assetId, token]);
 
-    const getTransactionLink = (type, id) => {
-        switch (type) {
-            case 'ASSIGNMENT':
-                return `/asset-assignments/${id}`;
-            case 'REPAIR':
-                return `/repairs/${id}`;
-            default:
-                return '#';
-        }
-    };
-
     if (loading) return <p>Loading history...</p>;
     if (!asset) return <p>Asset not found.</p>;
 
@@ -73,37 +55,29 @@ export default function AssetHistoryPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>History Log</CardTitle>
+                    <CardDescription>A complete log of events for this asset.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b">
                                 <th className="p-2 text-left">Date</th>
+                                <th className="p-2 text-left">Event</th>
                                 <th className="p-2 text-left">Details</th>
                                 <th className="p-2 text-left">Handled By</th>
-                                <th className="p-2 text-center w-40">Event</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {history.length > 0 ? history.map((h, index) => {
-                                const config = eventConfig[h.type] || { label: h.type, variant: 'secondary', icon: null };
-                                return (
-                                <tr key={index} className="border-b">
-                                    <td className="p-2">{new Date(h.date).toLocaleString()}</td>
-                                    <td className="p-2">{h.details}</td>
-                                    <td className="p-2">{h.user || '-'}</td>
-                                    <td className="p-2 text-center">
-                                         <Badge 
-                                            variant={config.variant} 
-                                            className="w-36 justify-center cursor-pointer"
-                                            onClick={() => navigate(getTransactionLink(h.transactionType, h.transactionId))}
-                                        >
-                                            {config.icon}
-                                            <span className="ml-1.5">{config.label}</span>
-                                        </Badge>
+                            {history.length > 0 ? history.map((h) => (
+                                <tr key={h.id} className="border-b">
+                                    <td className="p-2">{new Date(h.createdAt).toLocaleString()}</td>
+                                    <td className="p-2">
+                                        <StatusBadge status={h.type} />
                                     </td>
+                                    <td className="p-2">{h.details}</td>
+                                    <td className="p-2">{h.user?.name || 'System'}</td>
                                 </tr>
-                            )}) : (
+                            )) : (
                                 <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">No history found for this asset.</td></tr>
                             )}
                         </tbody>

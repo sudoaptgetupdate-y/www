@@ -14,6 +14,4 @@ router.get('/', authCheck, repairController.getAllRepairOrders);
 router.get('/:id', authCheck, repairController.getRepairOrderById);
 router.patch('/:id/return', authCheck, roleCheck(adminAccess), repairController.returnItemsFromRepair);
 
-// TODO: Add route for returning items from repair
-
 module.exports = router;

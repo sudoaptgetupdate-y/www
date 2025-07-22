@@ -5,6 +5,11 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 
+// --- START: Import routes ใหม่ ---
+const addressRoute = require('./routes/addressRoute');
+const repairRoute = require('./routes/repairRoute');
+// --- END: Import routes ใหม่ ---
+
 const assetAssignmentRoute = require('./routes/assetAssignmentRoute');
 const assetRoute = require('./routes/assetRoute');
 const categoryRoute = require('./routes/categoryRoute');
@@ -17,8 +22,7 @@ const saleRoute = require('./routes/saleRoute');
 const dashboardRoute = require('./routes/dashboardRoute');
 const userRoute = require('./routes/userRoute');
 const borrowingRoute = require('./routes/borrowingRoute');
-const addressRoute = require('./routes/addressRoute');
-const repairRoute = require('./routes/repairRoute');
+
 
 const app = express();
 
@@ -28,7 +32,7 @@ app.use(morgan('dev'));
 
 // --- API Routes ---
 app.use('/api/assets', assetRoute);
-app.use('/api/inventory', inventoryRoute); // <-- แก้ไข Path และตัวแปร
+app.use('/api/inventory', inventoryRoute);
 app.use('/api/asset-assignments', assetAssignmentRoute);
 app.use('/api/categories', categoryRoute);
 app.use('/api/customers', customerRoute);
@@ -39,8 +43,11 @@ app.use('/api/sales', saleRoute);
 app.use('/api/dashboard', dashboardRoute);
 app.use('/api/users', userRoute);
 app.use('/api/borrowings', borrowingRoute);
+
+// --- START: ลงทะเบียน routes ใหม่ ---
 app.use('/api/addresses', addressRoute);
 app.use('/api/repairs', repairRoute);
+// --- END: ลงทะเบียน routes ใหม่ ---
 
 const port = process.env.PORT || 5001;
 app.listen(port, () => console.log(`Server is running on port ${port}`));

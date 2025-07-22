@@ -26,6 +26,7 @@ enum AccountStatus {
   DISABLED
 }
 
+// อัปเดต ItemStatus enum
 enum ItemStatus {
   IN_STOCK
   SOLD
@@ -35,9 +36,8 @@ enum ItemStatus {
   IN_WAREHOUSE
   ASSIGNED
   DECOMMISSIONED
-  AWAITING_REPAIR // <-- เพิ่มใหม่
-  REPAIRING // <-- เพิ่มใหม่
-  RETURNED_TO_CUSTOMER // <-- เพิ่มใหม่
+  REPAIRING               // <-- เพิ่มใหม่
+  RETURNED_TO_CUSTOMER    // <-- เพิ่มใหม่
 }
 
 enum BorrowStatus {
@@ -57,7 +57,7 @@ enum AssignmentStatus {
   RETURNED
 }
 
-// --- START: Enums ที่เพิ่มเข้ามาใหม่ ---
+// --- Enums ที่เพิ่มเข้ามาใหม่ ---
 enum RepairStatus {
   REPAIRING
   PARTIALLY_RETURNED
@@ -100,7 +100,7 @@ model User {
   receivedAssignments   AssetAssignment[] @relation("ReceivedAssignments")
   assetHistory          AssetHistory[]
 
-  createdRepairs        Repair[] // <-- เพิ่มใหม่
+  createdRepairs        Repair[] // <-- เพิ่ม Relation ใหม่
 }
 
 model Customer {
@@ -117,10 +117,11 @@ model Customer {
   borrowings   Borrowing[]
 }
 
+// อัปเดต Model InventoryItem
 model InventoryItem {
   id                  Int                      @id @default(autoincrement())
   itemType            ItemType                 @default(SALE)
-  ownerType           ItemOwner                @default(COMPANY) // <-- เพิ่มใหม่
+  ownerType           ItemOwner                @default(COMPANY) // <-- เพิ่ม field ใหม่
   assetCode           String?                  @unique
   serialNumber        String?                  @unique
   macAddress          String?                  @unique
@@ -137,14 +138,13 @@ model InventoryItem {
   saleId              Int?
   sale                Sale?                    @relation(fields: [saleId], references: [id])
   borrowingRecords    BorrowingOnItems[]
-  repairRecords       RepairOnItems[]          // <-- เพิ่มใหม่
+  repairRecords       RepairOnItems[]          // <-- เพิ่ม Relation ใหม่
 
   @@index([status])
   @@index([itemType])
-  @@index([ownerType]) // <-- เพิ่มใหม่
+  @@index([ownerType]) // <-- เพิ่ม index ใหม่
 }
 
-// ... (Model Borrowing, Category, Brand, ProductModel, Sale, AssetHistory, AssetAssignment ไม่เปลี่ยนแปลง) ...
 model Borrowing {
   id           Int       @id @default(autoincrement())
   borrowerId   Int
@@ -277,7 +277,7 @@ model Address {
 model Repair {
   id              Int      @id @default(autoincrement())
   repairDate      DateTime @default(now())
-  notes           String?  // อาการเสีย
+  notes           String?
   status          RepairStatus @default(REPAIRING)
   
   createdById     Int

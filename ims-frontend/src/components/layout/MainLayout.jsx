@@ -35,6 +35,7 @@ const MainLayout = () => {
 
     const handleLogout = () => {
         logout();
+        navigate('/login'); // Redirect to login after logout
     };
 
     const onNavLinkClick = () => {
@@ -66,6 +67,7 @@ const MainLayout = () => {
                     </div>
                 </div>
 
+                {/* --- START: เพิ่มเมนูใหม่ --- */}
                 <div>
                     <p className="px-3 py-2 text-slate-400 text-xs font-bold uppercase">Repair</p>
                     <div className="space-y-1">
@@ -73,6 +75,7 @@ const MainLayout = () => {
                         <NavItem to="/addresses" handleclick={onNavLinkClick}><BookUser size={18} /> Address Book</NavItem>
                     </div>
                 </div>
+                {/* --- END: เพิ่มเมนูใหม่ --- */}
 
                 <div>
                     <p className="px-3 py-2 text-slate-400 text-xs font-bold uppercase">Products</p>

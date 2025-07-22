@@ -1,10 +1,9 @@
 // ims-backend/controllers/assetController.js
 
-const { PrismaClient, ItemType } = require('@prisma/client');
+const { PrismaClient, ItemType, HistoryEventType } = require('@prisma/client');
 const prisma = new PrismaClient();
 const assetController = {};
 
-// ... (โค้ดส่วนบน: createAsset, updateAsset, deleteAsset, getAllAssets, getAssetById ไม่เปลี่ยนแปลง) ...
 assetController.createAsset = async (req, res) => {
     try {
         const { serialNumber, macAddress, productModelId, assetCode } = req.body;
@@ -12,7 +11,7 @@ assetController.createAsset = async (req, res) => {
 
         const newAsset = await prisma.inventoryItem.create({
             data: {
-                itemType: ItemType.ASSET, // บังคับเป็น ASSET
+                itemType: ItemType.ASSET,
                 assetCode: assetCode,
                 serialNumber: serialNumber || null,
                 macAddress: macAddress || null,
@@ -21,6 +20,17 @@ assetController.createAsset = async (req, res) => {
                 status: 'IN_WAREHOUSE',
             },
         });
+        
+        // สร้างประวัติการ 'CREATE'
+        await prisma.assetHistory.create({
+            data: {
+                inventoryItemId: newAsset.id,
+                userId: userId,
+                type: HistoryEventType.CREATE,
+                details: `Asset created with code ${assetCode}.`
+            }
+        });
+
         res.status(201).json(newAsset);
     } catch (error) {
         if (error.code === 'P2002') {
@@ -33,9 +43,13 @@ assetController.createAsset = async (req, res) => {
 };
 
 assetController.updateAsset = async (req, res) => {
+    const { id } = req.params;
+    const actorId = req.user.id;
     try {
-        const { id } = req.params;
         const { assetCode, serialNumber, macAddress, status, productModelId } = req.body;
+        
+        const originalAsset = await prisma.inventoryItem.findUnique({ where: { id: parseInt(id) } });
+
         const updatedAsset = await prisma.inventoryItem.update({
             where: { id: parseInt(id), itemType: 'ASSET' },
             data: {
@@ -46,6 +60,18 @@ assetController.updateAsset = async (req, res) => {
                 productModelId
             },
         });
+        
+        // สร้างประวัติการ 'UPDATE'
+        const details = `Asset details updated.`; // สามารถเพิ่มรายละเอียดการเปลี่ยนแปลงได้ในอนาคต
+        await prisma.assetHistory.create({
+            data: {
+                inventoryItemId: parseInt(id),
+                userId: actorId,
+                type: HistoryEventType.UPDATE,
+                details: details
+            }
+        });
+
         res.status(200).json(updatedAsset);
     } catch (error) {
         if (error.code === 'P2002') {
@@ -180,111 +206,47 @@ assetController.getAssetById = async (req, res) => {
     }
 };
 
-// --- START: ส่วนที่แก้ไข ---
-assetController.getAssetHistory = async (req, res) => {
-    const { id } = req.params;
-    const itemId = parseInt(id);
-    try {
-        const history = [];
-
-        // 1. Assignment History
-        const assignmentRecords = await prisma.assetAssignmentOnItems.findMany({
-            where: { inventoryItemId: itemId },
-            include: {
-                assignment: {
-                    include: {
-                        assignee: { select: { name: true } },
-                        approvedBy: { select: { name: true } }
-                    }
-                }
-            },
-            orderBy: { assignedAt: 'asc' }
-        });
-
-        assignmentRecords.forEach(record => {
-            history.push({
-                type: 'ASSIGN',
-                date: record.assignedAt,
-                details: `Assigned to ${record.assignment.assignee.name}`,
-                user: record.assignment.approvedBy.name,
-                transactionId: record.assignmentId,
-                transactionType: 'ASSIGNMENT'
-            });
-            if (record.returnedAt) {
-                history.push({
-                    type: 'RETURN',
-                    date: record.returnedAt,
-                    details: `Returned from ${record.assignment.assignee.name}`,
-                    user: record.assignment.approvedBy.name,
-                    transactionId: record.assignmentId,
-                    transactionType: 'ASSIGNMENT'
-                });
-            }
-        });
-
-        // 2. Repair History
-        const repairRecords = await prisma.repairOnItems.findMany({
-            where: { inventoryItemId: itemId },
-            include: { repair: { include: { receiver: true, createdBy: true } } },
-            orderBy: { sentAt: 'asc' }
-        });
-
-        repairRecords.forEach(record => {
-            history.push({
-                type: 'REPAIR_SENT',
-                date: record.sentAt,
-                details: `Sent to ${record.repair.receiver.name} for repair`,
-                user: record.repair.createdBy.name,
-                transactionId: record.repairId,
-                transactionType: 'REPAIR'
-            });
-            if (record.returnedAt) {
-                const outcome = record.repairOutcome === 'REPAIRED_SUCCESSFULLY' ? 'Success' : 'Failed';
-                history.push({
-                    type: 'REPAIR_RETURNED',
-                    date: record.returnedAt,
-                    details: `Returned from ${record.repair.receiver.name} (Outcome: ${outcome})`,
-                    user: record.repair.createdBy.name,
-                    transactionId: record.repairId,
-                    transactionType: 'REPAIR'
-                });
-            }
-        });
-
-        const sortedHistory = history.sort((a, b) => new Date(b.date) - new Date(a.date));
-        res.status(200).json(sortedHistory);
-
-    } catch (error) {
-        console.error("Error fetching asset history:", error);
-        res.status(500).json({ error: 'Could not fetch asset history.' });
-    }
-};
-// --- END: ส่วนที่แก้ไข ---
-
 assetController.decommissionAsset = async (req, res) => {
     const { id } = req.params;
+    const actorId = req.user.id;
+
     try {
         const asset = await prisma.inventoryItem.findFirst({ where: { id: parseInt(id), itemType: 'ASSET' } });
 
         if (!asset) {
             return res.status(404).json({ error: 'Asset not found.' });
         }
-        if (asset.status !== 'IN_WAREHOUSE') {
-            return res.status(400).json({ error: 'Only assets in the warehouse can be decommissioned.' });
+        
+        if (!['IN_WAREHOUSE', 'DEFECTIVE'].includes(asset.status)) {
+            return res.status(400).json({ error: 'Only assets in the warehouse or marked as defective can be decommissioned.' });
         }
 
-        const decommissionedAsset = await prisma.inventoryItem.update({
-            where: { id: parseInt(id) },
-            data: { status: 'DECOMMISSIONED' },
-        });
-        res.status(200).json(decommissionedAsset);
+        await prisma.$transaction([
+            prisma.inventoryItem.update({
+                where: { id: parseInt(id) },
+                data: { status: 'DECOMMISSIONED' },
+            }),
+            prisma.assetHistory.create({
+                data: {
+                    inventoryItemId: parseInt(id),
+                    userId: actorId,
+                    type: HistoryEventType.DECOMMISSION,
+                    details: `Asset status changed from ${asset.status} to DECOMMISSIONED.`
+                }
+            })
+        ]);
+        
+        res.status(200).json({ message: 'Asset decommissioned successfully.' });
     } catch (error) {
+        console.error("Decommission Error:", error);
         res.status(500).json({ error: 'Could not decommission the asset.' });
     }
 };
 
 assetController.reinstateAsset = async (req, res) => {
     const { id } = req.params;
+    const actorId = req.user.id;
+
     try {
         const asset = await prisma.inventoryItem.findFirst({ where: { id: parseInt(id), itemType: 'ASSET' } });
 
@@ -295,13 +257,42 @@ assetController.reinstateAsset = async (req, res) => {
             return res.status(400).json({ error: 'Only decommissioned assets can be reinstated.' });
         }
 
-        const reinstatedAsset = await prisma.inventoryItem.update({
-            where: { id: parseInt(id) },
-            data: { status: 'IN_WAREHOUSE' },
-        });
-        res.status(200).json(reinstatedAsset);
+        await prisma.$transaction([
+            prisma.inventoryItem.update({
+                where: { id: parseInt(id) },
+                data: { status: 'IN_WAREHOUSE' },
+            }),
+            prisma.assetHistory.create({
+                data: {
+                    inventoryItemId: parseInt(id),
+                    userId: actorId,
+                    type: HistoryEventType.REINSTATE,
+                    details: 'Asset was reinstated to warehouse.'
+                }
+            })
+        ]);
+        
+        res.status(200).json({ message: 'Asset reinstated successfully.' });
     } catch (error) {
+        console.error("Reinstate Error:", error);
         res.status(500).json({ error: 'Could not reinstate the asset.' });
+    }
+};
+
+assetController.getAssetHistory = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const history = await prisma.assetHistory.findMany({
+            where: { inventoryItemId: parseInt(id) },
+            include: {
+                user: { select: { name: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.status(200).json(history);
+    } catch (error) {
+        console.error("Error fetching asset history:", error);
+        res.status(500).json({ error: 'Could not fetch asset history.' });
     }
 };
 

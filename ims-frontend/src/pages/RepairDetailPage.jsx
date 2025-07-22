@@ -6,13 +6,13 @@ import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ArrowLeft, Printer, CheckSquare, Square, Wrench } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export default function RepairDetailPage() {
     const { repairId } = useParams();
@@ -36,7 +36,7 @@ export default function RepairDetailPage() {
                 inventoryItemId: item.inventoryItemId,
                 repairOutcome: null,
                 isSelected: false,
-                isCustomerItem: item.inventoryItem.ownerType === 'CUSTOMER',
+                isCustomerItem: item.inventoryItem.ownerType === 'CUSTOMER' || item.inventoryItem.saleId !== null, // <-- ปรับ Logic ตรงนี้
                 displayName: item.inventoryItem.assetCode || item.inventoryItem.serialNumber || 'N/A'
             })));
         } catch (error) {
@@ -98,7 +98,7 @@ export default function RepairDetailPage() {
     const itemsStillAtRepair = repairOrder.items.filter(i => !i.returnedAt);
 
     return (
-        <div className="space-y-4 printable-area"> {/* <-- ลด space y */}
+        <div className="space-y-4 printable-area">
             <div className="flex justify-between items-center no-print">
                 <Button variant="outline" onClick={() => navigate(-1)}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
@@ -126,22 +126,25 @@ export default function RepairDetailPage() {
                             <CardTitle>Repair Order Details</CardTitle>
                             <CardDescription>Record ID: #{repairOrder.id}</CardDescription>
                         </div>
-                        <div className="text-sm text-muted-foreground sm:text-right pt-1">
-                            <p><strong>Date Sent:</strong> {new Date(repairOrder.repairDate).toLocaleString()}</p>
-                            <p><strong>Created By:</strong> {repairOrder.createdBy.name}</p>
-                        </div>
+                         <div className="flex flex-col items-start sm:items-end gap-2">
+                             <StatusBadge status={repairOrder.status} />
+                             <div className="text-sm text-muted-foreground pt-1">
+                                <p><strong>Date Sent:</strong> {new Date(repairOrder.repairDate).toLocaleString()}</p>
+                                <p><strong>Created By:</strong> {repairOrder.createdBy.name}</p>
+                            </div>
+                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="pt-2"> {/* <-- ลด padding top */}
-                     <div className="grid md:grid-cols-2 gap-4 text-sm"> {/* <-- ลด gap */}
-                        <div className="space-y-1 rounded-lg border p-3"> {/* <-- ลด space y และ padding */}
+                <CardContent className="pt-2">
+                     <div className="grid md:grid-cols-2 gap-4 text-sm">
+                        <div className="space-y-1 rounded-lg border p-3">
                             <p className="font-semibold text-base">From (Sender):</p>
                             <p className="font-bold text-lg">{repairOrder.sender.name}</p>
                             <p><strong>Contact:</strong> {repairOrder.sender.contactPerson || '-'}</p>
                             <p><strong>Phone:</strong> {repairOrder.sender.phone || '-'}</p>
                             <p><strong>Address:</strong> {repairOrder.sender.address || '-'}</p>
                         </div>
-                        <div className="space-y-1 rounded-lg border p-3"> {/* <-- ลด space y และ padding */}
+                        <div className="space-y-1 rounded-lg border p-3">
                             <p className="font-semibold text-base">To (Receiver):</p>
                             <p className="font-bold text-lg">{repairOrder.receiver.name}</p>
                             <p><strong>Contact:</strong> {repairOrder.receiver.contactPerson || '-'}</p>
@@ -149,7 +152,7 @@ export default function RepairDetailPage() {
                             <p><strong>Address:</strong> {repairOrder.receiver.address || '-'}</p>
                         </div>
                     </div>
-                    <Separator className="my-3"/> {/* <-- ลด margin y */}
+                    <Separator className="my-3"/>
                     <div>
                         <p className="font-semibold">Notes / Problem Description:</p>
                         <p className="whitespace-pre-wrap text-muted-foreground">{repairOrder.notes || 'N/A'}</p>
@@ -164,7 +167,6 @@ export default function RepairDetailPage() {
                         <thead><tr className="border-b">
                             <th className="p-2 text-left">Identifier</th>
                             <th className="p-2 text-left">Product Model</th>
-                            <th className="p-2 text-left">MAC Address</th>
                             <th className="p-2 text-left">Owner</th>
                             <th className="p-2 text-left">Status</th>
                         </tr></thead>
@@ -173,15 +175,16 @@ export default function RepairDetailPage() {
                                 <tr key={item.inventoryItemId} className="border-b">
                                     <td className="p-2">{item.inventoryItem.assetCode || item.inventoryItem.serialNumber}</td>
                                     <td className="p-2">{item.inventoryItem.productModel.modelNumber}</td>
-                                    <td className="p-2">{item.inventoryItem.macAddress || 'N/A'}</td>
-                                    <td className="p-2"><Badge variant={item.inventoryItem.ownerType === 'CUSTOMER' ? 'outline' : 'secondary'}>{item.inventoryItem.ownerType}</Badge></td>
+                                    {/* --- START: แก้ไขการแสดงผล Owner --- */}
+                                    <td className="p-2">
+                                        <StatusBadge status={item.inventoryItem.saleId !== null ? 'CUSTOMER' : item.inventoryItem.ownerType} />
+                                    </td>
+                                    {/* --- END: แก้ไขการแสดงผล Owner --- */}
                                     <td className="p-2">
                                         {item.returnedAt ? (
-                                            <Badge variant={item.repairOutcome === 'REPAIRED_SUCCESSFULLY' ? 'success' : 'destructive'}>
-                                                Returned ({item.repairOutcome.replace(/_/g, ' ')})
-                                            </Badge>
+                                            <StatusBadge status={item.repairOutcome} />
                                         ) : (
-                                            <Badge variant="warning">Repairing</Badge>
+                                            <StatusBadge status="REPAIRING" />
                                         )}
                                     </td>
                                 </tr>
@@ -233,6 +236,11 @@ export default function RepairDetailPage() {
                     <div className="signature-line"></div>
                     <p>( ..................................................... )</p>
                     <p>ผู้ส่งมอบสินค้า</p>
+                </div>
+                 <div className="signature-box">
+                    <div className="signature-line"></div>
+                    <p>( ..................................................... )</p>
+                    <p>ผู้รับสินค้า</p>
                 </div>
             </div>
         </div>

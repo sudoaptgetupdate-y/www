@@ -35,9 +35,8 @@ enum ItemStatus {
   IN_WAREHOUSE
   ASSIGNED
   DECOMMISSIONED
-  AWAITING_REPAIR // <-- เพิ่มใหม่
-  REPAIRING // <-- เพิ่มใหม่
-  RETURNED_TO_CUSTOMER // <-- เพิ่มใหม่
+  REPAIRING
+  RETURNED_TO_CUSTOMER
 }
 
 enum BorrowStatus {
@@ -57,7 +56,6 @@ enum AssignmentStatus {
   RETURNED
 }
 
-// --- START: Enums ที่เพิ่มเข้ามาใหม่ ---
 enum RepairStatus {
   REPAIRING
   PARTIALLY_RETURNED
@@ -73,7 +71,19 @@ enum ItemOwner {
   COMPANY
   CUSTOMER
 }
-// --- END: Enums ที่เพิ่มเข้ามาใหม่ ---
+
+// --- START: เพิ่ม Enum ใหม่ ---
+enum HistoryEventType {
+  CREATE
+  UPDATE
+  ASSIGN
+  RETURN
+  DECOMMISSION
+  REINSTATE
+  REPAIR_SENT
+  REPAIR_RETURNED
+}
+// --- END: เพิ่ม Enum ใหม่ ---
 
 
 // --- Models ---
@@ -98,9 +108,10 @@ model User {
   
   approvedAssignments   AssetAssignment[] @relation("ApprovedAssignments")
   receivedAssignments   AssetAssignment[] @relation("ReceivedAssignments")
-  assetHistory          AssetHistory[]
-
-  createdRepairs        Repair[] // <-- เพิ่มใหม่
+  createdRepairs        Repair[]
+  
+  // Relation ไปยัง AssetHistory
+  assetHistoryEvents    AssetHistory[] // <-- เปลี่ยนชื่อ Relation
 }
 
 model Customer {
@@ -120,7 +131,7 @@ model Customer {
 model InventoryItem {
   id                  Int                      @id @default(autoincrement())
   itemType            ItemType                 @default(SALE)
-  ownerType           ItemOwner                @default(COMPANY) // <-- เพิ่มใหม่
+  ownerType           ItemOwner                @default(COMPANY)
   assetCode           String?                  @unique
   serialNumber        String?                  @unique
   macAddress          String?                  @unique
@@ -133,18 +144,20 @@ model InventoryItem {
   addedBy             User                     @relation("AddedBy", fields: [addedById], references: [id])
   
   assignmentRecords   AssetAssignmentOnItems[]
-  assignmentHistory   AssetHistory[]
   saleId              Int?
   sale                Sale?                    @relation(fields: [saleId], references: [id])
   borrowingRecords    BorrowingOnItems[]
-  repairRecords       RepairOnItems[]          // <-- เพิ่มใหม่
+  repairRecords       RepairOnItems[]
+
+  // --- START: แก้ไข Relation ---
+  historyEvents       AssetHistory[] // เปลี่ยนชื่อ Relation ให้ชัดเจน
+  // --- END: แก้ไข Relation ---
 
   @@index([status])
   @@index([itemType])
-  @@index([ownerType]) // <-- เพิ่มใหม่
+  @@index([ownerType])
 }
 
-// ... (Model Borrowing, Category, Brand, ProductModel, Sale, AssetHistory, AssetAssignment ไม่เปลี่ยนแปลง) ...
 model Borrowing {
   id           Int       @id @default(autoincrement())
   borrowerId   Int
@@ -225,17 +238,6 @@ model Sale {
   voidedBy   User?    @relation("VoidedSales", fields: [voidedById], references: [id])
 }
 
-model AssetHistory {
-  id              Int           @id @default(autoincrement())
-  inventoryItemId Int
-  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
-  assignedToId    Int
-  assignedTo      User          @relation(fields: [assignedToId], references: [id])
-  assignedAt      DateTime      @default(now())
-  returnedAt      DateTime?
-  @@index([inventoryItemId])
-}
-
 model AssetAssignment {
   id            Int                    @id @default(autoincrement())
   assigneeId    Int
@@ -259,11 +261,9 @@ model AssetAssignmentOnItems {
   @@id([assignmentId, inventoryItemId])
 }
 
-
-// --- START: Models ที่เพิ่มเข้ามาใหม่ ---
 model Address {
   id              Int      @id @default(autoincrement())
-  name            String   @unique // เช่น "ศูนย์ซ่อม A", "คลังหลัก"
+  name            String   @unique
   contactPerson   String?
   phone           String?
   address         String?
@@ -277,7 +277,7 @@ model Address {
 model Repair {
   id              Int      @id @default(autoincrement())
   repairDate      DateTime @default(now())
-  notes           String?  // อาการเสีย
+  notes           String?
   status          RepairStatus @default(REPAIRING)
   
   createdById     Int
@@ -300,8 +300,24 @@ model RepairOnItems {
   
   sentAt          DateTime  @default(now())
   returnedAt      DateTime?
-  repairOutcome   RepairOutcome? // ผลการซ่อม
+  repairOutcome   RepairOutcome?
   
   @@id([repairId, inventoryItemId])
 }
-// --- END: Models ที่เพิ่มเข้ามาใหม่ ---
+
+// --- START: สร้าง Model ใหม่สำหรับ Event History ---
+model AssetHistory {
+  id              Int              @id @default(autoincrement())
+  inventoryItemId Int
+  inventoryItem   InventoryItem    @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  
+  userId          Int?             // User ที่กระทำการ (อาจเป็น null ได้สำหรับ event เริ่มต้น)
+  user            User?            @relation(fields: [userId], references: [id])
+
+  type            HistoryEventType // ประเภทของเหตุการณ์
+  details         String?          // รายละเอียดเพิ่มเติม
+  createdAt       DateTime         @default(now())
+
+  @@index([inventoryItemId])
+}
+// --- END: สร้าง Model ใหม่ ---
