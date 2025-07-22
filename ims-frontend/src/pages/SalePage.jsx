@@ -12,8 +12,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { Badge } from "@/components/ui/badge";
 import { PlusCircle } from "lucide-react";
+import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -54,13 +54,7 @@ export default function SalePage() {
     
     const [saleToVoid, setSaleToVoid] = useState(null);
 
-    const getStatusVariant = (status) => {
-        switch (status) {
-            case 'COMPLETED': return 'success';
-            case 'VOIDED': return 'destructive';
-            default: return 'secondary';
-        }
-    };
+    // --- ลบ getStatusVariant ---
 
     const handleVoidSale = async () => {
         if (!saleToVoid) return;
@@ -134,9 +128,7 @@ export default function SalePage() {
                                     <td className="p-2 text-left">{sale.customer.name}</td>
                                     <td className="p-2 text-left">{new Date(sale.saleDate).toLocaleString()}</td>
                                     <td className="p-2 text-center">
-                                        <Badge variant={getStatusVariant(sale.status)} className="w-24 justify-center">
-                                            {sale.status}
-                                        </Badge>
+                                        <StatusBadge status={sale.status} className="w-24" />
                                     </td>
                                     <td className="p-2 text-center">{sale.itemsSold.length}</td>
                                     <td className="p-2 text-right">{sale.total.toLocaleString('en-US')} THB</td>

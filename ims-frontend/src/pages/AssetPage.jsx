@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle, MoreHorizontal, History, Edit, ArrowRightLeft, Archive } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +19,9 @@ import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
     DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { BrandCombobox } from "@/components/ui/BrandCombobox";
+import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -38,6 +40,7 @@ export default function AssetPage() {
     const { user: currentUser } = useAuthStore((state) => state);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
+    // --- START: เพิ่ม Filters ใหม่ ---
     const {
         data: assets,
         pagination,
@@ -49,21 +52,16 @@ export default function AssetPage() {
         handleItemsPerPageChange,
         handleFilterChange,
         refreshData
-    } = usePaginatedFetch("/assets", 10, { status: "All" }); // <-- แก้ไข Endpoint
-
-    const getStatusVariant = (status) => {
-        switch (status) {
-            case 'IN_WAREHOUSE': return 'success';
-            case 'ASSIGNED': return 'warning';
-            case 'DECOMMISSIONED': return 'secondary';
-            case 'DEFECTIVE': return 'destructive';
-            default: return 'outline';
-        }
-    };
+    } = usePaginatedFetch("/assets", 10, { 
+        status: "All",
+        categoryId: "All",
+        brandId: "All"
+    });
+    // --- END: เพิ่ม Filters ใหม่ ---
 
     const handleDecommission = async (assetId) => {
         try {
-            await axiosInstance.patch(`/assets/${assetId}/decommission`, {}, { // <-- แก้ไข Endpoint
+            await axiosInstance.patch(`/assets/${assetId}/decommission`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             toast.success("Asset has been decommissioned.");
@@ -75,7 +73,7 @@ export default function AssetPage() {
 
     const handleReinstate = async (assetId) => {
         try {
-            await axiosInstance.patch(`/assets/${assetId}/reinstate`, {}, { // <-- แก้ไข Endpoint
+            await axiosInstance.patch(`/assets/${assetId}/reinstate`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             toast.success("Asset has been reinstated to the warehouse.");
@@ -110,15 +108,24 @@ export default function AssetPage() {
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                {/* --- START: เพิ่ม Filters ใหม่ --- */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <Input
                         placeholder="Search by Asset Code, S/N, Model..."
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
-                        className="flex-grow"
+                        className="sm:col-span-2 lg:col-span-1"
+                    />
+                     <CategoryCombobox
+                        selectedValue={filters.categoryId}
+                        onSelect={(value) => handleFilterChange('categoryId', value)}
+                    />
+                    <BrandCombobox
+                        selectedValue={filters.brandId}
+                        onSelect={(value) => handleFilterChange('brandId', value)}
                     />
                     <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
-                        <SelectTrigger className="w-full sm:w-[220px]">
+                        <SelectTrigger>
                             <SelectValue placeholder="Filter by Status..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -130,6 +137,7 @@ export default function AssetPage() {
                         </SelectContent>
                     </Select>
                 </div>
+                {/* --- END: เพิ่ม Filters ใหม่ --- */}
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-left text-sm whitespace-nowrap">
                         <colgroup>
@@ -159,9 +167,7 @@ export default function AssetPage() {
                                     <td className="p-2">{asset.productModel.modelNumber}</td>
                                     <td className="p-2">{asset.serialNumber || 'N/A'}</td>
                                     <td className="p-2 text-center">
-                                        <Badge variant={getStatusVariant(asset.status)} className="w-28 justify-center">
-                                            {asset.status}
-                                        </Badge>
+                                        <StatusBadge status={asset.status} className="w-28" />
                                     </td>
                                     <td className="p-2">{asset.assignedTo?.name || '-'}</td>
                                     <td className="p-2 text-center">

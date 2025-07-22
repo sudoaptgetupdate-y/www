@@ -4,6 +4,7 @@ const { PrismaClient, ItemType, HistoryEventType } = require('@prisma/client');
 const prisma = new PrismaClient();
 const assetController = {};
 
+// ... (ฟังก์ชัน create, update, delete, getById, decommission, reinstate, getAssetHistory ไม่เปลี่ยนแปลง) ...
 assetController.createAsset = async (req, res) => {
     try {
         const { serialNumber, macAddress, productModelId, assetCode } = req.body;
@@ -21,7 +22,6 @@ assetController.createAsset = async (req, res) => {
             },
         });
         
-        // สร้างประวัติการ 'CREATE'
         await prisma.assetHistory.create({
             data: {
                 inventoryItemId: newAsset.id,
@@ -61,8 +61,7 @@ assetController.updateAsset = async (req, res) => {
             },
         });
         
-        // สร้างประวัติการ 'UPDATE'
-        const details = `Asset details updated.`; // สามารถเพิ่มรายละเอียดการเปลี่ยนแปลงได้ในอนาคต
+        const details = `Asset details updated.`;
         await prisma.assetHistory.create({
             data: {
                 inventoryItemId: parseInt(id),
@@ -116,13 +115,17 @@ assetController.deleteAsset = async (req, res) => {
     }
 };
 
+// --- START: แก้ไขฟังก์ชัน getAllAssets ---
 assetController.getAllAssets = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
+
         const searchTerm = req.query.search || '';
         const statusFilter = req.query.status || 'All';
+        const categoryIdFilter = req.query.categoryId || 'All';
+        const brandIdFilter = req.query.brandId || 'All';
 
         let where = { itemType: ItemType.ASSET };
 
@@ -137,6 +140,13 @@ assetController.getAllAssets = async (req, res) => {
         
         if (statusFilter && statusFilter !== 'All') {
             where.status = statusFilter;
+        }
+
+        if (categoryIdFilter && categoryIdFilter !== 'All') {
+            where.productModel = { ...where.productModel, categoryId: parseInt(categoryIdFilter) };
+        }
+        if (brandIdFilter && brandIdFilter !== 'All') {
+            where.productModel = { ...where.productModel, brandId: parseInt(brandIdFilter) };
         }
 
         const include = {
@@ -174,6 +184,7 @@ assetController.getAllAssets = async (req, res) => {
         res.status(500).json({ error: 'Could not fetch assets' });
     }
 };
+// --- END: แก้ไขฟังก์ชัน getAllAssets ---
 
 assetController.getAssetById = async (req, res) => {
     try {

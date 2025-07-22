@@ -35,10 +35,13 @@ inventoryController.getAllInventoryItems = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
+        
         const searchTerm = req.query.search || '';
         const statusFilter = req.query.status || 'All';
+        const categoryIdFilter = req.query.categoryId || 'All';
+        const brandIdFilter = req.query.brandId || 'All';
 
-        let where = { itemType: ItemType.SALE }; // Default to SALE items
+        let where = { itemType: ItemType.SALE };
 
         if (searchTerm) {
             where.OR = [
@@ -49,6 +52,12 @@ inventoryController.getAllInventoryItems = async (req, res) => {
         }
         if (statusFilter && statusFilter !== 'All') {
             where.status = statusFilter;
+        }
+        if (categoryIdFilter && categoryIdFilter !== 'All') {
+            where.productModel = { ...where.productModel, categoryId: parseInt(categoryIdFilter) };
+        }
+        if (brandIdFilter && brandIdFilter !== 'All') {
+            where.productModel = { ...where.productModel, brandId: parseInt(brandIdFilter) };
         }
 
         const include = {
@@ -203,7 +212,6 @@ inventoryController.reinstateItem = async (req, res) => {
     }
 };
 
-// --- START: ส่วนที่แก้ไข ---
 inventoryController.getInventoryItemHistory = async (req, res) => {
     const { id } = req.params;
     const itemId = parseInt(id);
@@ -214,13 +222,13 @@ inventoryController.getInventoryItemHistory = async (req, res) => {
             include: { productModel: true }
         });
 
-        if (!item) { // No need to check itemType here, history is for all types
+        if (!item) {
             return res.status(404).json({ error: 'Item not found.' });
         }
 
         const history = [];
 
-        // 1. Sale History
+        // Sale History
         const saleRecord = await prisma.sale.findFirst({
             where: { itemsSold: { some: { id: itemId } } },
             include: { customer: true, soldBy: true, voidedBy: true }
@@ -246,7 +254,7 @@ inventoryController.getInventoryItemHistory = async (req, res) => {
             }
         }
 
-        // 2. Borrowing History
+        // Borrowing History
         const borrowingRecords = await prisma.borrowingOnItems.findMany({
             where: { inventoryItemId: itemId },
             include: { borrowing: { include: { borrower: true, approvedBy: true } } },
@@ -273,7 +281,7 @@ inventoryController.getInventoryItemHistory = async (req, res) => {
             }
         });
 
-        // 3. Repair History
+        // Repair History
         const repairRecords = await prisma.repairOnItems.findMany({
             where: { inventoryItemId: itemId },
             include: { repair: { include: { receiver: true, createdBy: true } } },
@@ -294,7 +302,7 @@ inventoryController.getInventoryItemHistory = async (req, res) => {
                     type: 'REPAIR_RETURNED',
                     date: record.returnedAt,
                     details: `Returned from ${record.repair.receiver.name} (Outcome: ${outcome})`,
-                    user: record.repair.createdBy.name, // Assuming the creator is the one who receives it back
+                    user: record.repair.createdBy.name,
                     transactionId: record.repairId,
                     transactionType: 'REPAIR'
                 });
@@ -313,6 +321,40 @@ inventoryController.getInventoryItemHistory = async (req, res) => {
         res.status(500).json({ error: 'Could not fetch item history.' });
     }
 };
-// --- END: ส่วนที่แก้ไข ---
+
+const updateItemStatus = async (res, itemId, expectedStatus, newStatus) => {
+    try {
+        const item = await prisma.inventoryItem.findFirst({ where: { id: parseInt(itemId), itemType: 'SALE' } });
+        if (!item) {
+            return res.status(404).json({ error: 'Item not found.' });
+        }
+        if (Array.isArray(expectedStatus) ? !expectedStatus.includes(item.status) : item.status !== expectedStatus) {
+            return res.status(400).json({ error: `Only items with status [${Array.isArray(expectedStatus) ? expectedStatus.join(', ') : expectedStatus}] can perform this action.` });
+        }
+        const updatedItem = await prisma.inventoryItem.update({
+            where: { id: parseInt(itemId) },
+            data: { status: newStatus },
+        });
+        res.status(200).json(updatedItem);
+    } catch (error) {
+        res.status(500).json({ error: `Could not update item status to ${newStatus}.` });
+    }
+};
+
+inventoryController.markAsReserved = (req, res) => {
+    updateItemStatus(res, req.params.id, 'IN_STOCK', 'RESERVED');
+};
+
+inventoryController.unreserveItem = (req, res) => {
+    updateItemStatus(res, req.params.id, 'RESERVED', 'IN_STOCK');
+};
+
+inventoryController.markAsDefective = (req, res) => {
+    updateItemStatus(res, req.params.id, ['IN_STOCK', 'RESERVED'], 'DEFECTIVE');
+};
+
+inventoryController.markAsInStock = (req, res) => {
+    updateItemStatus(res, req.params.id, 'DEFECTIVE', 'IN_STOCK');
+};
 
 module.exports = inventoryController;

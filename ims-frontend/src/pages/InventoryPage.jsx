@@ -11,11 +11,10 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { ProductModelCombobox } from "@/components/ui/ProductModelCombobox";
-import { MoreHorizontal, View, ShoppingCart, ArrowRightLeft, Edit, Trash2, PlusCircle, Archive, History } from "lucide-react";
+import { MoreHorizontal, View, ShoppingCart, ArrowRightLeft, Edit, Trash2, PlusCircle, Archive, History, ShieldAlert, ArchiveRestore, ShieldCheck } from "lucide-react"; // <-- เพิ่ม ShieldCheck
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +23,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { BrandCombobox } from "@/components/ui/BrandCombobox";
+import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -63,7 +65,11 @@ export default function InventoryPage() {
     const {
         data: inventoryItems, pagination, isLoading, searchTerm, filters,
         handleSearchChange, handlePageChange, handleItemsPerPageChange, handleFilterChange, refreshData
-    } = usePaginatedFetch("/inventory", 10, { status: "All" });
+    } = usePaginatedFetch("/inventory", 10, { 
+        status: "All",
+        categoryId: "All",
+        brandId: "All"
+    });
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -73,22 +79,8 @@ export default function InventoryPage() {
     const [isMacRequired, setIsMacRequired] = useState(true);
     const [isSerialRequired, setIsSerialRequired] = useState(true);
 
-    // --- START: ส่วนที่แก้ไข ---
     const [itemToDelete, setItemToDelete] = useState(null);
     const [itemToDecommission, setItemToDecommission] = useState(null);
-    // --- END: ส่วนที่แก้ไข ---
-
-    const getStatusVariant = (status) => {
-        switch (status) {
-            case 'IN_STOCK': return 'success';
-            case 'SOLD': return 'secondary';
-            case 'BORROWED': return 'warning';
-            case 'DEFECTIVE': return 'destructive';
-            case 'RESERVED': return 'info';
-            case 'DECOMMISSIONED': return 'secondary';
-            default: return 'secondary';
-        }
-    };
 
     const openDialog = (item = null) => {
         if (item) {
@@ -168,7 +160,6 @@ export default function InventoryPage() {
         }
     };
 
-    // --- START: แก้ไขฟังก์ชัน Delete และ Decommission ---
     const confirmDelete = async () => {
         if (!itemToDelete) return;
         try {
@@ -196,18 +187,21 @@ export default function InventoryPage() {
             setItemToDecommission(null);
         }
     };
-    // --- END: แก้ไขฟังก์ชัน ---
 
-    const handleReinstateItem = async (itemId) => {
+    const handleStatusChange = async (itemId, action, successMessage) => {
         try {
-            await axiosInstance.patch(`/inventory/${itemId}/reinstate`, {}, {
+            await axiosInstance.patch(`/inventory/${itemId}/${action}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            toast.success("Item has been reinstated to stock.");
+            toast.success(successMessage);
             refreshData();
         } catch (error) {
-            toast.error(error.response?.data?.error || "Failed to reinstate item.");
+            toast.error(error.response?.data?.error || `Failed to update status.`);
         }
+    };
+
+    const handleReinstateItem = async (itemId) => {
+        handleStatusChange(itemId, 'reinstate', 'Item has been reinstated to stock.');
     };
 
     const handleSellItem = (itemToSell) => {
@@ -226,15 +220,23 @@ export default function InventoryPage() {
                 }
             </CardHeader>
             <CardContent>
-                <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <Input
                         placeholder="Search by Serial, MAC, Model..."
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
-                        className="flex-grow"
+                        className="sm:col-span-2 lg:col-span-1"
+                    />
+                    <CategoryCombobox
+                        selectedValue={filters.categoryId}
+                        onSelect={(value) => handleFilterChange('categoryId', value)}
+                    />
+                    <BrandCombobox
+                        selectedValue={filters.brandId}
+                        onSelect={(value) => handleFilterChange('brandId', value)}
                     />
                     <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectTrigger>
                             <SelectValue placeholder="Filter by Status..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -278,9 +280,7 @@ export default function InventoryPage() {
                                         <td className="p-2 truncate">{item.serialNumber || '-'}</td>
                                         <td className="p-2 truncate">{item.macAddress || '-'}</td>
                                         <td className="p-2 text-center">
-                                            <Badge variant={getStatusVariant(item.status)} className="w-24 justify-center">
-                                                {item.status}
-                                            </Badge>
+                                            <StatusBadge status={item.status} className="w-24" />
                                         </td>
                                         <td className="p-2">{item.addedBy.name}</td>
                                         <td className="p-2 text-center">
@@ -328,8 +328,30 @@ export default function InventoryPage() {
                                                             >
                                                                 <Edit className="mr-2 h-4 w-4" /> Edit
                                                             </DropdownMenuItem>
-
+                                                            
                                                             {/* --- START: ส่วนที่แก้ไข --- */}
+                                                            {item.status === 'IN_STOCK' && (
+                                                                <>
+                                                                    <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'reserve', 'Item marked as RESERVED.')}>
+                                                                        <ArchiveRestore className="mr-2 h-4 w-4" /> Mark as Reserved
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem className="text-orange-600 focus:text-orange-500" onClick={() => handleStatusChange(item.id, 'defect', 'Item marked as DEFECTIVE.')}>
+                                                                        <ShieldAlert className="mr-2 h-4 w-4" /> Mark as Defective
+                                                                    </DropdownMenuItem>
+                                                                </>
+                                                            )}
+                                                            {item.status === 'RESERVED' && (
+                                                                <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'unreserve', 'Item is now IN STOCK.')}>
+                                                                    <ArrowRightLeft className="mr-2 h-4 w-4" /> Unreserve
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                             {item.status === 'DEFECTIVE' && (
+                                                                <DropdownMenuItem className="text-green-600 focus:text-green-500" onClick={() => handleStatusChange(item.id, 'in-stock', 'Item marked as IN STOCK.')}>
+                                                                    <ShieldCheck className="mr-2 h-4 w-4" /> Mark as In Stock
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                            {/* --- END: ส่วนที่แก้ไข --- */}
+
                                                             {item.status === 'DECOMMISSIONED' ? (
                                                                 <DropdownMenuItem onClick={() => handleReinstateItem(item.id)}>
                                                                     <ArrowRightLeft className="mr-2 h-4 w-4" /> Reinstate
@@ -353,7 +375,6 @@ export default function InventoryPage() {
                                                             >
                                                                 <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                             </DropdownMenuItem>
-                                                            {/* --- END: ส่วนที่แก้ไข --- */}
                                                         </>
                                                     )}
                                                 </DropdownMenuContent>
@@ -387,7 +408,6 @@ export default function InventoryPage() {
                 </div>
             </CardFooter>
 
-            {/* --- START: ย้าย AlertDialogs ออกมาข้างนอก --- */}
             <AlertDialog open={!!itemToDelete} onOpenChange={(isOpen) => !isOpen && setItemToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -413,8 +433,6 @@ export default function InventoryPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            {/* --- END: ย้าย AlertDialogs ออกมาข้างนอก --- */}
-
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>

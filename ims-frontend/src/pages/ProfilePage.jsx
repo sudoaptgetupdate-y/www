@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import axiosInstance from '@/api/axiosInstance';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
+import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -45,13 +45,7 @@ const MyAssetsTab = () => {
         fetchAssets();
     }, [token]);
 
-    const getStatusVariant = (status) => {
-        switch (status) {
-            case 'ASSIGNED': return 'warning';
-            case 'DEFECTIVE': return 'destructive';
-            default: return 'secondary';
-        }
-    };
+    // --- ลบ getStatusVariant ---
 
     return (
         <Card>
@@ -80,12 +74,10 @@ const MyAssetsTab = () => {
                                     <td className="p-2">{asset.productModel.modelNumber}</td>
                                     <td className="p-2">{asset.serialNumber || 'N/A'}</td>
                                     <td className="p-2 text-center">
-                                        <Badge variant={getStatusVariant(asset.status)} className="w-24 justify-center">{asset.status}</Badge>
+                                        <StatusBadge status={asset.status} className="w-24" />
                                     </td>
                                     <td className="p-2 text-center">
-                                        {/* --- START: แก้ไขบรรทัดนี้ --- */}
                                         <Button variant="outline" size="sm" onClick={() => navigate(`/assets/${asset.id}/history`)}>
-                                        {/* --- END: แก้ไขบรรทัดนี้ --- */}
                                             Details
                                         </Button>
                                     </td>

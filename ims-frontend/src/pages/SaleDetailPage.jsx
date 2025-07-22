@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowLeft, AlertTriangle, Printer } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import
 
 export default function SaleDetailPage() {
     const { saleId } = useParams();
@@ -51,20 +51,12 @@ export default function SaleDetailPage() {
 
     const isVoided = sale.status === 'VOIDED';
 
-    const getStatusVariant = (status) => {
-        switch (status) {
-            case 'COMPLETED': return 'success';
-            case 'VOIDED': return 'destructive';
-            default: return 'secondary';
-        }
-    };
+    // --- ลบ getStatusVariant ---
 
     return (
         <div className="space-y-6 printable-area">
             <div className="flex justify-between items-center no-print">
-                {/* --- START: ส่วนที่แก้ไข --- */}
                 <Button variant="outline" onClick={() => navigate(-1)}>
-                {/* --- END: ส่วนที่แก้ไข --- */}
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                 </Button>
@@ -95,7 +87,7 @@ export default function SaleDetailPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <span>Sale Details</span>
-                        <Badge variant={getStatusVariant(sale.status)}>{sale.status}</Badge>
+                        <StatusBadge status={sale.status} />
                     </CardTitle>
                     <CardDescription>Sale ID: {sale.id}</CardDescription>
                 </CardHeader>

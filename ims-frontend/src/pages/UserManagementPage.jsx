@@ -10,10 +10,10 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -150,11 +150,9 @@ export default function UserManagementPage() {
                                     <td className="p-2">{user.name}</td>
                                     <td className="p-2">{user.username}</td>
                                     <td className="p-2">{user.email}</td>
-                                    <td className="p-2"><Badge variant={user.role === 'SUPER_ADMIN' ? 'default' : 'secondary'}>{user.role}</Badge></td>
+                                    <td className="p-2"><StatusBadge status={user.role} /></td>
                                     <td className="p-2 text-center">
-                                        <Badge variant={user.accountStatus === 'ACTIVE' ? 'success' : 'destructive'} className="w-24 justify-center">
-                                            {user.accountStatus}
-                                        </Badge>
+                                        <StatusBadge status={user.accountStatus} className="w-24" />
                                     </td>
                                     <td className="p-2">
                                         <div className="flex items-center justify-center gap-2">

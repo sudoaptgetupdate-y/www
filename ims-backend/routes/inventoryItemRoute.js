@@ -27,8 +27,16 @@ router.put('/:id', authCheck, roleCheck(adminAccess), updateInventoryItem);
 router.delete('/:id', authCheck, roleCheck(adminAccess), deleteInventoryItem);
 
 // --- START: แก้ไข Routes ---
-router.patch('/:id/decommission', authCheck, roleCheck(adminAccess), decommission);
-router.patch('/:id/reinstate', authCheck, roleCheck(adminAccess), reinstate);
-// --- END: แก้ไข Routes ---
+router.patch('/:id/decommission', authCheck, roleCheck(adminAccess), inventoryController.decommissionItem);
+router.patch('/:id/reinstate', authCheck, roleCheck(adminAccess), inventoryController.reinstateItem);
+
+router.patch('/:id/reserve', authCheck, roleCheck(adminAccess), inventoryController.markAsReserved);
+router.patch('/:id/unreserve', authCheck, roleCheck(adminAccess), inventoryController.unreserveItem);
+router.patch('/:id/defect', authCheck, roleCheck(adminAccess), inventoryController.markAsDefective);
+
+// --- START: เพิ่ม Route ใหม่ ---
+router.patch('/:id/in-stock', authCheck, roleCheck(adminAccess), inventoryController.markAsInStock);
+// --- END: เพิ่ม Route ใหม่ ---
+
 
 module.exports = router;

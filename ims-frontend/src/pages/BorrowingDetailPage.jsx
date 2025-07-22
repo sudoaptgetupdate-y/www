@@ -20,6 +20,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import
 
 export default function BorrowingDetailPage() {
     const { borrowingId } = useParams();
@@ -86,9 +87,7 @@ export default function BorrowingDetailPage() {
     return (
         <div className="space-y-6 printable-area">
             <div className="flex justify-between items-center no-print">
-                {/* --- START: ส่วนที่แก้ไข --- */}
                 <Button variant="outline" onClick={() => navigate(-1)}>
-                {/* --- END: ส่วนที่แก้ไข --- */}
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                 </Button>
@@ -128,7 +127,7 @@ export default function BorrowingDetailPage() {
                         </div>
                         <div>
                             <p className="font-semibold">Status</p>
-                            <div><Badge>{borrowing.status}</Badge></div>
+                            <div><StatusBadge status={borrowing.status} /></div>
                         </div>
                         {borrowing.returnDate && (
                             <div>

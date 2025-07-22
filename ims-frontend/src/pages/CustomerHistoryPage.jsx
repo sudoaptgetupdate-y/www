@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowLeft, ShoppingCart, PackageOpen, Package, Users } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import
 
 const StatCard = ({ title, value, icon, description, onClick }) => (
     <Card onClick={onClick} className={onClick ? "cursor-pointer hover:border-primary transition-colors" : ""}>
@@ -58,17 +58,7 @@ export default function CustomerHistoryPage() {
 
     if (loading || !summary) return <p>Loading customer data...</p>;
 
-    const getTransactionTypeStyle = (type) => {
-        if (type === 'SALE') return { variant: 'success', label: 'Sale' };
-        if (type === 'BORROWING') return { variant: 'warning', label: 'Borrow' };
-        return { variant: 'secondary', label: 'Unknown' };
-    };
-
-    const getBorrowStatusVariant = (status) => {
-        if (status === 'RETURNED') return 'secondary';
-        if (status === 'OVERDUE') return 'destructive';
-        return 'warning';
-    }
+    // --- ลบ getTransactionTypeStyle และ getBorrowStatusVariant ---
 
     return (
         <div className="space-y-6">
@@ -137,20 +127,17 @@ export default function CustomerHistoryPage() {
                                 {history.length === 0 ? (
                                      <tr><td colSpan="5" className="text-center p-4 text-muted-foreground">No transaction history found.</td></tr>
                                 ) : history.map((item) => {
-                                    const style = getTransactionTypeStyle(item.type);
                                     return (
                                         <tr key={item.id} className="border-b">
                                             <td className="p-2 text-center">
-                                                {/* --- START: ส่วนที่แก้ไข --- */}
-                                                <Badge variant={style.variant} className="w-20 justify-center">{style.label}</Badge>
-                                                {/* --- END --- */}
+                                                <StatusBadge status={item.type} className="w-20" />
                                             </td>
                                             <td className="p-2 text-left">{new Date(item.date).toLocaleString()}</td>
                                             <td className="p-2 text-center">{item.itemCount}</td>
                                             <td className="p-2 text-right">
                                                 {item.type === 'SALE' 
                                                     ? `${item.details.total.toLocaleString('en-US')} THB`
-                                                    : <Badge variant={getBorrowStatusVariant(item.details.status)} className="w-24 justify-center">{item.details.status}</Badge>
+                                                    : <StatusBadge status={item.details.status} className="w-24" />
                                                 }
                                             </td>
                                             <td className="p-2 text-center">

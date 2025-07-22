@@ -6,10 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
+import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -40,14 +40,7 @@ export default function BorrowingPage() {
         handleFilterChange
     } = usePaginatedFetch("/borrowings", 10, { status: "All" });
 
-    const getStatusVariant = (status) => {
-        switch (status) {
-            case 'BORROWED': return 'warning';
-            case 'RETURNED': return 'secondary';
-            case 'OVERDUE': return 'destructive';
-            default: return 'outline';
-        }
-    };
+    // --- ลบ getStatusVariant ---
 
     return (
         <Card>
@@ -110,7 +103,7 @@ export default function BorrowingPage() {
                                     <td className="p-2">{new Date(b.borrowDate).toLocaleDateString()}</td>
                                     <td className="p-2">{b.dueDate ? new Date(b.dueDate).toLocaleDateString() : 'N/A'}</td>
                                     <td className="p-2 text-center">
-                                        <Badge variant={getStatusVariant(b.status)} className="w-24 justify-center">{b.status}</Badge>
+                                        <StatusBadge status={b.status} className="w-24" />
                                     </td>
                                     <td className="p-2 text-center">{b.returnedItemCount}/{b.totalItemCount} Returned</td>
                                     <td className="p-2">{b.approvedBy.name}</td>
