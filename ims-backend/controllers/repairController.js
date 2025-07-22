@@ -75,26 +75,51 @@ repairController.createRepairOrder = async (req, res) => {
     }
 };
 
+// --- START: ส่วนที่แก้ไข ---
 repairController.getAllRepairOrders = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
+        const searchTerm = req.query.search || '';
+        const statusFilter = req.query.status || 'All';
+
+        let where = {};
+        const whereConditions = [];
+
+        if (statusFilter && statusFilter !== 'All') {
+            whereConditions.push({ status: statusFilter });
+        }
+        
+        if (searchTerm) {
+            whereConditions.push({
+                OR: [
+                    { sender: { name: { contains: searchTerm } } },
+                    { receiver: { name: { contains: searchTerm } } },
+                    { id: { equals: parseInt(searchTerm) || 0 } }
+                ]
+            });
+        }
+        
+        if(whereConditions.length > 0) {
+            where.AND = whereConditions;
+        }
 
         const [repairs, totalItems] = await Promise.all([
             prisma.repair.findMany({
+                where,
                 skip,
                 take: limit,
                 orderBy: { repairDate: 'desc' },
                 include: {
                     sender: true,
                     receiver: true,
-                    items: { select: { returnedAt: true } }
+                    items: { select: { returnedAt: true } } 
                 }
             }),
-            prisma.repair.count()
+            prisma.repair.count({ where })
         ]);
-        
+
         const formattedRepairs = repairs.map(r => {
             const totalItemCount = r.items.length;
             const returnedItemCount = r.items.filter(i => i.returnedAt !== null).length;
@@ -115,6 +140,7 @@ repairController.getAllRepairOrders = async (req, res) => {
         res.status(500).json({ error: 'Could not fetch repair orders.' });
     }
 };
+// --- END ---
 
 repairController.getRepairOrderById = async (req, res) => {
     try {
@@ -206,9 +232,7 @@ repairController.returnItemsFromRepair = async (req, res) => {
                         inventoryItemId,
                         userId: actorId,
                         type: HistoryEventType.REPAIR_RETURNED,
-                        // --- START: ส่วนที่แก้ไข ---
                         details: `Returned from ${repairOrder?.receiver?.name || 'N/A'}. Outcome: ${repairOutcome}.`
-                        // --- END ---
                     }
                 });
             }

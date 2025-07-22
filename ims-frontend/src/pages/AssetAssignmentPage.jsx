@@ -6,17 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const SkeletonRow = () => (
     <tr className="border-b">
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2 text-center"><div className="h-6 w-24 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
+        <td className="p-2 text-center"><div className="h-6 w-32 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
         <td className="p-2 text-center"><div className="h-5 w-24 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
         <td className="p-2 text-center"><div className="h-8 w-[76px] bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
     </tr>
@@ -27,22 +27,19 @@ export default function AssetAssignmentPage() {
     const { user: currentUser } = useAuthStore((state) => state);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
+    // --- START: ส่วนที่แก้ไข ---
     const { 
         data: assignments, 
         pagination, 
-        isLoading, 
+        isLoading,
+        searchTerm,
+        filters,
+        handleSearchChange,
         handlePageChange,
-        handleItemsPerPageChange
-    } = usePaginatedFetch("/asset-assignments");
-
-    const getStatusVariant = (status) => {
-        switch (status) {
-            case 'ASSIGNED': return 'warning';
-            case 'RETURNED': return 'secondary';
-            case 'PARTIALLY_RETURNED': return 'info';
-            default: return 'outline';
-        }
-    };
+        handleItemsPerPageChange,
+        handleFilterChange
+    } = usePaginatedFetch("/asset-assignments", 10, { status: "All" });
+    // --- END ---
 
     return (
         <Card>
@@ -55,6 +52,28 @@ export default function AssetAssignmentPage() {
                 )}
             </CardHeader>
             <CardContent>
+                {/* --- START: ส่วนที่แก้ไข --- */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                    <Input
+                        placeholder="Search by Assignee or Assignment ID..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="flex-grow"
+                    />
+                    <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+                        <SelectTrigger className="w-full sm:w-[220px]">
+                            <SelectValue placeholder="Filter by Status..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="All">All Statuses</SelectItem>
+                            <SelectItem value="ASSIGNED">Assigned</SelectItem>
+                            <SelectItem value="PARTIALLY_RETURNED">Partially Returned</SelectItem>
+                            <SelectItem value="RETURNED">Returned</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                {/* --- END --- */}
+
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm whitespace-nowrap">
                          <colgroup>
@@ -81,10 +100,10 @@ export default function AssetAssignmentPage() {
                             ) : assignments.map((a) => (
                                 <tr key={a.id} className="border-b">
                                     <td className="p-2 font-semibold">#{a.id}</td>
-                                    <td className="p-2">{a.assignee.name}</td>
+                                    <td className="p-2">{a.assignee?.name || 'N/A'}</td>
                                     <td className="p-2">{new Date(a.assignedDate).toLocaleDateString()}</td>
                                     <td className="p-2 text-center">
-                                        <Badge variant={getStatusVariant(a.status)} className="w-32 justify-center">{a.status}</Badge>
+                                        <StatusBadge status={a.status} className="w-32" />
                                     </td>
                                     <td className="p-2 text-center">{a.returnedItemCount}/{a.totalItemCount} Returned</td>
                                     <td className="p-2 text-center">

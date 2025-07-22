@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowLeft, AlertTriangle, Printer } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import
+import { StatusBadge } from "@/components/ui/StatusBadge"; 
 
 export default function SaleDetailPage() {
     const { saleId } = useParams();
@@ -51,8 +51,6 @@ export default function SaleDetailPage() {
 
     const isVoided = sale.status === 'VOIDED';
 
-    // --- ลบ getStatusVariant ---
-
     return (
         <div className="space-y-6 printable-area">
             <div className="flex justify-between items-center no-print">
@@ -77,7 +75,9 @@ export default function SaleDetailPage() {
                     <div className="text-sm">
                         <p className="font-bold text-destructive">This sale has been voided.</p>
                         <p className="text-red-800">
+                            {/* --- START: ส่วนที่แก้ไข --- */}
                             Voided by: {sale.voidedBy?.name || 'N/A'} on {new Date(sale.voidedAt).toLocaleString()}
+                            {/* --- END --- */}
                         </p>
                     </div>
                 </div>
@@ -94,7 +94,9 @@ export default function SaleDetailPage() {
                 <CardContent className="grid md:grid-cols-3 gap-4 text-sm print:flex print:justify-between">
                     <div>
                         <p className="font-semibold">Customer</p>
-                        <p>{sale.customer.name}</p>
+                        {/* --- START: ส่วนที่แก้ไข --- */}
+                        <p>{sale.customer?.name || 'N/A'}</p>
+                        {/* --- END --- */}
                     </div>
                     <div className="md:col-span-2 grid grid-cols-2 gap-4 print:text-right">
                          <div>
@@ -103,7 +105,9 @@ export default function SaleDetailPage() {
                         </div>
                         <div>
                             <p className="font-semibold">Sold By</p>
-                            <p>{sale.soldBy.name}</p>
+                            {/* --- START: ส่วนที่แก้ไข --- */}
+                            <p>{sale.soldBy?.name || 'N/A'}</p>
+                            {/* --- END --- */}
                         </div>
                     </div>
                 </CardContent>
@@ -126,10 +130,12 @@ export default function SaleDetailPage() {
                         <tbody>
                             {sale.itemsSold.map(item => (
                                 <tr key={item.id} className="border-b">
-                                    <td className="p-2">{item.productModel.brand.name}</td>
-                                    <td className="p-2">{item.productModel.modelNumber}</td>
+                                    {/* --- START: ส่วนที่แก้ไข --- */}
+                                    <td className="p-2">{item.productModel?.brand?.name || 'N/A'}</td>
+                                    <td className="p-2">{item.productModel?.modelNumber || 'N/A'}</td>
+                                    {/* --- END --- */}
                                     <td className="p-2">{item.serialNumber || 'N/A'}</td>
-                                    <td className="p-2 text-right">{item.productModel.sellingPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} THB</td>
+                                    <td className="p-2 text-right">{item.productModel?.sellingPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} THB</td>
                                 </tr>
                             ))}
                         </tbody>

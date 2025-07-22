@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
-import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import
+import { StatusBadge } from "@/components/ui/StatusBadge"; 
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -39,8 +39,6 @@ export default function BorrowingPage() {
         handleItemsPerPageChange,
         handleFilterChange
     } = usePaginatedFetch("/borrowings", 10, { status: "All" });
-
-    // --- ลบ getStatusVariant ---
 
     return (
         <Card>
@@ -99,14 +97,18 @@ export default function BorrowingPage() {
                                 [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
                             ) : borrowings.map((b) => (
                                 <tr key={b.id} className="border-b">
-                                    <td className="p-2">{b.borrower.name}</td>
+                                    {/* --- START: ส่วนที่แก้ไข --- */}
+                                    <td className="p-2">{b.borrower?.name || 'N/A'}</td>
+                                    {/* --- END --- */}
                                     <td className="p-2">{new Date(b.borrowDate).toLocaleDateString()}</td>
                                     <td className="p-2">{b.dueDate ? new Date(b.dueDate).toLocaleDateString() : 'N/A'}</td>
                                     <td className="p-2 text-center">
                                         <StatusBadge status={b.status} className="w-24" />
                                     </td>
                                     <td className="p-2 text-center">{b.returnedItemCount}/{b.totalItemCount} Returned</td>
-                                    <td className="p-2">{b.approvedBy.name}</td>
+                                    {/* --- START: ส่วนที่แก้ไข --- */}
+                                    <td className="p-2">{b.approvedBy?.name || 'N/A'}</td>
+                                    {/* --- END --- */}
                                     <td className="p-2 text-center">
                                         <Button variant="outline" size="sm" onClick={() => navigate(`/borrowings/${b.id}`)}>
                                             Details

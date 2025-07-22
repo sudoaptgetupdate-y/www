@@ -36,8 +36,8 @@ export default function RepairDetailPage() {
                 inventoryItemId: item.inventoryItemId,
                 repairOutcome: null,
                 isSelected: false,
-                isCustomerItem: item.inventoryItem.ownerType === 'CUSTOMER' || item.inventoryItem.saleId !== null,
-                displayName: item.inventoryItem.assetCode || item.inventoryItem.serialNumber || 'N/A'
+                isCustomerItem: item.inventoryItem?.ownerType === 'CUSTOMER' || item.inventoryItem?.saleId !== null,
+                displayName: item.inventoryItem?.assetCode || item.inventoryItem?.serialNumber || 'N/A'
             })));
         } catch (error) {
             toast.error("Failed to fetch repair order details.");
@@ -130,28 +130,26 @@ export default function RepairDetailPage() {
                              <StatusBadge status={repairOrder.status} />
                              <div className="text-sm text-muted-foreground pt-1">
                                 <p><strong>Date Sent:</strong> {new Date(repairOrder.repairDate).toLocaleString()}</p>
-                                <p><strong>Created By:</strong> {repairOrder.createdBy.name}</p>
+                                <p><strong>Created By:</strong> {repairOrder.createdBy?.name || 'N/A'}</p>
                             </div>
                          </div>
                     </div>
                 </CardHeader>
                 <CardContent className="pt-2">
-                     {/* --- START: ส่วนที่แก้ไข --- */}
                      <div className="grid md:grid-cols-2 gap-4 text-sm print:flex print:gap-4">
-                     {/* --- END: ส่วนที่แก้ไข --- */}
                         <div className="space-y-1 rounded-lg border p-3">
                             <p className="font-semibold text-base">From (Sender):</p>
-                            <p className="font-bold text-lg">{repairOrder.sender.name}</p>
-                            <p><strong>Contact:</strong> {repairOrder.sender.contactPerson || '-'}</p>
-                            <p><strong>Phone:</strong> {repairOrder.sender.phone || '-'}</p>
-                            <p><strong>Address:</strong> {repairOrder.sender.address || '-'}</p>
+                            <p className="font-bold text-lg">{repairOrder.sender?.name || 'N/A'}</p>
+                            <p><strong>Contact:</strong> {repairOrder.sender?.contactPerson || '-'}</p>
+                            <p><strong>Phone:</strong> {repairOrder.sender?.phone || '-'}</p>
+                            <p><strong>Address:</strong> {repairOrder.sender?.address || '-'}</p>
                         </div>
                         <div className="space-y-1 rounded-lg border p-3">
                             <p className="font-semibold text-base">To (Receiver):</p>
-                            <p className="font-bold text-lg">{repairOrder.receiver.name}</p>
-                            <p><strong>Contact:</strong> {repairOrder.receiver.contactPerson || '-'}</p>
-                            <p><strong>Phone:</strong> {repairOrder.receiver.phone || '-'}</p>
-                            <p><strong>Address:</strong> {repairOrder.receiver.address || '-'}</p>
+                            <p className="font-bold text-lg">{repairOrder.receiver?.name || 'N/A'}</p>
+                            <p><strong>Contact:</strong> {repairOrder.receiver?.contactPerson || '-'}</p>
+                            <p><strong>Phone:</strong> {repairOrder.receiver?.phone || '-'}</p>
+                            <p><strong>Address:</strong> {repairOrder.receiver?.address || '-'}</p>
                         </div>
                     </div>
                     <Separator className="my-3"/>
@@ -179,12 +177,12 @@ export default function RepairDetailPage() {
                         <tbody>
                             {repairOrder.items.map(item => (
                                 <tr key={item.inventoryItemId} className="border-b">
-                                    <td className="p-2">{item.inventoryItem.assetCode || 'N/A'}</td>
-                                    <td className="p-2">{item.inventoryItem.productModel.modelNumber}</td>
-                                    <td className="p-2">{item.inventoryItem.serialNumber || 'N/A'}</td>
-                                    <td className="p-2">{item.inventoryItem.macAddress || 'N/A'}</td>
+                                    <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
+                                    <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
+                                    <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
+                                    <td className="p-2">{item.inventoryItem?.macAddress || 'N/A'}</td>
                                     <td className="p-2">
-                                        <StatusBadge status={item.inventoryItem.saleId !== null ? 'CUSTOMER' : item.inventoryItem.ownerType} />
+                                        <StatusBadge status={item.inventoryItem?.ownerType} />
                                     </td>
                                     <td className="p-2">
                                         {item.returnedAt ? (

@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
-import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import
+import { StatusBadge } from "@/components/ui/StatusBadge"; 
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -53,8 +53,6 @@ export default function SalePage() {
     } = usePaginatedFetch("/sales", 10, { status: "All" });
     
     const [saleToVoid, setSaleToVoid] = useState(null);
-
-    // --- ลบ getStatusVariant ---
 
     const handleVoidSale = async () => {
         if (!saleToVoid) return;
@@ -125,7 +123,9 @@ export default function SalePage() {
                                 [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
                             ) : sales.map((sale) => (
                                 <tr key={sale.id} className="border-b">
-                                    <td className="p-2 text-left">{sale.customer.name}</td>
+                                    {/* --- START: ส่วนที่แก้ไข --- */}
+                                    <td className="p-2 text-left">{sale.customer?.name || 'N/A'}</td>
+                                    {/* --- END --- */}
                                     <td className="p-2 text-left">{new Date(sale.saleDate).toLocaleString()}</td>
                                     <td className="p-2 text-center">
                                         <StatusBadge status={sale.status} className="w-24" />

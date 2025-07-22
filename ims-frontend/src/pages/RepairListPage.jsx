@@ -5,10 +5,11 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
-import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- 1. Import StatusBadge
+import { StatusBadge } from "@/components/ui/StatusBadge"; 
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -26,15 +27,19 @@ export default function RepairListPage() {
     const { user: currentUser } = useAuthStore((state) => state);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
+    // --- START: ส่วนที่แก้ไข ---
     const { 
         data: repairs, 
         pagination, 
         isLoading, 
+        searchTerm,
+        filters,
+        handleSearchChange,
         handlePageChange,
-        handleItemsPerPageChange
-    } = usePaginatedFetch("/repairs");
-
-    // 2. ลบ getStatusVariant ทิ้งไปได้เลย
+        handleItemsPerPageChange,
+        handleFilterChange
+    } = usePaginatedFetch("/repairs", 10, { status: "All" });
+    // --- END ---
 
     return (
         <Card>
@@ -47,6 +52,28 @@ export default function RepairListPage() {
                 )}
             </CardHeader>
             <CardContent>
+                {/* --- START: ส่วนที่แก้ไข --- */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                    <Input
+                        placeholder="Search by Order ID, Sender, or Receiver..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="flex-grow"
+                    />
+                    <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+                        <SelectTrigger className="w-full sm:w-[220px]">
+                            <SelectValue placeholder="Filter by Status..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="All">All Statuses</SelectItem>
+                            <SelectItem value="REPAIRING">Repairing</SelectItem>
+                            <SelectItem value="PARTIALLY_RETURNED">Partially Returned</SelectItem>
+                            <SelectItem value="COMPLETED">Completed</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                {/* --- END --- */}
+
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm whitespace-nowrap">
                         <thead>
@@ -65,10 +92,9 @@ export default function RepairListPage() {
                             ) : repairs.map((r) => (
                                 <tr key={r.id} className="border-b">
                                     <td className="p-2 font-semibold">#{r.id}</td>
-                                    <td className="p-2">{r.receiver.name}</td>
+                                    <td className="p-2">{r.receiver?.name || 'N/A'}</td>
                                     <td className="p-2">{new Date(r.repairDate).toLocaleDateString()}</td>
                                     <td className="p-2 text-center">
-                                        {/* 3. เปลี่ยนมาใช้ StatusBadge */}
                                         <StatusBadge status={r.status} className="w-32" />
                                     </td>
                                     <td className="p-2 text-center">{r.returnedItemCount}/{r.totalItemCount} Returned</td>

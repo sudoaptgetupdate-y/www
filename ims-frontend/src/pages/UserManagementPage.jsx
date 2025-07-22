@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import
+import { StatusBadge } from "@/components/ui/StatusBadge"; 
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -112,7 +112,9 @@ export default function UserManagementPage() {
         } catch (error) { toast.error("Failed to update status."); }
     };
     
-    const displayedUsers = users.filter(u => u.id !== currentUser.id);
+    // --- START: ส่วนที่แก้ไข ---
+    const displayedUsers = users.filter(u => u.id !== currentUser?.id);
+    // --- END ---
 
     return (
         <Card>

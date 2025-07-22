@@ -109,7 +109,9 @@ export default function BorrowingDetailPage() {
                 <CardContent className="grid md:grid-cols-3 gap-4 text-sm print:flex print:justify-between">
                     <div>
                         <p className="font-semibold">Customer</p>
-                        <p>{borrowing.borrower.name}</p>
+                        {/* --- START: ส่วนที่แก้ไข --- */}
+                        <p>{borrowing.borrower?.name || 'N/A'}</p>
+                        {/* --- END --- */}
                     </div>
                     <div className="md:col-span-2 grid grid-cols-2 gap-4 print:text-right">
                         <div>
@@ -122,7 +124,9 @@ export default function BorrowingDetailPage() {
                         </div>
                         <div>
                             <p className="font-semibold">Approved By</p>
-                            <p>{borrowing.approvedBy.name}</p>
+                            {/* --- START: ส่วนที่แก้ไข --- */}
+                            <p>{borrowing.approvedBy?.name || 'N/A'}</p>
+                            {/* --- END --- */}
                         </div>
                         <div>
                             <p className="font-semibold">Status</p>
@@ -173,7 +177,7 @@ export default function BorrowingDetailPage() {
                                                     : <Square className="h-5 w-5 text-muted-foreground mx-auto" />
                                                 }
                                             </td>
-                                            <td className="p-2">{item.productModel.modelNumber}</td>
+                                            <td className="p-2">{item.productModel?.modelNumber || 'N/A'}</td>
                                             <td className="p-2">{item.serialNumber || 'N/A'}</td>
                                         </tr>
                                     ))}
@@ -222,18 +226,16 @@ export default function BorrowingDetailPage() {
                         <tbody>
                             {borrowing.items.map(item => (
                                 <tr key={item.id} className="border-b">
-                                    <td className="p-2">{item.productModel.modelNumber}</td>
+                                    <td className="p-2">{item.productModel?.modelNumber || 'N/A'}</td>
                                     <td className="p-2">{item.serialNumber || 'N/A'}</td>
                                     <td className="p-2">{item.macAddress || 'N/A'}</td>
                                     <td className="p-2">
-                                        {/* --- START: ส่วนที่แก้ไข --- */}
                                         <StatusBadge status={item.returnedAt ? 'RETURNED' : 'BORROWED'} />
                                         {item.returnedAt && (
                                             <span className="text-xs text-muted-foreground ml-2">
                                                 on {new Date(item.returnedAt).toLocaleDateString()}
                                             </span>
                                         )}
-                                        {/* --- END --- */}
                                     </td>
                                 </tr>
                             ))}

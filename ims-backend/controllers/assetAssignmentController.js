@@ -49,8 +49,6 @@ assetAssignmentController.createAssignment = async (req, res) => {
                 data: { status: 'ASSIGNED' },
             });
 
-            // --- START: ส่วนที่แก้ไข ---
-            // สร้าง Event Log สำหรับ AssetHistory
             const historyEvents = inventoryItemIds.map(itemId => ({
                 inventoryItemId: itemId,
                 userId: approvedById,
@@ -60,7 +58,6 @@ assetAssignmentController.createAssignment = async (req, res) => {
             await tx.assetHistory.createMany({
                 data: historyEvents
             });
-            // --- END: ส่วนที่แก้ไข ---
 
             return createdAssignment;
         });
@@ -100,18 +97,15 @@ assetAssignmentController.returnItems = async (req, res) => {
                 data: { status: 'IN_WAREHOUSE' },
             });
 
-            // --- START: ส่วนที่แก้ไข ---
-            // สร้าง Event Log สำหรับการ Return
             const historyEvents = itemIdsToReturn.map(itemId => ({
                 inventoryItemId: itemId,
                 userId: actorId,
                 type: HistoryEventType.RETURN,
-                details: `Returned from ${assignment.assignee.name}.`
+                details: `Returned from ${assignment.assignee?.name || 'N/A'}.`
             }));
             await tx.assetHistory.createMany({
                 data: historyEvents
             });
-            // --- END: ส่วนที่แก้ไข ---
 
             const remainingItems = await tx.assetAssignmentOnItems.count({
                 where: {
@@ -138,14 +132,38 @@ assetAssignmentController.returnItems = async (req, res) => {
     }
 };
 
+// --- START: ส่วนที่แก้ไข ---
 assetAssignmentController.getAllAssignments = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
+        const searchTerm = req.query.search || '';
+        const statusFilter = req.query.status || 'All';
+
+        let where = {};
+        const whereConditions = [];
+
+        if (statusFilter && statusFilter !== 'All') {
+            whereConditions.push({ status: statusFilter });
+        }
+        
+        if (searchTerm) {
+             whereConditions.push({
+                OR: [
+                    { assignee: { name: { contains: searchTerm } } },
+                    { id: { equals: parseInt(searchTerm) || 0 } }
+                ]
+            });
+        }
+        
+        if(whereConditions.length > 0) {
+            where.AND = whereConditions;
+        }
 
         const [assignments, totalItems] = await Promise.all([
             prisma.assetAssignment.findMany({
+                where,
                 skip,
                 take: limit,
                 orderBy: { assignedDate: 'desc' },
@@ -159,7 +177,7 @@ assetAssignmentController.getAllAssignments = async (req, res) => {
                     }
                 }
             }),
-            prisma.assetAssignment.count()
+            prisma.assetAssignment.count({ where })
         ]);
         
         const formattedAssignments = assignments.map(a => {
@@ -187,6 +205,7 @@ assetAssignmentController.getAllAssignments = async (req, res) => {
         res.status(500).json({ error: 'Could not fetch assignments.' });
     }
 };
+// --- END ---
 
 assetAssignmentController.getAssignmentById = async (req, res) => {
     const { assignmentId } = req.params;

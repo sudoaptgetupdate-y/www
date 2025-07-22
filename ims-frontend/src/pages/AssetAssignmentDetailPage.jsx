@@ -19,7 +19,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import ที่เพิ่มเข้ามา
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export default function AssetAssignmentDetailPage() {
     const { assignmentId } = useParams();
@@ -75,8 +75,6 @@ export default function AssetAssignmentDetailPage() {
     const handlePrint = () => {
         window.print();
     };
-    
-    // --- START: ลบ getStatusVariant ออก ---
 
     if (loading) return <p>Loading assignment details...</p>;
     if (!assignment) return <p>Record not found.</p>;
@@ -105,18 +103,16 @@ export default function AssetAssignmentDetailPage() {
                 <CardHeader>
                     <CardTitle className="flex justify-between items-start">
                        <span>Assignment Details</span>
-                       {/* --- START: ส่วนที่แก้ไข --- */}
                        <StatusBadge status={assignment.status} />
-                       {/* --- END --- */}
                     </CardTitle>
                     <CardDescription>Record ID: #{assignment.id}</CardDescription>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-4 text-sm print:flex print:justify-between">
                     <div>
-                        <p className="font-semibold">Assignee (Employee)</p><p>{assignment.assignee.name}</p>
+                        <p className="font-semibold">Assignee (Employee)</p><p>{assignment.assignee?.name || 'N/A'}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-4 print:text-right">
-                        <div><p className="font-semibold">Approved By</p><p>{assignment.approvedBy.name}</p></div>
+                        <div><p className="font-semibold">Approved By</p><p>{assignment.approvedBy?.name || 'N/A'}</p></div>
                         <div><p className="font-semibold">Assignment Date</p><p>{new Date(assignment.assignedDate).toLocaleString()}</p></div>
                         {assignment.returnDate && (
                              <div><p className="font-semibold">Completion Date</p><p>{new Date(assignment.returnDate).toLocaleString()}</p></div>
@@ -161,9 +157,11 @@ export default function AssetAssignmentDetailPage() {
                                                     : <Square className="h-5 w-5 text-muted-foreground mx-auto" />
                                                 }
                                             </td>
-                                            <td className="p-2">{item.inventoryItem.assetCode}</td>
-                                            <td className="p-2">{item.inventoryItem.productModel.modelNumber}</td>
-                                            <td className="p-2">{item.inventoryItem.serialNumber || 'N/A'}</td>
+                                            <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
+                                            {/* --- START: ส่วนที่แก้ไข --- */}
+                                            <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
+                                            {/* --- END --- */}
+                                            <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -211,18 +209,18 @@ export default function AssetAssignmentDetailPage() {
                         <tbody>
                             {assignment.items.map(item => (
                                 <tr key={item.inventoryItem.id} className="border-b">
-                                    <td className="p-2">{item.inventoryItem.assetCode}</td>
-                                    <td className="p-2">{item.inventoryItem.productModel.modelNumber}</td>
-                                    <td className="p-2">{item.inventoryItem.serialNumber || 'N/A'}</td>
+                                    <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
+                                    {/* --- START: ส่วนที่แก้ไข --- */}
+                                    <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
+                                    {/* --- END --- */}
+                                    <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
                                     <td className="p-2">
-                                        {/* --- START: ส่วนที่แก้ไข --- */}
                                         <StatusBadge status={item.returnedAt ? 'RETURNED' : 'ASSIGNED'} />
                                         {item.returnedAt && (
                                             <span className="text-xs text-muted-foreground ml-2">
                                                 on {new Date(item.returnedAt).toLocaleDateString()}
                                             </span>
                                         )}
-                                        {/* --- END --- */}
                                     </td>
                                 </tr>
                             ))}

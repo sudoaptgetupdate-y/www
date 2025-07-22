@@ -40,7 +40,6 @@ export default function AssetPage() {
     const { user: currentUser } = useAuthStore((state) => state);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
-    // --- START: เพิ่ม Filters ใหม่ ---
     const {
         data: assets,
         pagination,
@@ -57,7 +56,6 @@ export default function AssetPage() {
         categoryId: "All",
         brandId: "All"
     });
-    // --- END: เพิ่ม Filters ใหม่ ---
 
     const handleDecommission = async (assetId) => {
         try {
@@ -108,7 +106,6 @@ export default function AssetPage() {
                 </div>
             </CardHeader>
             <CardContent>
-                {/* --- START: เพิ่ม Filters ใหม่ --- */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <Input
                         placeholder="Search by Asset Code, S/N, Model..."
@@ -137,7 +134,6 @@ export default function AssetPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                {/* --- END: เพิ่ม Filters ใหม่ --- */}
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-left text-sm whitespace-nowrap">
                         <colgroup>
@@ -164,7 +160,9 @@ export default function AssetPage() {
                             ) : assets.map((asset) => (
                                 <tr key={asset.id} className="border-b">
                                     <td className="p-2 font-semibold">{asset.assetCode}</td>
-                                    <td className="p-2">{asset.productModel.modelNumber}</td>
+                                    {/* --- START: ส่วนที่แก้ไข --- */}
+                                    <td className="p-2">{asset.productModel?.modelNumber || 'N/A'}</td>
+                                    {/* --- END --- */}
                                     <td className="p-2">{asset.serialNumber || 'N/A'}</td>
                                     <td className="p-2 text-center">
                                         <StatusBadge status={asset.status} className="w-28" />
