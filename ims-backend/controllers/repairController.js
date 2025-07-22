@@ -1,10 +1,9 @@
 // ims-backend/controllers/repairController.js
 
-const { PrismaClient, ItemStatus, ItemOwner, RepairStatus, RepairOutcome, ItemType } = require('@prisma/client');
+const { PrismaClient, ItemStatus, ItemOwner, RepairStatus, RepairOutcome, ItemType, HistoryEventType } = require('@prisma/client');
 const prisma = new PrismaClient();
 const repairController = {};
 
-// POST /api/repairs - สร้างใบส่งซ่อมใหม่
 repairController.createRepairOrder = async (req, res) => {
     const { senderId, receiverId, notes, items } = req.body;
     const createdById = req.user.id;
@@ -15,7 +14,6 @@ repairController.createRepairOrder = async (req, res) => {
 
     try {
         const newRepairOrder = await prisma.$transaction(async (tx) => {
-            // สร้างไอเท็มชั่วคราวสำหรับสินค้าของลูกค้า (Virtual Item)
             const itemsToCreate = items.filter(item => item.isCustomerItem);
             const createdCustomerItems = [];
             if (itemsToCreate.length > 0) {
@@ -24,16 +22,16 @@ repairController.createRepairOrder = async (req, res) => {
                         data: {
                             productModelId: item.productModelId,
                             serialNumber: item.serialNumber,
-                            ownerType: ItemOwner.CUSTOMER, // <-- ระบุว่าเป็นของลูกค้า
+                            ownerType: ItemOwner.CUSTOMER,
                             status: ItemStatus.REPAIRING,
                             addedById: createdById,
+                            itemType: ItemType.SALE 
                         },
                     });
                     createdCustomerItems.push(created);
                 }
             }
             
-            // อัปเดตสถานะสินค้าของบริษัท
             const companyItemIds = items.filter(item => !item.isCustomerItem).map(i => i.id);
             if (companyItemIds.length > 0) {
                 await tx.inventoryItem.updateMany({
@@ -42,10 +40,8 @@ repairController.createRepairOrder = async (req, res) => {
                 });
             }
 
-            // รวบรวม ID ของสินค้าทั้งหมด
             const allItemIds = [...companyItemIds, ...createdCustomerItems.map(i => i.id)];
 
-            // สร้างใบส่งซ่อม
             const repairOrder = await tx.repair.create({
                 data: {
                     senderId,
@@ -58,7 +54,16 @@ repairController.createRepairOrder = async (req, res) => {
                         }))
                     }
                 },
+                include: { receiver: true }
             });
+
+            const historyEvents = allItemIds.map(itemId => ({
+                inventoryItemId: itemId,
+                userId: createdById,
+                type: HistoryEventType.REPAIR_SENT,
+                details: `Sent to repair at ${repairOrder.receiver?.name || 'N/A'}.`
+            }));
+            await tx.assetHistory.createMany({ data: historyEvents });
 
             return repairOrder;
         });
@@ -70,7 +75,6 @@ repairController.createRepairOrder = async (req, res) => {
     }
 };
 
-// GET /api/repairs - ดึงข้อมูลใบส่งซ่อมทั้งหมด
 repairController.getAllRepairOrders = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -85,13 +89,12 @@ repairController.getAllRepairOrders = async (req, res) => {
                 include: {
                     sender: true,
                     receiver: true,
-                    items: { select: { returnedAt: true } } // ดึงข้อมูลเพื่อนับ
+                    items: { select: { returnedAt: true } }
                 }
             }),
             prisma.repair.count()
         ]);
-
-        // จัดรูปแบบข้อมูลเพื่อนับจำนวนของที่คืนแล้ว
+        
         const formattedRepairs = repairs.map(r => {
             const totalItemCount = r.items.length;
             const returnedItemCount = r.items.filter(i => i.returnedAt !== null).length;
@@ -113,7 +116,6 @@ repairController.getAllRepairOrders = async (req, res) => {
     }
 };
 
-// GET /api/repairs/:id - ดึงข้อมูลใบส่งซ่อมใบเดียว
 repairController.getRepairOrderById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -142,10 +144,10 @@ repairController.getRepairOrderById = async (req, res) => {
     }
 };
 
-// PATCH /api/repairs/:id/return - รับของคืนจากซ่อม
 repairController.returnItemsFromRepair = async (req, res) => {
     const { id: repairId } = req.params;
     const { itemsToReturn } = req.body;
+    const actorId = req.user.id;
 
     if (!itemsToReturn || itemsToReturn.length === 0) {
         return res.status(400).json({ error: 'At least one item to return is required.' });
@@ -154,6 +156,11 @@ repairController.returnItemsFromRepair = async (req, res) => {
     try {
         await prisma.$transaction(async (tx) => {
             const now = new Date();
+
+            const repairOrder = await tx.repair.findUnique({
+                where: { id: parseInt(repairId) },
+                include: { receiver: true }
+            });
 
             for (const itemData of itemsToReturn) {
                 const { inventoryItemId, repairOutcome } = itemData;
@@ -178,15 +185,13 @@ repairController.returnItemsFromRepair = async (req, res) => {
 
                 const { inventoryItem } = repairItemRecord;
                 let newStatus;
-
-                // **LOGIC ที่แก้ไข:** ตรวจสอบ `saleId` ก่อน `ownerType`
-                // ถ้ามี `saleId` หมายความว่าของชิ้นนี้เคยถูกขายไปแล้ว และเป็นของลูกค้าแน่นอน
-                if (inventoryItem.saleId !== null || inventoryItem.ownerType === ItemOwner.CUSTOMER) {
+                
+                if (inventoryItem.ownerType === ItemOwner.CUSTOMER) {
                     newStatus = ItemStatus.RETURNED_TO_CUSTOMER;
-                } else { // ของบริษัท
+                } else {
                     if (repairOutcome === RepairOutcome.REPAIRED_SUCCESSFULLY) {
                         newStatus = inventoryItem.itemType === ItemType.ASSET ? ItemStatus.IN_WAREHOUSE : ItemStatus.IN_STOCK;
-                    } else { // ซ่อมไม่ได้
+                    } else {
                         newStatus = ItemStatus.DECOMMISSIONED;
                     }
                 }
@@ -194,6 +199,17 @@ repairController.returnItemsFromRepair = async (req, res) => {
                 await tx.inventoryItem.update({
                     where: { id: inventoryItemId },
                     data: { status: newStatus },
+                });
+
+                await tx.assetHistory.create({
+                    data: {
+                        inventoryItemId,
+                        userId: actorId,
+                        type: HistoryEventType.REPAIR_RETURNED,
+                        // --- START: ส่วนที่แก้ไข ---
+                        details: `Returned from ${repairOrder?.receiver?.name || 'N/A'}. Outcome: ${repairOutcome}.`
+                        // --- END ---
+                    }
                 });
             }
 
@@ -215,6 +231,5 @@ repairController.returnItemsFromRepair = async (req, res) => {
         res.status(500).json({ error: error.message || 'Could not process the return.' });
     }
 };
-
 
 module.exports = repairController;

@@ -6,7 +6,6 @@ import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ArrowLeft, CheckSquare, Square, Printer } from "lucide-react";
 import {
@@ -20,7 +19,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import
+import { StatusBadge } from "@/components/ui/StatusBadge"; 
 
 export default function BorrowingDetailPage() {
     const { borrowingId } = useParams();
@@ -227,9 +226,14 @@ export default function BorrowingDetailPage() {
                                     <td className="p-2">{item.serialNumber || 'N/A'}</td>
                                     <td className="p-2">{item.macAddress || 'N/A'}</td>
                                     <td className="p-2">
-                                        <Badge variant={item.returnedAt ? 'secondary' : 'warning'}>
-                                            {item.returnedAt ? `Returned on ${new Date(item.returnedAt).toLocaleDateString()}` : 'Borrowed'}
-                                        </Badge>
+                                        {/* --- START: ส่วนที่แก้ไข --- */}
+                                        <StatusBadge status={item.returnedAt ? 'RETURNED' : 'BORROWED'} />
+                                        {item.returnedAt && (
+                                            <span className="text-xs text-muted-foreground ml-2">
+                                                on {new Date(item.returnedAt).toLocaleDateString()}
+                                            </span>
+                                        )}
+                                        {/* --- END --- */}
                                     </td>
                                 </tr>
                             ))}

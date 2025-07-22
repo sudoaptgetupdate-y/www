@@ -11,9 +11,16 @@ import { cn } from "@/lib/utils";
  */
 export const StatusBadge = ({ status, className, ...props }) => {
   const { label, variant } = getStatusProperties(status);
+  // --- START: ส่วนที่แก้ไข ---
+  // ตรวจสอบว่ามีการส่ง onClick มาหรือไม่
+  const isInteractive = !!props.onClick;
+  // --- END ---
 
   return (
-    <Badge variant={variant} className={cn("justify-center", className)} {...props}>
+    // --- START: ส่วนที่แก้ไข ---
+    // ส่ง prop 'interactive' ไปให้ Badge component
+    <Badge variant={variant} interactive={isInteractive} className={cn("justify-center", className)} {...props}>
+    {/* --- END --- */}
       {label}
     </Badge>
   );

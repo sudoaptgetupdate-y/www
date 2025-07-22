@@ -1,10 +1,8 @@
 // controllers/saleController.js
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient, HistoryEventType } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const saleController = {};
-
-// ... (ฟังก์ชัน createSale, getAllSales ไม่มีการเปลี่ยนแปลง)
 
 saleController.createSale = async (req, res) => {
     const { customerId, inventoryItemIds } = req.body;
@@ -28,6 +26,9 @@ saleController.createSale = async (req, res) => {
                 throw new Error('One or more items are not available for sale or not found.');
             }
 
+            const customer = await tx.customer.findUnique({ where: { id: customerId } });
+            if (!customer) throw new Error('Customer not found.');
+
             const subtotal = itemsToSell.reduce((sum, item) => sum + (item.productModel?.sellingPrice || 0), 0);
             const vatAmount = subtotal * 0.07;
             const total = subtotal + vatAmount;
@@ -42,16 +43,20 @@ saleController.createSale = async (req, res) => {
                 },
             });
 
-            const updatedItems = await tx.inventoryItem.updateMany({
+            await tx.inventoryItem.updateMany({
                 where: { id: { in: inventoryItemIds } },
                 data: { status: 'SOLD', saleId: newSale.id },
             });
 
-            if (updatedItems.count !== inventoryItemIds.length) {
-                throw new Error('One or more items could not be updated to SOLD status.');
-            }
+            const historyEvents = inventoryItemIds.map(itemId => ({
+                inventoryItemId: itemId,
+                userId: soldById,
+                type: HistoryEventType.UPDATE, 
+                details: `Item sold to ${customer.name}. Sale ID: ${newSale.id}`
+            }));
+            await tx.assetHistory.createMany({ data: historyEvents });
 
-            const completeSale = await tx.sale.findUnique({
+            return tx.sale.findUnique({
                 where: { id: newSale.id },
                 include: { 
                     customer: true, 
@@ -59,8 +64,6 @@ saleController.createSale = async (req, res) => {
                     itemsSold: { include: { productModel: true } } 
                 }
             });
-            
-            return completeSale;
         });
 
         res.status(201).json(sale);
@@ -105,14 +108,19 @@ saleController.getAllSales = async (req, res) => {
                 include: {
                     customer: true,
                     soldBy: { select: { id: true, name: true } },
-                    itemsSold: { include: { productModel: true } }
+                    itemsSold: { select: { id: true } }
                 }
             }),
             prisma.sale.count({ where })
         ]);
         
+        // --- START: ส่วนที่แก้ไข ---
+        // เพิ่มการกรองข้อมูลที่ไม่สมบูรณ์ออกไป
+        const completeSalesData = sales.filter(sale => sale.customer && sale.soldBy);
+        // --- END ---
+
         res.status(200).json({
-            data: sales,
+            data: completeSalesData, // <-- ใช้ข้อมูลที่กรองแล้ว
             pagination: {
                 totalItems,
                 totalPages: Math.ceil(totalItems / limit),
@@ -127,7 +135,6 @@ saleController.getAllSales = async (req, res) => {
 };
 
 
-// --- START: ส่วนที่แก้ไข ---
 saleController.getSaleById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -140,7 +147,6 @@ saleController.getSaleById = async (req, res) => {
                 itemsSold: {
                     include: {
                         productModel: {
-                            // เพิ่มการ include ข้อมูล Brand และ Category เข้ามาที่นี่
                             include: {
                                 brand: true,
                                 category: true
@@ -162,7 +168,6 @@ saleController.getSaleById = async (req, res) => {
         res.status(500).json({ error: 'Could not fetch the sale.' });
     }
 };
-// --- END ---
 
 saleController.voidSale = async (req, res) => {
     const { id } = req.params;
@@ -185,8 +190,17 @@ saleController.voidSale = async (req, res) => {
                     where: { id: { in: itemIdsToUpdate } },
                     data: {
                         status: 'IN_STOCK',
+                        saleId: null
                     },
                 });
+
+                const historyEvents = itemIdsToUpdate.map(itemId => ({
+                    inventoryItemId: itemId,
+                    userId: voidedById,
+                    type: HistoryEventType.UPDATE,
+                    details: `Sale ID ${id} voided. Item returned to stock.`
+                }));
+                await tx.assetHistory.createMany({ data: historyEvents });
             }
 
             return await tx.sale.update({

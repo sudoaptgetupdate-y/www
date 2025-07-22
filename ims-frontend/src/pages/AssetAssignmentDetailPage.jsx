@@ -6,7 +6,6 @@ import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ArrowLeft, CheckSquare, Square, Printer } from "lucide-react";
 import {
@@ -20,6 +19,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import ที่เพิ่มเข้ามา
 
 export default function AssetAssignmentDetailPage() {
     const { assignmentId } = useParams();
@@ -75,15 +75,8 @@ export default function AssetAssignmentDetailPage() {
     const handlePrint = () => {
         window.print();
     };
-
-    const getStatusVariant = (status) => {
-        switch (status) {
-            case 'ASSIGNED': return 'warning';
-            case 'RETURNED': return 'secondary';
-            case 'PARTIALLY_RETURNED': return 'info';
-            default: return 'outline';
-        }
-    };
+    
+    // --- START: ลบ getStatusVariant ออก ---
 
     if (loading) return <p>Loading assignment details...</p>;
     if (!assignment) return <p>Record not found.</p>;
@@ -93,9 +86,7 @@ export default function AssetAssignmentDetailPage() {
     return (
         <div className="space-y-6 printable-area">
             <div className="flex justify-between items-center no-print">
-                {/* --- START: ส่วนที่แก้ไข --- */}
                 <Button variant="outline" onClick={() => navigate(-1)}>
-                {/* --- END: ส่วนที่แก้ไข --- */}
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                 </Button>
@@ -114,7 +105,9 @@ export default function AssetAssignmentDetailPage() {
                 <CardHeader>
                     <CardTitle className="flex justify-between items-start">
                        <span>Assignment Details</span>
-                       <Badge variant={getStatusVariant(assignment.status)}>{assignment.status}</Badge>
+                       {/* --- START: ส่วนที่แก้ไข --- */}
+                       <StatusBadge status={assignment.status} />
+                       {/* --- END --- */}
                     </CardTitle>
                     <CardDescription>Record ID: #{assignment.id}</CardDescription>
                 </CardHeader>
@@ -222,9 +215,14 @@ export default function AssetAssignmentDetailPage() {
                                     <td className="p-2">{item.inventoryItem.productModel.modelNumber}</td>
                                     <td className="p-2">{item.inventoryItem.serialNumber || 'N/A'}</td>
                                     <td className="p-2">
-                                        <Badge variant={item.returnedAt ? 'secondary' : 'warning'}>
-                                            {item.returnedAt ? `Returned on ${new Date(item.returnedAt).toLocaleDateString()}` : 'Assigned'}
-                                        </Badge>
+                                        {/* --- START: ส่วนที่แก้ไข --- */}
+                                        <StatusBadge status={item.returnedAt ? 'RETURNED' : 'ASSIGNED'} />
+                                        {item.returnedAt && (
+                                            <span className="text-xs text-muted-foreground ml-2">
+                                                on {new Date(item.returnedAt).toLocaleDateString()}
+                                            </span>
+                                        )}
+                                        {/* --- END --- */}
                                     </td>
                                 </tr>
                             ))}

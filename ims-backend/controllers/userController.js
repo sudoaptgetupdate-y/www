@@ -8,15 +8,12 @@ const userController = {};
 
 userController.getAllUsers = async (req, res) => {
     try {
-        // ลบเงื่อนไข if (req.query.all === 'true') ออกไป
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const searchTerm = req.query.search || '';
         const skip = (page - 1) * limit;
 
         const where = {
-            // ค้นหาเฉพาะ User ที่ยัง Active อยู่สำหรับ dropdown
-            accountStatus: 'ACTIVE', 
             ...(searchTerm && {
                 OR: [
                     { name: { contains: searchTerm } },
@@ -31,7 +28,7 @@ userController.getAllUsers = async (req, res) => {
                 where,
                 skip,
                 take: limit,
-                orderBy: { name: 'asc' }, // เรียงตามชื่อเพื่อให้หาได้ง่าย
+                orderBy: { name: 'asc' },
                 select: {
                     id: true,
                     username: true,
@@ -92,7 +89,7 @@ userController.createUser = async (req, res) => {
         res.status(201).json(userToReturn);
     } catch (error) {
         if (error.code === 'P2002') {
-            const field = error.meta.target[0];
+            const field = error.meta.target?.[0] || 'fields';
             return res.status(400).json({ error: `This ${field} is already in use.` });
         }
         res.status(500).json({ error: 'Could not create the user.' });
@@ -111,7 +108,7 @@ userController.updateUser = async (req, res) => {
         res.status(200).json(userToReturn);
     } catch (error) {
         if (error.code === 'P2002') {
-            const field = error.meta.target[0];
+            const field = error.meta.target?.[0] || 'fields';
             return res.status(400).json({ error: `This ${field} is already in use.` });
         }
         if (error.code === 'P2025') {
@@ -173,7 +170,7 @@ userController.updateMyProfile = async (req, res) => {
         
     } catch (error) {
         if (error.code === 'P2002') {
-            const field = error.meta.target[0];
+            const field = error.meta.target?.[0] || 'fields';
             return res.status(400).json({ error: `This ${field} is already in use.` });
         }
         console.error(error);
@@ -215,13 +212,11 @@ userController.changeMyPassword = async (req, res) => {
     }
 };
 
-// --- START: ส่วนที่แก้ไข ---
-// สำหรับ Admin ดูประวัติของ User คนอื่น
 userController.getUserAssets = async (req, res) => {
     const { id: userId } = req.params;
     try {
-        const history = await prisma.assetHistory.findMany({
-            where: { assignedToId: parseInt(userId) },
+        const history = await prisma.assetAssignmentOnItems.findMany({
+            where: { assignment: { assigneeId: parseInt(userId) } },
             include: {
                 inventoryItem: { include: { productModel: true } }
             },
@@ -234,9 +229,8 @@ userController.getUserAssets = async (req, res) => {
     }
 };
 
-// สำหรับ User ที่ Login อยู่ ดูประวัติของตัวเอง
 userController.getMyAssets = async (req, res) => {
-    const { id: userId } = req.user; // <-- ใช้ req.user.id
+    const { id: userId } = req.user;
     try {
         const assets = await prisma.inventoryItem.findMany({
             where: {
@@ -263,15 +257,15 @@ userController.getMyAssets = async (req, res) => {
 userController.getUserAssetSummary = async (req, res) => {
     const { id: userId } = req.params;
     try {
-        const currentlyAssigned = await prisma.assetHistory.count({
+        const currentlyAssigned = await prisma.assetAssignmentOnItems.count({
             where: { 
-                assignedToId: parseInt(userId),
+                assignment: { assigneeId: parseInt(userId) },
                 returnedAt: null
             }
         });
 
-        const totalEverAssigned = await prisma.assetHistory.count({
-            where: { assignedToId: parseInt(userId) }
+        const totalEverAssigned = await prisma.assetAssignmentOnItems.count({
+            where: { assignment: { assigneeId: parseInt(userId) } }
         });
 
         res.status(200).json({
@@ -283,6 +277,5 @@ userController.getUserAssetSummary = async (req, res) => {
         res.status(500).json({ error: "Could not fetch user's asset summary." });
     }
 };
-// --- END ---
 
 module.exports = userController;
