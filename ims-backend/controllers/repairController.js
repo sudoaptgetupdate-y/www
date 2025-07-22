@@ -29,9 +29,7 @@ repairController.createRepairOrder = async (req, res, next) => {
                         data: {
                             productModelId: item.productModelId,
                             serialNumber: item.serialNumber,
-                            // --- START: นี่คือจุดที่แก้ไขและสำคัญที่สุด ---
-                            ownerType: ItemOwner.CUSTOMER, // บังคับให้เป็นของลูกค้าเสมอ
-                            // --- END: นี่คือจุดที่แก้ไขและสำคัญที่สุด ---
+                            ownerType: ItemOwner.CUSTOMER,
                             status: ItemStatus.REPAIRING,
                             addedById: createdById,
                             itemType: ItemType.SALE 
@@ -66,12 +64,14 @@ repairController.createRepairOrder = async (req, res, next) => {
                 include: { receiver: true }
             });
 
+            // --- START: แก้ไขส่วนนี้ ---
             const historyEvents = allItemIds.map(itemId => ({
                 inventoryItemId: itemId,
                 userId: createdById,
                 type: HistoryEventType.REPAIR_SENT,
-                details: `Sent to repair at ${repairOrder.receiver?.name || 'N/A'}.`
+                details: `Sent to repair at ${repairOrder.receiver?.name || 'N/A'}. Repair ID: ${repairOrder.id}`
             }));
+            // --- END ---
             await tx.assetHistory.createMany({ data: historyEvents });
 
             return repairOrder;
@@ -83,7 +83,6 @@ repairController.createRepairOrder = async (req, res, next) => {
     }
 };
 
-// ... (โค้ดส่วนที่เหลือของไฟล์เหมือนเดิม)
 repairController.getAllRepairOrders = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -244,8 +243,9 @@ repairController.returnItemsFromRepair = async (req, res, next) => {
                 const { inventoryItem } = repairItemRecord;
                 let newStatus;
                 
-                if (inventoryItem.ownerType === ItemOwner.CUSTOMER) {
-                    newStatus = ItemStatus.RETURNED_TO_CUSTOMER;
+                const isSoldItem = inventoryItem.saleId !== null;
+                if (inventoryItem.ownerType === ItemOwner.CUSTOMER || isSoldItem) {
+                    newStatus = ItemStatus.SOLD;
                 } else {
                     if (repairOutcome === RepairOutcome.REPAIRED_SUCCESSFULLY) {
                         newStatus = inventoryItem.itemType === ItemType.ASSET ? ItemStatus.IN_WAREHOUSE : ItemStatus.IN_STOCK;
@@ -259,14 +259,16 @@ repairController.returnItemsFromRepair = async (req, res, next) => {
                     data: { status: newStatus },
                 });
 
+                // --- START: แก้ไขส่วนนี้ ---
                 await tx.assetHistory.create({
                     data: {
                         inventoryItemId,
                         userId: actorId,
                         type: HistoryEventType.REPAIR_RETURNED,
-                        details: `Returned from ${repairOrder?.receiver?.name || 'N/A'}. Outcome: ${repairOutcome}.`
+                        details: `Returned from ${repairOrder?.receiver?.name || 'N/A'}. Outcome: ${repairOutcome}. Repair ID: ${id}`
                     }
                 });
+                // --- END ---
             }
 
             const remainingItems = await tx.repairOnItems.count({

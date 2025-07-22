@@ -9,19 +9,21 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { 
     ArrowLeft, PlusCircle, Edit, ArchiveRestore, ArchiveX, 
-    ArrowRightLeft, CornerUpLeft, Wrench, ShieldCheck, Package
+    ArrowRightLeft, CornerUpLeft, Wrench, ShieldCheck, Package, ShieldAlert 
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { getStatusProperties } from "@/lib/statusUtils";
 
 const eventConfig = {
-    CREATE: { icon: <PlusCircle className="h-4 w-4" />, label: 'Created' },
-    UPDATE: { icon: <Edit className="h-4 w-4" />, label: 'Updated' },
-    ASSIGN: { icon: <ArrowRightLeft className="h-4 w-4" />, label: 'Assigned' },
-    RETURN: { icon: <CornerUpLeft className="h-4 w-4" />, label: 'Returned' },
-    DECOMMISSION: { icon: <ArchiveX className="h-4 w-4" />, label: 'Decommissioned' },
-    REINSTATE: { icon: <ArchiveRestore className="h-4 w-4" />, label: 'Reinstated' },
-    REPAIR_SENT: { icon: <Wrench className="h-4 w-4" />, label: 'Repair Sent' },
-    REPAIR_RETURNED: { icon: <ShieldCheck className="h-4 w-4" />, label: 'Repair Return' },
+    CREATE: { icon: <PlusCircle className="h-4 w-4" /> },
+    UPDATE: { icon: <Edit className="h-4 w-4" /> },
+    ASSIGN: { icon: <ArrowRightLeft className="h-4 w-4" /> },
+    RETURN: { icon: <CornerUpLeft className="h-4 w-4" /> },
+    DECOMMISSION: { icon: <ArchiveX className="h-4 w-4" /> },
+    REINSTATE: { icon: <ArchiveRestore className="h-4 w-4" /> },
+    REPAIR_SENT: { icon: <Wrench className="h-4 w-4" /> },
+    REPAIR_SUCCESS: { icon: <ShieldCheck className="h-4 w-4" /> },
+    REPAIR_FAILED: { icon: <ShieldAlert className="h-4 w-4" /> },
 };
 
 export default function AssetHistoryPage() {
@@ -50,18 +52,25 @@ export default function AssetHistoryPage() {
         };
         fetchData();
     }, [assetId, token]);
-
-    // --- START: เพิ่มฟังก์ชันนี้ ---
+    
+    // --- START: แก้ไขฟังก์ชันนี้ ---
     const getTransactionLink = (details) => {
         if (!details) return null;
-        const match = details.match(/Assignment ID: (\d+)/);
-        if (match && match[1]) {
-            return `/asset-assignments/${match[1]}`;
+        
+        let assignmentMatch = details.match(/Assignment ID: (\d+)/);
+        if (assignmentMatch && assignmentMatch[1]) {
+            return `/asset-assignments/${assignmentMatch[1]}`;
         }
+
+        let repairMatch = details.match(/Repair ID: (\d+)/);
+        if (repairMatch && repairMatch[1]) {
+            return `/repairs/${repairMatch[1]}`;
+        }
+        
         return null;
     };
-    // --- END: เพิ่มฟังก์ชันนี้ ---
-
+    // --- END ---
+    
     if (loading) return <p>Loading history...</p>;
     if (!asset) return <p>Asset not found.</p>;
 
@@ -94,10 +103,23 @@ export default function AssetHistoryPage() {
                         </thead>
                         <tbody>
                             {history.length > 0 ? history.map((h) => {
-                                // --- START: แก้ไขส่วนนี้ ---
                                 const link = getTransactionLink(h.details);
-                                const eventLabel = eventConfig[h.type]?.label || h.type.replace(/_/g, ' ');
-                                const eventIcon = eventConfig[h.type]?.icon;
+
+                                const getDisplayInfo = (historyItem) => {
+                                    if (historyItem.type === 'REPAIR_RETURNED') {
+                                        if (historyItem.details.includes('REPAIRED_SUCCESSFULLY')) {
+                                            return { status: 'REPAIR_SUCCESS' };
+                                        }
+                                        if (historyItem.details.includes('UNREPAIRABLE')) {
+                                            return { status: 'REPAIR_FAILED' };
+                                        }
+                                    }
+                                    return { status: historyItem.type };
+                                };
+                                
+                                const { status: displayStatus } = getDisplayInfo(h);
+                                const eventIcon = eventConfig[displayStatus]?.icon;
+                                const { label: eventLabel } = getStatusProperties(displayStatus);
 
                                 return (
                                     <tr key={h.id} className="border-b">
@@ -106,7 +128,7 @@ export default function AssetHistoryPage() {
                                         <td className="p-2">{h.user?.name || 'System'}</td>
                                         <td className="p-2 text-center">
                                             <StatusBadge
-                                                status={h.type}
+                                                status={displayStatus}
                                                 className="w-36"
                                                 {...(link && { onClick: () => navigate(link) })}
                                             >
@@ -116,7 +138,6 @@ export default function AssetHistoryPage() {
                                         </td>
                                     </tr>
                                 );
-                                // --- END: แก้ไขส่วนนี้ ---
                             }) : (
                                 <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">No history found for this asset.</td></tr>
                             )}

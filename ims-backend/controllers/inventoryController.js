@@ -25,7 +25,7 @@ inventoryController.addInventoryItem = async (req, res, next) => {
         const newItem = await prisma.inventoryItem.create({
             data: {
                 itemType: ItemType.SALE,
-                ownerType: ItemOwner.COMPANY, // ระบุให้ชัดเจนว่าเป็นของบริษัทเสมอ
+                ownerType: ItemOwner.COMPANY,
                 serialNumber: serialNumber || null,
                 macAddress: macAddress || null,
                 productModelId,
@@ -60,30 +60,42 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         const categoryIdFilter = req.query.categoryId || 'All';
         const brandIdFilter = req.query.brandId || 'All';
 
-        // --- START: นี่คือส่วนที่แก้ไข ---
-        // เพิ่มเงื่อนไข `ownerType: 'COMPANY'` เพื่อกรองเอาเฉพาะสินค้าของบริษัทเท่านั้น
-        let where = { 
-            itemType: ItemType.SALE,
-            ownerType: 'COMPANY' 
-        };
-        // --- END: นี่คือส่วนที่แก้ไข ---
+        // --- START: แก้ไข Logic การกรองข้อมูล ---
+        const whereConditions = [
+            { itemType: ItemType.SALE },
+            { ownerType: 'COMPANY' }
+        ];
+
+        if (statusFilter && statusFilter !== 'All') {
+            whereConditions.push({ status: statusFilter });
+        } else {
+            // ถ้าไม่ได้เลือก filter สถานะ หรือเลือก "All" ให้กรองสถานะของลูกค้าออกเสมอ
+            whereConditions.push({ status: { notIn: ['RETURNED_TO_CUSTOMER'] } });
+        }
 
         if (searchTerm) {
-            where.OR = [
-                { serialNumber: { contains: searchTerm } },
-                { macAddress: { equals: searchTerm } },
-                { productModel: { modelNumber: { contains: searchTerm } } },
-            ];
+            whereConditions.push({
+                OR: [
+                    { serialNumber: { contains: searchTerm } },
+                    { macAddress: { equals: searchTerm } },
+                    { productModel: { modelNumber: { contains: searchTerm } } },
+                ]
+            });
         }
-        if (statusFilter && statusFilter !== 'All') {
-            where.status = statusFilter;
-        }
+        
+        const modelFilters = {};
         if (categoryIdFilter && categoryIdFilter !== 'All') {
-            where.productModel = { ...where.productModel, categoryId: parseInt(categoryIdFilter) };
+            modelFilters.categoryId = parseInt(categoryIdFilter);
         }
         if (brandIdFilter && brandIdFilter !== 'All') {
-            where.productModel = { ...where.productModel, brandId: parseInt(brandIdFilter) };
+            modelFilters.brandId = parseInt(brandIdFilter);
         }
+        if (Object.keys(modelFilters).length > 0) {
+            whereConditions.push({ productModel: modelFilters });
+        }
+
+        const where = { AND: whereConditions };
+        // --- END: แก้ไข Logic การกรองข้อมูล ---
 
         const include = {
             productModel: { include: { category: true, brand: true } },
@@ -120,7 +132,6 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
     }
 };
 
-// ... (โค้ดส่วนที่เหลือของไฟล์เหมือนเดิมทั้งหมด)
 inventoryController.getInventoryItemById = async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -161,7 +172,7 @@ inventoryController.updateInventoryItem = async (req, res, next) => {
             err.statusCode = 400;
             throw err;
         }
-        // --- START: Input Validation ---
+        
         if (typeof productModelId !== 'number') {
             const err = new Error('Product Model ID is required and must be a number.');
             err.statusCode = 400;
@@ -172,7 +183,6 @@ inventoryController.updateInventoryItem = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: Input Validation ---
         
         const [updatedItem] = await prisma.$transaction([
             prisma.inventoryItem.update({

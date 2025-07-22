@@ -49,6 +49,11 @@ const STATUS_CONFIG = {
   PARTIALLY_RETURNED: { label: "Partial Return", variant: "info" },
   REPAIRING: { label: "Repairing", variant: "warning" },
 
+  // --- START: เพิ่มสถานะใหม่สำหรับการซ่อม ---
+  REPAIR_SUCCESS: { label: "Repair Success", variant: "success" },
+  REPAIR_FAILED: { label: "Repair Failed", variant: "destructive" },
+  // --- END ---
+
   // Repair Outcomes & Status
   REPAIRED_SUCCESSFULLY: { label: "Success", variant: "success" },
   UNREPAIRABLE: { label: "Failed", variant: "destructive" },
@@ -78,6 +83,5 @@ const STATUS_CONFIG = {
  * @returns {StatusConfig} The configuration for the badge.
  */
 export const getStatusProperties = (status) => {
-  // Return specific config or a formatted version of the status itself
   return STATUS_CONFIG[status] || { label: status.replace(/_/g, ' '), variant: 'default' };
 };

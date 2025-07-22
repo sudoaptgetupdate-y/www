@@ -9,26 +9,27 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { 
     ArrowLeft, ShoppingCart, ArrowRightLeft, CornerUpLeft, Package, 
-    ArchiveX, Wrench, ShieldCheck, History as HistoryIcon, PlusCircle, Edit, ArchiveRestore 
+    ArchiveX, Wrench, ShieldCheck, History as HistoryIcon, PlusCircle, Edit, ArchiveRestore, ShieldAlert
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const eventConfig = {
-    SALE: { icon: <ShoppingCart className="h-4 w-4" />, label: 'Sold' },
-    VOID: { icon: <ArchiveX className="h-4 w-4" />, label: 'Voided' },
-    BORROW: { icon: <ArrowRightLeft className="h-4 w-4" />, label: 'Borrowed' },
-    RETURN: { icon: <CornerUpLeft className="h-4 w-4" />, label: 'Returned' },
-    REPAIR_SENT: { icon: <Wrench className="h-4 w-4" />, label: 'Repair Sent' },
-    REPAIR_RETURNED: { icon: <ShieldCheck className="h-4 w-4" />, label: 'Repair Return' },
-    CREATE: { icon: <PlusCircle className="h-4 w-4" />, label: 'Created' },
-    UPDATE: { icon: <Edit className="h-4 w-4" />, label: 'Updated' },
-    DECOMMISSION: { icon: <ArchiveX className="h-4 w-4" />, label: 'Decommissioned' },
-    REINSTATE: { icon: <ArchiveRestore className="h-4 w-4" />, label: 'Reinstated' },
-    DEFECTIVE: { icon: <ArchiveX className="h-4 w-4" />, label: 'Defective' },
-    IN_STOCK: { icon: <ShieldCheck className="h-4 w-4" />, label: 'In Stock' },
-    RESERVED: { icon: <ArchiveRestore className="h-4 w-4" />, label: 'Reserved' }
+    SALE: { icon: <ShoppingCart className="h-4 w-4" /> },
+    VOID: { icon: <ArchiveX className="h-4 w-4" /> },
+    BORROW: { icon: <ArrowRightLeft className="h-4 w-4" /> },
+    RETURN: { icon: <CornerUpLeft className="h-4 w-4" /> },
+    REPAIR_SENT: { icon: <Wrench className="h-4 w-4" /> },
+    REPAIR_RETURNED: { icon: <ShieldCheck className="h-4 w-4" /> },
+    REPAIR_SUCCESS: { icon: <ShieldCheck className="h-4 w-4" /> },
+    REPAIR_FAILED: { icon: <ShieldAlert className="h-4 w-4" /> },
+    CREATE: { icon: <PlusCircle className="h-4 w-4" /> },
+    UPDATE: { icon: <Edit className="h-4 w-4" /> },
+    DECOMMISSION: { icon: <ArchiveX className="h-4 w-4" /> },
+    REINSTATE: { icon: <ArchiveRestore className="h-4 w-4" /> },
+    DEFECTIVE: { icon: <ShieldAlert className="h-4 w-4" /> },
+    IN_STOCK: { icon: <ShieldCheck className="h-4 w-4" /> },
+    RESERVED: { icon: <ArchiveRestore className="h-4 w-4" /> }
 };
-
 
 export default function InventoryHistoryPage() {
     const { itemId } = useParams();
@@ -109,25 +110,30 @@ export default function InventoryHistoryPage() {
                             {history.length > 0 ? history.map((h, index) => {
                                 const link = h.transactionId ? getTransactionLink(h.transactionType, h.transactionId) : null;
                                 
-                                // --- START: อัปเดต Logic ตรงนี้ ---
-                                const getDisplayStatus = (historyItem) => {
+                                const getDisplayInfo = (historyItem) => {
+                                    if (historyItem.type === 'REPAIR_RETURNED') {
+                                        if (historyItem.details.includes('Success')) {
+                                            return { status: 'REPAIR_SUCCESS', icon: eventConfig.REPAIR_SUCCESS.icon };
+                                        }
+                                        if (historyItem.details.includes('Failed')) {
+                                            return { status: 'REPAIR_FAILED', icon: eventConfig.REPAIR_FAILED.icon };
+                                        }
+                                    }
+                                    
+                                    let status = historyItem.type;
                                     if (historyItem.type === 'UPDATE') {
                                         const details = historyItem.details.toLowerCase();
-                                        if (details.includes('sold to')) return 'SALE';
-                                        if (details.includes('voided')) return 'VOID';
-                                        if (details.includes('marked as defective')) return 'DEFECTIVE';
-                                        if (details.includes('returned to stock from defective')) return 'IN_STOCK';
-                                        if (details.includes('marked as reserved')) return 'RESERVED';
-                                        if (details.includes('unreserved and returned to stock')) return 'IN_STOCK';
+                                        if (details.includes('sold to')) status = 'SALE';
+                                        else if (details.includes('voided')) status = 'VOID';
+                                        else if (details.includes('marked as defective')) status = 'DEFECTIVE';
+                                        else if (details.includes('returned to stock from defective')) status = 'IN_STOCK';
+                                        else if (details.includes('marked as reserved')) status = 'RESERVED';
+                                        else if (details.includes('unreserved and returned to stock')) status = 'IN_STOCK';
                                     }
-                                    return historyItem.type;
+                                    return { status, icon: eventConfig[status]?.icon };
                                 };
 
-                                const displayStatus = getDisplayStatus(h);
-                                // --- END: อัปเดต Logic ตรงนี้ ---
-
-                                const eventLabel = eventConfig[displayStatus]?.label || displayStatus.replace(/_/g, ' ');
-                                const eventIcon = eventConfig[displayStatus]?.icon;
+                                const { status: displayStatus, icon: eventIcon } = getDisplayInfo(h);
 
                                 return (
                                 <tr key={index} className="border-b">
@@ -141,7 +147,7 @@ export default function InventoryHistoryPage() {
                                             {...(link && { onClick: () => navigate(link) })}
                                         >
                                             {eventIcon}
-                                            <span className="ml-1.5">{eventLabel}</span>
+                                            <span className="ml-1.5">{displayStatus.replace(/_/g, ' ')}</span>
                                         </StatusBadge>
                                     </td>
                                 </tr>
