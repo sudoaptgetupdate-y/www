@@ -42,7 +42,9 @@ export default function BorrowingPage() {
 
     return (
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            {/* --- START: แก้ไขบรรทัดนี้ --- */}
+            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            {/* --- END --- */}
                 <CardTitle>Borrowing Records</CardTitle>
                 {canManage && (
                     <Button onClick={() => navigate('/borrowings/new')}>
@@ -97,18 +99,14 @@ export default function BorrowingPage() {
                                 [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
                             ) : borrowings.map((b) => (
                                 <tr key={b.id} className="border-b">
-                                    {/* --- START: ส่วนที่แก้ไข --- */}
                                     <td className="p-2">{b.borrower?.name || 'N/A'}</td>
-                                    {/* --- END --- */}
                                     <td className="p-2">{new Date(b.borrowDate).toLocaleDateString()}</td>
                                     <td className="p-2">{b.dueDate ? new Date(b.dueDate).toLocaleDateString() : 'N/A'}</td>
                                     <td className="p-2 text-center">
                                         <StatusBadge status={b.status} className="w-24" />
                                     </td>
                                     <td className="p-2 text-center">{b.returnedItemCount}/{b.totalItemCount} Returned</td>
-                                    {/* --- START: ส่วนที่แก้ไข --- */}
                                     <td className="p-2">{b.approvedBy?.name || 'N/A'}</td>
-                                    {/* --- END --- */}
                                     <td className="p-2 text-center">
                                         <Button variant="outline" size="sm" onClick={() => navigate(`/borrowings/${b.id}`)}>
                                             Details

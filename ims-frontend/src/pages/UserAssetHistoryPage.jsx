@@ -10,8 +10,8 @@ import { toast } from "sonner";
 import { ArrowLeft, Package, History, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-const StatCard = ({ title, value, icon, description }) => (
-    <Card>
+const StatCard = ({ title, value, icon, description, onClick }) => (
+    <Card onClick={onClick} className={onClick ? "cursor-pointer hover:border-primary transition-colors" : ""}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             {icon}
@@ -36,7 +36,6 @@ export default function UserAssetHistoryPage() {
         const fetchData = async () => {
             if (!userId || !token) return;
             try {
-                // --- START: ส่วนที่แก้ไข ---
                 const [historyRes, summaryRes, userRes] = await Promise.all([
                     axiosInstance.get(`/users/${userId}/assets`, { headers: { Authorization: `Bearer ${token}` } }),
                     axiosInstance.get(`/users/${userId}/assets/summary`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -45,7 +44,6 @@ export default function UserAssetHistoryPage() {
                 setHistory(historyRes.data);
                 setSummary(summaryRes.data);
                 setUser(userRes.data);
-                // --- END ---
             } catch (error) {
                 toast.error("Failed to fetch user's asset history.");
             } finally {
@@ -76,18 +74,20 @@ export default function UserAssetHistoryPage() {
                     value={summary.currentlyAssigned}
                     icon={<Package className="h-4 w-4 text-muted-foreground" />}
                     description="Assets currently in possession."
+                    onClick={() => navigate(`/users/${userId}/active-assets`)}
                 />
                 <StatCard 
                     title="Total Ever Assigned"
                     value={summary.totalEverAssigned}
                     icon={<History className="h-4 w-4 text-muted-foreground" />}
                     description="Total number of assets ever assigned."
+                    onClick={() => navigate(`/users/${userId}/assets`)}
                 />
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Assignment History Log</CardTitle>
+                    <CardTitle>Full Assignment History Log</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <table className="w-full text-sm">
@@ -101,7 +101,7 @@ export default function UserAssetHistoryPage() {
                         </thead>
                         <tbody>
                             {history.length > 0 ? history.map(h => (
-                                <tr key={h.id} className="border-b">
+                                <tr key={`${h.assignmentId}-${h.inventoryItemId}`} className="border-b">
                                     <td className="p-2 font-semibold">{h.inventoryItem.assetCode}</td>
                                     <td className="p-2">{h.inventoryItem.productModel.modelNumber}</td>
                                     <td className="p-2">{new Date(h.assignedAt).toLocaleString()}</td>

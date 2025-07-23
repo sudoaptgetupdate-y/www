@@ -27,7 +27,6 @@ export default function RepairListPage() {
     const { user: currentUser } = useAuthStore((state) => state);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
-    // --- START: ส่วนที่แก้ไข ---
     const { 
         data: repairs, 
         pagination, 
@@ -39,11 +38,12 @@ export default function RepairListPage() {
         handleItemsPerPageChange,
         handleFilterChange
     } = usePaginatedFetch("/repairs", 10, { status: "All" });
-    // --- END ---
 
     return (
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            {/* --- START: แก้ไขบรรทัดนี้ --- */}
+            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            {/* --- END --- */}
                 <CardTitle>Repair Orders</CardTitle>
                 {canManage && (
                     <Button onClick={() => navigate('/repairs/new')}>
@@ -52,7 +52,6 @@ export default function RepairListPage() {
                 )}
             </CardHeader>
             <CardContent>
-                {/* --- START: ส่วนที่แก้ไข --- */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
                         placeholder="Search by Order ID, Sender, or Receiver..."
@@ -72,7 +71,6 @@ export default function RepairListPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                {/* --- END --- */}
 
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm whitespace-nowrap">

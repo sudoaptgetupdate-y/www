@@ -1,107 +1,95 @@
 // src/components/dialogs/CategoryFormDialog.jsx
 
 import { useEffect, useState } from "react";
-import axiosInstance from '@/api/axiosInstance';
-import useAuthStore from "@/store/authStore";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "sonner";
+import axiosInstance from '@/api/axiosInstance';
+import useAuthStore from "@/store/authStore";
+import { toast } from 'sonner';
 
-const initialData = {
-    name: "",
+const initialFormData = {
+    name: '',
     requiresMacAddress: true,
-    requiresSerialNumber: true,
+    requiresSerialNumber: true
 };
 
-export default function CategoryFormDialog({ open, onOpenChange, category, isEditMode, onSuccess }) {
+// --- START: แก้ไขชื่อฟังก์ชัน ---
+export default function CategoryFormDialog({ isOpen, setIsOpen, category, onSave }) {
+// --- END ---
+    const [formData, setFormData] = useState(initialFormData);
     const token = useAuthStore((state) => state.token);
-    const [formData, setFormData] = useState(initialData);
+    const isEditMode = !!category;
 
     useEffect(() => {
-        if (isEditMode && category) {
-            setFormData({ 
+        if (isEditMode) {
+            setFormData({
                 name: category.name,
-                requiresMacAddress: category.requiresMacAddress ?? true,
-                requiresSerialNumber: category.requiresSerialNumber ?? true,
+                requiresMacAddress: category.requiresMacAddress,
+                requiresSerialNumber: category.requiresSerialNumber
             });
         } else {
-            setFormData(initialData);
+            setFormData(initialFormData);
         }
-    }, [isEditMode, category, open]);
+    }, [category, isOpen]);
 
     const handleInputChange = (e) => {
         const { id, value } = e.target;
-        setFormData(prev => ({ ...prev, [id]: value }));
+        setFormData({ ...formData, [id]: value });
     };
 
-    const handleSwitchChange = (checked, fieldName) => {
-        setFormData(prev => ({ ...prev, [fieldName]: checked }));
+    const handleSwitchChange = (id, checked) => {
+        setFormData({ ...formData, [id]: checked });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const url = isEditMode
-            ? `/categories/${category.id}`
-            : "/categories";
+        const url = isEditMode ? `/categories/${category.id}` : "/categories";
         const method = isEditMode ? 'put' : 'post';
 
         try {
             await axiosInstance[method](url, formData, { headers: { Authorization: `Bearer ${token}` } });
-            toast.success(`Category has been ${isEditMode ? 'updated' : 'created'} successfully.`);
-            onSuccess();
-            onOpenChange(false);
+            toast.success(`Category ${isEditMode ? 'updated' : 'created'} successfully!`);
+            onSave();
+            setIsOpen(false);
         } catch (error) {
             toast.error(error.response?.data?.error || `Failed to save category.`);
         }
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{isEditMode ? 'Edit Category' : 'Add New Category'}</DialogTitle>
-                    <DialogDescription>
-                       {isEditMode ? `Editing category: ${category?.name}.` : "Enter the details for the new category."}
-                    </DialogDescription>
+                    <DialogTitle>{isEditMode ? 'Edit' : 'Add New'} Category</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                     <div className="space-y-2">
                         <Label htmlFor="name">Category Name</Label>
                         <Input id="name" value={formData.name} onChange={handleInputChange} required />
                     </div>
-                    
-                    <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <div className="space-y-0.5">
-                           <Label>Requires Serial Number?</Label>
-                           <p className="text-[0.8rem] text-muted-foreground">
-                               Enable if items in this category must have a Serial Number.
-                           </p>
-                        </div>
+                    <div className="flex items-center space-x-2">
                         <Switch
+                            id="requiresSerialNumber"
                             checked={formData.requiresSerialNumber}
-                            onCheckedChange={(checked) => handleSwitchChange(checked, 'requiresSerialNumber')}
+                            onCheckedChange={(checked) => handleSwitchChange('requiresSerialNumber', checked)}
                         />
+                        <Label htmlFor="requiresSerialNumber">Requires Serial Number</Label>
                     </div>
-
-                    <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <div className="space-y-0.5">
-                           <Label>Requires MAC Address?</Label>
-                           <p className="text-[0.8rem] text-muted-foreground">
-                               Enable if items in this category must have a MAC address.
-                           </p>
-                        </div>
+                     <div className="flex items-center space-x-2">
                         <Switch
+                            id="requiresMacAddress"
                             checked={formData.requiresMacAddress}
-                            onCheckedChange={(checked) => handleSwitchChange(checked, 'requiresMacAddress')}
+                            onCheckedChange={(checked) => handleSwitchChange('requiresMacAddress', checked)}
                         />
+                        <Label htmlFor="requiresMacAddress">Requires MAC Address</Label>
                     </div>
-
                     <DialogFooter>
-                        <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-                        <Button type="submit">{isEditMode ? 'Save Changes' : 'Create Category'}</Button>
+                        <Button type="submit">Save</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

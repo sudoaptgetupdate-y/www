@@ -44,11 +44,9 @@ export default function InventoryHistoryPage() {
         const fetchData = async () => {
             if (!itemId || !token) return;
             try {
-                // --- START: แก้ไข Endpoint ที่เรียกใช้ ---
                 const response = await axiosInstance.get(`/history/${itemId}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                // --- END ---
                 setItemDetails(response.data.itemDetails);
                 setHistory(response.data.history);
             } catch (error) {
@@ -60,7 +58,6 @@ export default function InventoryHistoryPage() {
         fetchData();
     }, [itemId, token]);
 
-    // --- START: แก้ไข Logic การสร้าง Link ---
     const getTransactionLink = (eventType, details) => {
         if (!details) return null;
         switch (eventType) {
@@ -77,7 +74,6 @@ export default function InventoryHistoryPage() {
                 return null;
         }
     };
-    // --- END ---
 
     if (loading) return <p>Loading history...</p>;
     if (!itemDetails) return <p>Item not found.</p>;
@@ -104,58 +100,62 @@ export default function InventoryHistoryPage() {
                     <CardDescription>A complete chronological history of this item.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="p-2 text-left">Date</th>
-                                <th className="p-2 text-left">Details</th>
-                                <th className="p-2 text-left">Handled By</th>
-                                <th className="p-2 text-center w-40">Event</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {history.length > 0 ? history.map((event) => {
-                                const link = getTransactionLink(event.eventType, event.details);
-                                
-                                // --- START: แก้ไข Logic การแสดงผล Badge ---
-                                const getDisplayInfo = (historyEvent) => {
-                                    if (historyEvent.eventType === 'REPAIR_RETURNED') {
-                                        if (historyEvent.details.outcome === 'REPAIRED_SUCCESSFULLY') {
-                                            return { status: 'REPAIR_SUCCESS' };
-                                        }
-                                        if (historyEvent.details.outcome === 'UNREPAIRABLE') {
-                                            return { status: 'REPAIR_FAILED' };
-                                        }
-                                    }
-                                    return { status: historyEvent.eventType };
-                                };
-
-                                const { status: displayStatus } = getDisplayInfo(event);
-                                const eventIcon = eventConfig[displayStatus]?.icon;
-                                const { label: eventLabel } = getStatusProperties(displayStatus);
-                                // --- END ---
-
-                                return (
-                                <tr key={event.id} className="border-b">
-                                    <td className="p-2">{new Date(event.createdAt).toLocaleString()}</td>
-                                    <td className="p-2">{event.details?.details || 'N/A'}</td>
-                                    <td className="p-2">{event.user?.name || 'System'}</td>
-                                    <td className="p-2 text-center">
-                                         <StatusBadge
-                                            status={displayStatus}
-                                            className="w-36"
-                                            {...(link && { onClick: () => navigate(link) })}
-                                        >
-                                            {eventIcon}
-                                            <span className="ml-1.5">{eventLabel}</span>
-                                        </StatusBadge>
-                                    </td>
+                    {/* --- START: แก้ไขโดยเพิ่ม div ครอบ table --- */}
+                    <div className="border rounded-lg overflow-x-auto">
+                        <table className="w-full text-sm whitespace-nowrap">
+                    {/* --- END --- */}
+                            <thead>
+                                <tr className="border-b">
+                                    <th className="p-2 text-left">Date</th>
+                                    <th className="p-2 text-left">Details</th>
+                                    <th className="p-2 text-left">Handled By</th>
+                                    <th className="p-2 text-center w-40">Event</th>
                                 </tr>
-                            )}) : (
-                                <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">No transaction history found for this item.</td></tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {history.length > 0 ? history.map((event) => {
+                                    const link = getTransactionLink(event.eventType, event.details);
+                                    
+                                    const getDisplayInfo = (historyEvent) => {
+                                        if (historyEvent.eventType === 'REPAIR_RETURNED') {
+                                            if (historyEvent.details.outcome === 'REPAIRED_SUCCESSFULLY') {
+                                                return { status: 'REPAIR_SUCCESS' };
+                                            }
+                                            if (historyEvent.details.outcome === 'UNREPAIRABLE') {
+                                                return { status: 'REPAIR_FAILED' };
+                                            }
+                                        }
+                                        return { status: historyEvent.eventType };
+                                    };
+
+                                    const { status: displayStatus } = getDisplayInfo(event);
+                                    const eventIcon = eventConfig[displayStatus]?.icon;
+                                    const { label: eventLabel } = getStatusProperties(displayStatus);
+
+                                    return (
+                                    <tr key={event.id} className="border-b">
+                                        <td className="p-2">{new Date(event.createdAt).toLocaleString()}</td>
+                                        <td className="p-2" title={event.details?.details || 'N/A'}>
+                                            {event.details?.details || 'N/A'}
+                                        </td>
+                                        <td className="p-2">{event.user?.name || 'System'}</td>
+                                        <td className="p-2 text-center">
+                                            <StatusBadge
+                                                status={displayStatus}
+                                                className="w-36"
+                                                {...(link && { onClick: () => navigate(link) })}
+                                            >
+                                                {eventIcon}
+                                                <span className="ml-1.5">{eventLabel}</span>
+                                            </StatusBadge>
+                                        </td>
+                                    </tr>
+                                )}) : (
+                                    <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">No transaction history found for this item.</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </CardContent>
             </Card>
         </div>

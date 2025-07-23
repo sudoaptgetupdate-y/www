@@ -1,20 +1,24 @@
 // src/pages/ProductModelPage.jsx
 
-import { useEffect, useState } from "react";
-import axiosInstance from '@/api/axiosInstance';
+import { useState } from "react";
 import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle } from "lucide-react";
-import { BrandCombobox } from "@/components/ui/BrandCombobox";
+import { PlusCircle, Edit, Trash2 } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import axiosInstance from '@/api/axiosInstance';
+import { toast } from 'sonner';
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
+import { BrandCombobox } from "@/components/ui/BrandCombobox";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -22,13 +26,7 @@ const SkeletonRow = () => (
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2">
-            <div className="flex items-center justify-center gap-2">
-                <div className="h-8 w-20 bg-gray-200 rounded-md animate-pulse"></div>
-                <div className="h-8 w-20 bg-gray-200 rounded-md animate-pulse"></div>
-            </div>
-        </td>
+        <td className="p-2 text-center"><div className="h-8 w-28 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
     </tr>
 );
 
@@ -41,37 +39,20 @@ const initialFormData = {
 };
 
 export default function ProductModelPage() {
-    const { 
-        data: productModels, 
-        pagination, 
-        isLoading, 
-        searchTerm,
-        handleSearchChange, 
-        handlePageChange, 
-        handleItemsPerPageChange,
-        refreshData 
-    } = usePaginatedFetch("/product-models");
-    
     const token = useAuthStore((state) => state.token);
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
+    const {
+        data: productModels, pagination, isLoading, searchTerm, filters,
+        handleSearchChange, handlePageChange, handleItemsPerPageChange, handleFilterChange, refreshData
+    } = usePaginatedFetch("/product-models", 10, { categoryId: "All", brandId: "All" });
+    
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [formData, setFormData] = useState(initialFormData);
     const [editingModelId, setEditingModelId] = useState(null);
     const [modelToDelete, setModelToDelete] = useState(null);
-    const [initialBrandForEdit, setInitialBrandForEdit] = useState(null);
-    const [initialCategoryForEdit, setInitialCategoryForEdit] = useState(null);
-
-    const handleInputChange = (e) => {
-        const { id, value } = e.target;
-        setFormData({ ...formData, [id]: id === 'sellingPrice' ? parseFloat(value) || 0 : value });
-    };
-
-    const handleSelectChange = (id, value) => {
-        setFormData({ ...formData, [id]: parseInt(value) });
-    };
 
     const openDialog = (model = null) => {
         if (model) {
@@ -80,43 +61,58 @@ export default function ProductModelPage() {
             setFormData({
                 modelNumber: model.modelNumber,
                 description: model.description || "",
-                sellingPrice: model.sellingPrice,
-                categoryId: String(model.categoryId),
-                brandId: String(model.brandId),
+                sellingPrice: model.sellingPrice.toString(),
+                categoryId: model.categoryId,
+                brandId: model.brandId
             });
-            setInitialBrandForEdit(model.brand);
-            setInitialCategoryForEdit(model.category);
         } else {
             setIsEditMode(false);
             setFormData(initialFormData);
-            setInitialBrandForEdit(null);
-            setInitialCategoryForEdit(null);
         }
         setIsDialogOpen(true);
     };
 
+    const handleInputChange = (e) => {
+        const { id, value } = e.target;
+        setFormData({ ...formData, [id]: value });
+    };
+
+    const handleComboboxSelect = (type, value) => {
+        setFormData(prev => ({ ...prev, [type]: value }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const url = isEditMode
-            ? `/product-models/${editingModelId}`
-            : "/product-models";
+
+        if (!formData.categoryId || !formData.brandId) {
+            toast.error("Please select both a Category and a Brand.");
+            return;
+        }
+
+        const url = isEditMode ? `/product-models/${editingModelId}` : "/product-models";
         const method = isEditMode ? 'put' : 'post';
-        
+        const payload = {
+            ...formData,
+            sellingPrice: parseFloat(formData.sellingPrice),
+            categoryId: parseInt(formData.categoryId, 10),
+            brandId: parseInt(formData.brandId, 10),
+        };
+
         try {
-            await axiosInstance[method](url, formData, { headers: { Authorization: `Bearer ${token}` } });
-            toast.success(`Product model ${isEditMode ? 'updated' : 'created'} successfully!`);
+            await axiosInstance[method](url, payload, { headers: { Authorization: `Bearer ${token}` } });
+            toast.success(`Product Model ${isEditMode ? 'updated' : 'created'} successfully!`);
             refreshData();
             setIsDialogOpen(false);
         } catch (error) {
-            toast.error(error.response?.data?.error || `Failed to ${isEditMode ? 'update' : 'create'} product model.`);
+            toast.error(error.response?.data?.error || `Failed to save product model.`);
         }
     };
 
     const confirmDelete = async () => {
-        if(!modelToDelete) return;
+        if (!modelToDelete) return;
         try {
             await axiosInstance.delete(`/product-models/${modelToDelete.id}`, { headers: { Authorization: `Bearer ${token}` } });
-            toast.success("Product model deleted successfully!");
+            toast.success("Product Model deleted successfully!");
             refreshData();
         } catch (error) {
             toast.error(error.response?.data?.error || "Failed to delete product model.");
@@ -127,27 +123,41 @@ export default function ProductModelPage() {
 
     return (
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Product Model Management</CardTitle>
-                {canManage && 
+            {/* --- START: แก้ไขบรรทัดนี้ --- */}
+            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            {/* --- END --- */}
+                <CardTitle>Product Models</CardTitle>
+                {canManage &&
                     <Button onClick={() => openDialog()}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Product Model
                     </Button>
                 }
             </CardHeader>
             <CardContent>
-                <div className="mb-4">
-                    <Input placeholder="Search by model or description..." value={searchTerm} onChange={(e) => handleSearchChange(e.target.value)} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                    <Input
+                        placeholder="Search by Model Number..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="lg:col-span-1"
+                    />
+                    <CategoryCombobox
+                        selectedValue={filters.categoryId}
+                        onSelect={(value) => handleFilterChange('categoryId', value)}
+                    />
+                    <BrandCombobox
+                        selectedValue={filters.brandId}
+                        onSelect={(value) => handleFilterChange('brandId', value)}
+                    />
                 </div>
                 <div className="border rounded-lg overflow-x-auto">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
+                    <table className="w-full text-sm whitespace-nowrap">
                         <thead>
                             <tr className="border-b">
                                 <th className="p-2 text-left">Model Number</th>
-                                <th className="p-2 text-left">Description</th>
-                                <th className="p-2 text-right">Price</th>
                                 <th className="p-2 text-left">Category</th>
                                 <th className="p-2 text-left">Brand</th>
+                                <th className="p-2 text-left">Price</th>
                                 {canManage && <th className="p-2 text-center">Actions</th>}
                             </tr>
                         </thead>
@@ -156,16 +166,19 @@ export default function ProductModelPage() {
                                 [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
                             ) : productModels.map((model) => (
                                 <tr key={model.id} className="border-b">
-                                    <td className="p-2">{model.modelNumber}</td>
-                                    <td className="p-2 max-w-xs truncate">{model.description}</td>
-                                    <td className="p-2 text-right">{model.sellingPrice.toLocaleString()}</td>
+                                    <td className="p-2 font-semibold">{model.modelNumber}</td>
                                     <td className="p-2">{model.category.name}</td>
                                     <td className="p-2">{model.brand.name}</td>
+                                    <td className="p-2">{model.sellingPrice.toFixed(2)}</td>
                                     {canManage && (
-                                         <td className="p-2">
+                                        <td className="p-2">
                                             <div className="flex items-center justify-center gap-2">
-                                                <Button variant="outline" size="sm" className="w-20" onClick={() => openDialog(model)}>Edit</Button>
-                                                <Button variant="destructive" size="sm" className="w-20" onClick={() => setModelToDelete(model)}>Delete</Button>
+                                                <Button variant="outline" size="sm" className="w-20" onClick={() => openDialog(model)}>
+                                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                                </Button>
+                                                <Button variant="destructive" size="sm" className="w-20" onClick={() => setModelToDelete(model)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                </Button>
                                             </div>
                                         </td>
                                     )}
@@ -176,15 +189,6 @@ export default function ProductModelPage() {
                 </div>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Label htmlFor="rows-per-page">Rows per page:</Label>
-                    <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
-                        <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                            {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
-                        </SelectContent>
-                    </Select>
-                </div>
                 <div className="text-sm text-muted-foreground">
                     Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
                 </div>
@@ -196,35 +200,35 @@ export default function ProductModelPage() {
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>
-                    <DialogHeader><DialogTitle>{isEditMode ? 'Edit' : 'Add New'} Product Model</DialogTitle></DialogHeader>
-                    <form onSubmit={handleSubmit}>
-                        <div className="grid gap-4 py-4">
+                    <DialogHeader>
+                        <DialogTitle>{isEditMode ? 'Edit' : 'Add New'} Product Model</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="modelNumber">Model Number</Label>
+                            <Input id="modelNumber" value={formData.modelNumber} onChange={handleInputChange} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="description">Description</Label>
+                            <Input id="description" value={formData.description} onChange={handleInputChange} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="sellingPrice">Selling Price</Label>
+                            <Input id="sellingPrice" type="number" step="0.01" value={formData.sellingPrice} onChange={handleInputChange} required />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="modelNumber">Model Number</Label>
-                                <Input id="modelNumber" value={formData.modelNumber} onChange={handleInputChange} required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="description">Description</Label>
-                                <Input id="description" value={formData.description} onChange={handleInputChange} />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="sellingPrice">Selling Price (Pre-VAT)</Label>
-                                <Input id="sellingPrice" type="number" value={formData.sellingPrice} onChange={handleInputChange} required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="brandId">Brand</Label>
-                                <BrandCombobox
-                                    selectedValue={formData.brandId}
-                                    onSelect={(value) => handleSelectChange('brandId', value)}
-                                    initialBrand={initialBrandForEdit}
-                                />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="categoryId">Category</Label>
+                                <Label>Category</Label>
                                 <CategoryCombobox
                                     selectedValue={formData.categoryId}
-                                    onSelect={(value) => handleSelectChange('categoryId', value)}
-                                    initialCategory={initialCategoryForEdit}
+                                    onSelect={(value) => handleComboboxSelect('categoryId', value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Brand</Label>
+                                <BrandCombobox
+                                    selectedValue={formData.brandId}
+                                    onSelect={(value) => handleComboboxSelect('brandId', value)}
                                 />
                             </div>
                         </div>
@@ -232,10 +236,19 @@ export default function ProductModelPage() {
                     </form>
                 </DialogContent>
             </Dialog>
-            <AlertDialog open={!!modelToDelete} onOpenChange={() => setModelToDelete(null)}>
+
+            <AlertDialog open={!!modelToDelete} onOpenChange={(isOpen) => !isOpen && setModelToDelete(null)}>
                 <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the model: <strong>{modelToDelete?.modelNumber}</strong>.</AlertDialogDescription></AlertDialogHeader>
-                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmDelete}>Continue</AlertDialogAction></AlertDialogFooter>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the product model: <strong>{modelToDelete?.modelNumber}</strong>.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete}>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
         </Card>

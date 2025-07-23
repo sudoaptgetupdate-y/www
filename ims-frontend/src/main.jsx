@@ -41,13 +41,12 @@ const CreateAssetAssignmentPage = lazy(() => import('./pages/CreateAssetAssignme
 const AssetAssignmentDetailPage = lazy(() => import('./pages/AssetAssignmentDetailPage.jsx'));
 const AssetHistoryPage = lazy(() => import('./pages/AssetHistoryPage.jsx'));
 const UserAssetHistoryPage = lazy(() => import('./pages/UserAssetHistoryPage.jsx'));
+const UserActiveAssetsPage = lazy(() => import('./pages/UserActiveAssetsPage.jsx'));
 const InventoryHistoryPage = lazy(() => import('./pages/InventoryHistoryPage.jsx'));
-// --- START: Import หน้าใหม่ ---
 const AddressPage = lazy(() => import('./pages/AddressPage.jsx'));
 const RepairListPage = lazy(() => import('./pages/RepairListPage.jsx'));
 const CreateRepairPage = lazy(() => import('./pages/CreateRepairPage.jsx'));
 const RepairDetailPage = lazy(() => import('./pages/RepairDetailPage.jsx'));
-// --- END: Import หน้าใหม่ ---
 
 // Fallback component to show while lazy components are loading
 const Loading = () => (
@@ -85,15 +84,14 @@ const routes = [
   { path: 'product-models', Page: ProductModelPage },
   { path: 'brands', Page: BrandPage },
   { path: 'categories', Page: CategoryPage },
-  // --- START: เพิ่ม Route ใหม่ ---
-  // System
+  // System & Repair
   { path: 'repairs', Page: RepairListPage },
   { path: 'repairs/new', Page: CreateRepairPage },
   { path: 'repairs/:repairId', Page: RepairDetailPage },
   { path: 'addresses', Page: AddressPage },
-  // --- END: เพิ่ม Route ใหม่ ---
   { path: 'users', Page: UserManagementPage },
   { path: 'users/:userId/assets', Page: UserAssetHistoryPage },
+  { path: 'users/:userId/active-assets', Page: UserActiveAssetsPage },
   { path: 'profile', Page: ProfilePage },
 ];
 

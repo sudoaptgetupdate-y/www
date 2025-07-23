@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { StatusBadge } from "@/components/ui/StatusBadge"; 
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -18,6 +18,7 @@ const SkeletonRow = () => (
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2 text-center"><div className="h-6 w-32 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
         <td className="p-2 text-center"><div className="h-5 w-24 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
+        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2 text-center"><div className="h-8 w-[76px] bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
     </tr>
 );
@@ -27,11 +28,10 @@ export default function AssetAssignmentPage() {
     const { user: currentUser } = useAuthStore((state) => state);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
-    // --- START: ส่วนที่แก้ไข ---
     const { 
         data: assignments, 
         pagination, 
-        isLoading,
+        isLoading, 
         searchTerm,
         filters,
         handleSearchChange,
@@ -39,11 +39,12 @@ export default function AssetAssignmentPage() {
         handleItemsPerPageChange,
         handleFilterChange
     } = usePaginatedFetch("/asset-assignments", 10, { status: "All" });
-    // --- END ---
 
     return (
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            {/* --- START: แก้ไขบรรทัดนี้ --- */}
+            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            {/* --- END --- */}
                 <CardTitle>Asset Assignments</CardTitle>
                 {canManage && (
                     <Button onClick={() => navigate('/asset-assignments/new')}>
@@ -52,15 +53,14 @@ export default function AssetAssignmentPage() {
                 )}
             </CardHeader>
             <CardContent>
-                {/* --- START: ส่วนที่แก้ไข --- */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
-                        placeholder="Search by Assignee or Assignment ID..."
+                        placeholder="Search by Assignee Name or ID..."
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="flex-grow"
                     />
-                    <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+                     <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
                         <SelectTrigger className="w-full sm:w-[220px]">
                             <SelectValue placeholder="Filter by Status..." />
                         </SelectTrigger>
@@ -72,25 +72,17 @@ export default function AssetAssignmentPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                {/* --- END --- */}
-
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm whitespace-nowrap">
-                         <colgroup>
-                            <col className="w-[10%]" />
-                            <col className="w-[25%]" />
-                            <col className="w-[20%]" />
-                            <col className="w-[140px]" />
-                            <col className="w-[15%]" />
-                            <col className="w-[100px]" />
-                        </colgroup>
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left">ID</th>
-                                <th className="p-2 text-left">Assignee</th>
+                                <th className="p-2 text-left">Assignment ID</th>
+                                <th className="p-2 text-left">Assigned To</th>
                                 <th className="p-2 text-left">Assigned Date</th>
+                                <th className="p-2 text-left">Return Date</th>
                                 <th className="p-2 text-center">Status</th>
                                 <th className="p-2 text-center">Item Status</th>
+                                <th className="p-2 text-left">Approved By</th>
                                 <th className="p-2 text-center">Actions</th>
                             </tr>
                         </thead>
@@ -100,12 +92,14 @@ export default function AssetAssignmentPage() {
                             ) : assignments.map((a) => (
                                 <tr key={a.id} className="border-b">
                                     <td className="p-2 font-semibold">#{a.id}</td>
-                                    <td className="p-2">{a.assignee?.name || 'N/A'}</td>
+                                    <td className="p-2">{a.assignee.name}</td>
                                     <td className="p-2">{new Date(a.assignedDate).toLocaleDateString()}</td>
+                                    <td className="p-2">{a.returnDate ? new Date(a.returnDate).toLocaleDateString() : 'N/A'}</td>
                                     <td className="p-2 text-center">
                                         <StatusBadge status={a.status} className="w-32" />
                                     </td>
                                     <td className="p-2 text-center">{a.returnedItemCount}/{a.totalItemCount} Returned</td>
+                                    <td className="p-2">{a.approvedBy.name}</td>
                                     <td className="p-2 text-center">
                                         <Button variant="outline" size="sm" onClick={() => navigate(`/asset-assignments/${a.id}`)}>
                                             Details

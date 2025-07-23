@@ -338,4 +338,54 @@ userController.getUserAssetSummary = async (req, res, next) => {
     }
 };
 
+userController.getActiveAssetsForUser = async (req, res, next) => {
+    const { id: userId } = req.params;
+    try {
+        const id = parseInt(userId);
+        if (isNaN(id)) {
+            const err = new Error('Invalid User ID.');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        const activeAssets = await prisma.inventoryItem.findMany({
+            where: {
+                itemType: ItemType.ASSET,
+                status: 'ASSIGNED',
+                assignmentRecords: {
+                    some: {
+                        assignment: { assigneeId: id },
+                        returnedAt: null
+                    }
+                }
+            },
+            include: {
+                productModel: true,
+                assignmentRecords: {
+                    where: { returnedAt: null },
+                    include: {
+                        assignment: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        const formattedAssets = activeAssets.map(asset => {
+            const assignmentInfo = asset.assignmentRecords[0];
+            return {
+                ...asset,
+                assignedDate: assignmentInfo?.assignedAt,
+                assignmentId: assignmentInfo?.assignmentId
+            };
+        });
+
+        res.status(200).json(formattedAssets);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = userController;

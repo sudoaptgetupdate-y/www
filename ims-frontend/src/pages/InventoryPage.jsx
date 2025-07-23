@@ -26,7 +26,7 @@ import {
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
-//ลบ Switch ออกจาก import เพราะไม่ได้ใช้แล้ว
+import { Switch } from "@/components/ui/switch";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -63,16 +63,14 @@ export default function InventoryPage() {
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
-    // --- START: แก้ไขค่าเริ่มต้นของ Filter ---
     const {
         data: inventoryItems, pagination, isLoading, searchTerm, filters,
         handleSearchChange, handlePageChange, handleItemsPerPageChange, handleFilterChange, refreshData
     } = usePaginatedFetch("/inventory", 10, { 
-        status: "IN_STOCK", // <<-- เปลี่ยนค่าเริ่มต้นเป็น "IN_STOCK"
+        status: "IN_STOCK",
         categoryId: "All",
         brandId: "All"
     });
-    // --- END ---
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -214,7 +212,9 @@ export default function InventoryPage() {
 
     return (
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            {/* --- START: แก้ไขบรรทัดนี้ --- */}
+            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            {/* --- END --- */}
                 <CardTitle>Inventory Item Management</CardTitle>
                  {canManage &&
                     <Button onClick={() => openDialog()}>
@@ -254,18 +254,6 @@ export default function InventoryPage() {
                         </SelectContent>
                     </Select>
                 </div>
-
-                {/* --- START: ลบ Switch ออกจากส่วนนี้ --- */}
-                {/* <div className="flex items-center space-x-2 mb-4">
-                    <Switch
-                        id="include-customer-items"
-                        checked={filters.includeCustomerItems === 'true'}
-                        onCheckedChange={(checked) => handleFilterChange('includeCustomerItems', String(checked))}
-                    />
-                    <Label htmlFor="include-customer-items">Include Customer Items</Label>
-                </div>
-                */}
-                {/* --- END --- */}
                 
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-left text-sm whitespace-nowrap">
