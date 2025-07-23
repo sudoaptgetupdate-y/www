@@ -74,6 +74,10 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         const statusFilter = req.query.status || 'All';
         const categoryIdFilter = req.query.categoryId || 'All';
         const brandIdFilter = req.query.brandId || 'All';
+        // --- START: เพิ่มการรับค่า Sort ---
+        const sortBy = req.query.sortBy || 'updatedAt';
+        const sortOrder = req.query.sortOrder || 'desc';
+        // --- END ---
         
         let where = { 
             itemType: ItemType.SALE
@@ -98,6 +102,15 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
             where.productModel = { ...where.productModel, brandId: parseInt(brandIdFilter) };
         }
 
+        // --- START: สร้าง Logic สำหรับ orderBy ---
+        let orderBy = {};
+        if (sortBy === 'productModel') {
+            orderBy = { productModel: { modelNumber: sortOrder } };
+        } else {
+            orderBy = { [sortBy]: sortOrder };
+        }
+        // --- END ---
+
         const include = {
             productModel: { include: { category: true, brand: true } },
             addedBy: { select: { name: true } },
@@ -113,7 +126,7 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         };
 
         const [items, totalItems] = await prisma.$transaction([
-            prisma.inventoryItem.findMany({ where, skip, take: limit, orderBy: { updatedAt: 'desc' }, include }),
+            prisma.inventoryItem.findMany({ where, skip, take: limit, orderBy, include }),
             prisma.inventoryItem.count({ where })
         ]);
 
@@ -143,6 +156,7 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
     }
 };
 
+// ... (ส่วนที่เหลือของไฟล์เหมือนเดิม)
 inventoryController.getInventoryItemById = async (req, res, next) => {
     try {
         const { id } = req.params;

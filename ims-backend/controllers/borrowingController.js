@@ -76,7 +76,6 @@ borrowingController.createBorrowing = async (req, res, next) => {
                 data: { status: 'BORROWED' },
             });
 
-            // --- START: แก้ไขส่วนการบันทึกประวัติ ---
             for (const itemId of inventoryItemIds) {
                 await createEventLog(
                     tx,
@@ -90,7 +89,6 @@ borrowingController.createBorrowing = async (req, res, next) => {
                     }
                 );
             }
-            // --- END ---
 
             return tx.borrowing.findUnique({
                 where: { id: createdBorrowing.id },
@@ -151,7 +149,6 @@ borrowingController.returnItems = async (req, res, next) => {
                 data: { status: 'IN_STOCK' },
             });
 
-            // --- START: แก้ไขส่วนการบันทึกประวัติ ---
             for (const itemId of itemIdsToReturn) {
                 await createEventLog(
                     tx,
@@ -165,7 +162,6 @@ borrowingController.returnItems = async (req, res, next) => {
                     }
                 );
             }
-            // --- END ---
 
             const remainingItems = await tx.borrowingOnItems.count({
                 where: {
@@ -197,12 +193,21 @@ borrowingController.getAllBorrowings = async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
+        const sortBy = req.query.sortBy || 'borrowDate';
+        const sortOrder = req.query.sortOrder || 'desc';
+
+        let orderBy = {};
+        if (sortBy === 'customer') {
+            orderBy = { borrower: { name: sortOrder } };
+        } else {
+            orderBy = { [sortBy]: sortOrder };
+        }
 
         const [borrowings, totalItems] = await prisma.$transaction([
             prisma.borrowing.findMany({
                 skip,
                 take: limit,
-                orderBy: { borrowDate: 'desc' },
+                orderBy,
                 include: {
                     borrower: { select: { id: true, name: true } },
                     approvedBy: { select: { id: true, name: true } },

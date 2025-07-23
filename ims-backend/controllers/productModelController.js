@@ -8,7 +8,6 @@ exports.createProductModel = async (req, res, next) => {
         const { modelNumber, description, sellingPrice, categoryId, brandId } = req.body;
         const userId = req.user.id;
 
-        // --- START: Input Validation ---
         if (typeof modelNumber !== 'string' || modelNumber.trim() === '') {
             const err = new Error('Model Number is required and cannot be empty.');
             err.statusCode = 400;
@@ -24,7 +23,6 @@ exports.createProductModel = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: Input Validation ---
 
         const newProductModel = await prisma.productModel.create({
             data: {
@@ -57,6 +55,8 @@ exports.getAllProductModels = async (req, res, next) => {
         const limit = parseInt(req.query.limit) || 10;
         const searchTerm = req.query.search || '';
         const skip = (page - 1) * limit;
+        const sortBy = req.query.sortBy || 'createdAt';
+        const sortOrder = req.query.sortOrder || 'desc';
 
         const where = searchTerm
             ? {
@@ -69,12 +69,23 @@ exports.getAllProductModels = async (req, res, next) => {
             }
             : {};
         
+        // --- START: สร้าง Logic สำหรับ orderBy ---
+        let orderBy = {};
+        if (sortBy === 'category') {
+            orderBy = { category: { name: sortOrder } };
+        } else if (sortBy === 'brand') {
+            orderBy = { brand: { name: sortOrder } };
+        } else {
+            orderBy = { [sortBy]: sortOrder };
+        }
+        // --- END ---
+        
         const [productModels, totalItems] = await Promise.all([
             prisma.productModel.findMany({
                 where,
                 skip,
                 take: limit,
-                orderBy: { createdAt: 'desc' },
+                orderBy, // <-- ใช้ orderBy ที่สร้างขึ้น
                 include: includeRelations
             }),
             prisma.productModel.count({ where })
@@ -138,7 +149,6 @@ exports.updateProductModel = async (req, res, next) => {
             throw err;
         }
 
-        // --- START: Input Validation ---
         if (typeof modelNumber !== 'string' || modelNumber.trim() === '') {
             const err = new Error('Model Number is required and cannot be empty.');
             err.statusCode = 400;
@@ -154,7 +164,6 @@ exports.updateProductModel = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: Input Validation ---
 
         const updatedProductModel = await prisma.productModel.update({
             where: { id: modelId },

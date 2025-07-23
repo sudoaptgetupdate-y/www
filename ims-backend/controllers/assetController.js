@@ -1,6 +1,6 @@
 // ims-backend/controllers/assetController.js
 
-const { PrismaClient, ItemType, EventType } = require('@prisma/client'); // <-- แก้ไข: เปลี่ยน HistoryEventType เป็น EventType
+const { PrismaClient, ItemType, EventType } = require('@prisma/client');
 const prisma = new PrismaClient();
 const assetController = {};
 
@@ -181,6 +181,8 @@ assetController.getAllAssets = async (req, res, next) => {
         const statusFilter = req.query.status || 'All';
         const categoryIdFilter = req.query.categoryId || 'All';
         const brandIdFilter = req.query.brandId || 'All';
+        const sortBy = req.query.sortBy || 'updatedAt';
+        const sortOrder = req.query.sortOrder || 'desc';
 
         let where = { itemType: ItemType.ASSET };
 
@@ -204,6 +206,13 @@ assetController.getAllAssets = async (req, res, next) => {
             where.productModel = { ...where.productModel, brandId: parseInt(brandIdFilter) };
         }
 
+        let orderBy = {};
+        if (sortBy === 'productModel') {
+            orderBy = { productModel: { modelNumber: sortOrder } };
+        } else {
+            orderBy = { [sortBy]: sortOrder };
+        }
+
         const include = {
             productModel: { include: { category: true, brand: true } },
             addedBy: { select: { name: true } },
@@ -218,7 +227,7 @@ assetController.getAllAssets = async (req, res, next) => {
         };
 
         const [items, totalItems] = await prisma.$transaction([
-            prisma.inventoryItem.findMany({ where, skip, take: limit, orderBy: { updatedAt: 'desc' }, include }),
+            prisma.inventoryItem.findMany({ where, skip, take: limit, orderBy, include }),
             prisma.inventoryItem.count({ where })
         ]);
 
@@ -381,8 +390,5 @@ assetController.reinstateAsset = async (req, res, next) => {
         next(error);
     }
 };
-
-// --- START: ลบฟังก์ชัน getAssetHistory เดิมทิ้งทั้งหมด ---
-// --- END ---
 
 module.exports = assetController;

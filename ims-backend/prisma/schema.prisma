@@ -72,8 +72,6 @@ enum ItemOwner {
   CUSTOMER
 }
 
-// --- START: แก้ไข Enum ---
-// รวม Event Type ทั้งหมดไว้ที่นี่ที่เดียว
 enum EventType {
   CREATE
   UPDATE
@@ -88,7 +86,6 @@ enum EventType {
   REPAIR_SENT
   REPAIR_RETURNED
 }
-// --- END: แก้ไข Enum ---
 
 
 // --- Models ---
@@ -115,7 +112,6 @@ model User {
   receivedAssignments   AssetAssignment[] @relation("ReceivedAssignments")
   createdRepairs        Repair[]
   
-  // Relation ไปยัง EventLog ใหม่
   events                EventLog[]
 }
 
@@ -154,10 +150,7 @@ model InventoryItem {
   borrowingRecords    BorrowingOnItems[]
   repairRecords       RepairOnItems[]
 
-  // --- START: แก้ไข Relation ---
-  // ลบ Relation ไปยัง AssetHistory เดิม และให้ EventLog อ้างอิงมาหาแทน
   eventLogs           EventLog[]
-  // --- END: แก้ไข Relation ---
 
   @@index([status])
   @@index([itemType])
@@ -171,6 +164,8 @@ model Borrowing {
   approvedById Int
   approvedBy   User      @relation("ApprovedBorrowings", fields: [approvedById], references: [id])
   borrowDate   DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   dueDate      DateTime?
   returnDate   DateTime?
   notes        String?
@@ -230,6 +225,8 @@ model ProductModel {
 model Sale {
   id         Int      @id @default(autoincrement())
   saleDate   DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
   subtotal   Float
   vatAmount  Float
   total      Float
@@ -251,6 +248,8 @@ model AssetAssignment {
   approvedById  Int
   approvedBy    User                   @relation("ApprovedAssignments", fields: [approvedById], references: [id])
   assignedDate  DateTime               @default(now())
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @default(now()) @updatedAt
   returnDate    DateTime?
   notes         String?
   status        AssignmentStatus       @default(ASSIGNED)
@@ -283,6 +282,8 @@ model Address {
 model Repair {
   id              Int      @id @default(autoincrement())
   repairDate      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
   notes           String?
   status          RepairStatus @default(REPAIRING)
   
@@ -311,7 +312,6 @@ model RepairOnItems {
   @@id([repairId, inventoryItemId])
 }
 
-// --- START: สร้าง Model ใหม่สำหรับ Event History ---
 model EventLog {
   id              Int       @id @default(autoincrement())
   inventoryItemId Int
@@ -320,11 +320,10 @@ model EventLog {
   userId          Int?
   user            User?     @relation(fields: [userId], references: [id])
   
-  eventType       EventType // ประเภทของเหตุการณ์
-  details         Json      // เก็บข้อมูลรายละเอียดเป็น JSON เพื่อความยืดหยุ่น
+  eventType       EventType
+  details         Json      
   createdAt       DateTime  @default(now())
 
   @@index([inventoryItemId])
   @@index([eventType])
 }
-// --- END: สร้าง Model ใหม่ ---
