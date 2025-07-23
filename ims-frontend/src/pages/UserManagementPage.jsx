@@ -44,7 +44,7 @@ export default function UserManagementPage() {
     const navigate = useNavigate();
     const token = useAuthStore((state) => state.token);
     const {
-        data: users, pagination, isLoading, refreshData
+        data: users, pagination, isLoading, searchTerm, handleSearchChange, handlePageChange, handleItemsPerPageChange, refreshData
     } = usePaginatedFetch("/users", 10);
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -107,9 +107,7 @@ export default function UserManagementPage() {
             await axiosInstance.delete(`/users/${userToDelete.id}`, { headers: { Authorization: `Bearer ${token}` } });
             toast.success("User deleted successfully!");
             refreshData();
-        // --- START: แก้ไขบรรทัดนี้ ---
         } catch (error) {
-        // --- END ---
             toast.error(error.response?.data?.error || "Failed to delete user.");
         } finally {
             setUserToDelete(null);
@@ -125,6 +123,14 @@ export default function UserManagementPage() {
                 </Button>
             </CardHeader>
             <CardContent>
+                <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                    <Input
+                        placeholder="Search by name, email, or username..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="flex-grow"
+                    />
+                </div>
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
@@ -170,6 +176,15 @@ export default function UserManagementPage() {
                 </div>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                        <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
+                        </SelectContent>
+                    </Select>
+                </div>
                 <div className="text-sm text-muted-foreground">
                     Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
                 </div>

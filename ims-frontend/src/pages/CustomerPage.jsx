@@ -15,9 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import axiosInstance from '@/api/axiosInstance';
 import { toast } from 'sonner';
-// --- START: แก้ไขการ import ---
 import CustomerFormDialog from "@/components/dialogs/CustomerFormDialog";
-// --- END ---
 import { useNavigate } from "react-router-dom";
 
 const SkeletonRow = () => (
@@ -75,17 +73,21 @@ export default function CustomerPage() {
         <Card>
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <CardTitle>Customers</CardTitle>
-                <div className="flex items-center gap-4">
+                {/* --- START: แก้ไขส่วนนี้ (ย้ายปุ่ม Add New มาไว้คนเดียว) --- */}
+                {canManage && <Button onClick={handleAddNew}>Add New Customer</Button>}
+                {/* --- END --- */}
+            </CardHeader>
+            <CardContent>
+                {/* --- START: เพิ่มส่วนนี้เข้ามา --- */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
                         placeholder="Search by name or code..."
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
-                        className="w-full sm:w-auto"
+                        className="flex-grow"
                     />
-                     {canManage && <Button onClick={handleAddNew}>Add New Customer</Button>}
                 </div>
-            </CardHeader>
-            <CardContent>
+                {/* --- END --- */}
                  <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm whitespace-nowrap">
                         <thead>

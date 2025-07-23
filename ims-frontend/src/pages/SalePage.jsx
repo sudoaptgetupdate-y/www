@@ -2,13 +2,10 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
@@ -17,6 +14,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const SkeletonRow = () => (
     <tr className="border-b">
+        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2 text-center"><div className="h-6 w-24 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
@@ -33,7 +31,7 @@ const SkeletonRow = () => (
 
 export default function SalePage() {
     const navigate = useNavigate();
-    const { user: currentUser } = useAuthStore((state) => state.user);
+    const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
     const { 
@@ -61,7 +59,7 @@ export default function SalePage() {
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
-                        placeholder="Search by Customer or Seller Name..."
+                        placeholder="Search by Customer, Seller Name or Sale ID..."
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="flex-grow"
@@ -80,15 +78,21 @@ export default function SalePage() {
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm whitespace-nowrap">
                         <colgroup>
+                            {/* --- START: เพิ่ม colgroup --- */}
+                            <col className="w-[10%]" />
                             <col className="w-[25%]" />
-                            <col className="w-[25%]" />
+                            <col className="w-[20%]" />
                             <col className="w-[120px]" />
                             <col className="w-[80px]" />
                             <col className="w-[15%]" />
-                            <col className="w-[180px]" />
+                            <col className="w-[100px]" />
+                            {/* --- END --- */}
                         </colgroup>
                         <thead>
                             <tr className="border-b">
+                                {/* --- START: เพิ่ม th --- */}
+                                <th className="p-2 text-left">Sale ID</th>
+                                {/* --- END --- */}
                                 <th className="p-2 text-left">Customer</th>
                                 <th className="p-2 text-left">Sale Date</th>
                                 <th className="p-2 text-center">Status</th>
@@ -102,17 +106,18 @@ export default function SalePage() {
                                 [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
                             ) : sales.map((sale) => (
                                 <tr key={sale.id} className="border-b">
+                                    {/* --- START: เพิ่ม td --- */}
+                                    <td className="p-2 font-semibold">#{sale.id}</td>
+                                    {/* --- END --- */}
                                     <td className="p-2 text-left">{sale.customer?.name || 'N/A'}</td>
                                     <td className="p-2 text-left">{new Date(sale.saleDate).toLocaleString()}</td>
                                     <td className="p-2 text-center">
-                                        {/* --- START: แก้ไขส่วนนี้ --- */}
                                         <StatusBadge 
                                             status={sale.status} 
                                             className="w-24" 
                                             onClick={() => navigate(`/sales/${sale.id}`)}
-                                            interactive // เพิ่ม prop นี้เพื่อให้มี hover effect
+                                            interactive
                                         />
-                                        {/* --- END --- */}
                                     </td>
                                     <td className="p-2 text-center">{sale.itemsSold.length}</td>
                                     <td className="p-2 text-right">{sale.total.toLocaleString('en-US')} THB</td>

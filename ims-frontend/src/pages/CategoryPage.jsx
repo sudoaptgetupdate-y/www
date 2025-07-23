@@ -4,6 +4,7 @@ import { useState } from "react";
 import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { Edit, Trash2 } from "lucide-react";
 import {
@@ -12,9 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import axiosInstance from '@/api/axiosInstance';
 import { toast } from 'sonner';
-// --- START: แก้ไขการ import ---
 import CategoryFormDialog from "@/components/dialogs/CategoryFormDialog";
-// --- END ---
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -31,7 +30,7 @@ export default function CategoryPage() {
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
     const {
-        data: categories, pagination, isLoading, refreshData
+        data: categories, pagination, isLoading, searchTerm, handleSearchChange, refreshData
     } = usePaginatedFetch("/categories", 100); 
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -76,6 +75,14 @@ export default function CategoryPage() {
                 }
             </CardHeader>
             <CardContent>
+                <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                    <Input
+                        placeholder="Search by category name..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="flex-grow"
+                    />
+                </div>
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>

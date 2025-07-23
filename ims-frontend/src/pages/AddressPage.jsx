@@ -4,6 +4,7 @@ import { useState } from "react";
 import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { Edit, Trash2 } from "lucide-react";
 import {
@@ -12,9 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import axiosInstance from '@/api/axiosInstance';
 import { toast } from 'sonner';
-// --- START: แก้ไขการ import ---
 import AddressFormDialog from "@/components/dialogs/AddressFormDialog";
-// --- END ---
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -32,7 +31,7 @@ export default function AddressPage() {
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
     const {
-        data: addresses, isLoading, refreshData
+        data: addresses, isLoading, searchTerm, handleSearchChange, refreshData
     } = usePaginatedFetch("/addresses", 100); 
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -73,6 +72,14 @@ export default function AddressPage() {
                 {canManage && <Button onClick={handleAddNew}>Add New Address</Button>}
             </CardHeader>
             <CardContent>
+                <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                    <Input
+                        placeholder="Search by name, contact, or phone..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="flex-grow"
+                    />
+                </div>
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>

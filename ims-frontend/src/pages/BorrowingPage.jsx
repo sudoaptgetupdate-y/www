@@ -16,6 +16,7 @@ const SkeletonRow = () => (
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
+        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
         <td className="p-2 text-center"><div className="h-6 w-24 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
         <td className="p-2 text-center"><div className="h-5 w-24 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
         <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
@@ -25,7 +26,7 @@ const SkeletonRow = () => (
 
 export default function BorrowingPage() {
     const navigate = useNavigate();
-    const { user: currentUser } = useAuthStore((state) => state);
+    const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
     const { 
@@ -53,7 +54,7 @@ export default function BorrowingPage() {
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
-                        placeholder="Search by Customer, Admin, or Serial Number..."
+                        placeholder="Search by Customer, Admin, or ID..."
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="flex-grow"
@@ -73,16 +74,22 @@ export default function BorrowingPage() {
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm whitespace-nowrap">
                          <colgroup>
+                            {/* --- START: เพิ่ม colgroup --- */}
+                            <col className="w-[10%]" />
                             <col className="w-[20%]" />
                             <col className="w-[15%]" />
                             <col className="w-[15%]" />
                             <col className="w-[120px]" />
                             <col className="w-[15%]" />
-                            <col className="w-[20%]" />
+                            <col className="w-[15%]" />
                             <col className="w-[100px]" />
+                            {/* --- END --- */}
                         </colgroup>
                         <thead>
                             <tr className="border-b">
+                                {/* --- START: เพิ่ม th --- */}
+                                <th className="p-2 text-left">Record ID</th>
+                                {/* --- END --- */}
                                 <th className="p-2 text-left">Customer</th>
                                 <th className="p-2 text-left">Borrow Date</th>
                                 <th className="p-2 text-left">Due Date</th>
@@ -97,18 +104,19 @@ export default function BorrowingPage() {
                                 [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
                             ) : borrowings.map((b) => (
                                 <tr key={b.id} className="border-b">
+                                    {/* --- START: เพิ่ม td --- */}
+                                    <td className="p-2 font-semibold">#{b.id}</td>
+                                    {/* --- END --- */}
                                     <td className="p-2">{b.borrower?.name || 'N/A'}</td>
                                     <td className="p-2">{new Date(b.borrowDate).toLocaleDateString()}</td>
                                     <td className="p-2">{b.dueDate ? new Date(b.dueDate).toLocaleDateString() : 'N/A'}</td>
                                     <td className="p-2 text-center">
-                                        {/* --- START: แก้ไขส่วนนี้ --- */}
                                         <StatusBadge 
                                             status={b.status} 
                                             className="w-24" 
                                             onClick={() => navigate(`/borrowings/${b.id}`)}
                                             interactive
                                         />
-                                        {/* --- END --- */}
                                     </td>
                                     <td className="p-2 text-center">{b.returnedItemCount}/{b.totalItemCount} Returned</td>
                                     <td className="p-2">{b.approvedBy?.name || 'N/A'}</td>

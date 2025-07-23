@@ -31,7 +31,7 @@ export default function BrandPage() {
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
     const {
-        data: brands, pagination, isLoading, refreshData
+        data: brands, pagination, isLoading, searchTerm, handleSearchChange, refreshData
     } = usePaginatedFetch("/brands", 100); 
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -78,9 +78,7 @@ export default function BrandPage() {
             await axiosInstance.delete(`/brands/${brandToDelete.id}`, { headers: { Authorization: `Bearer ${token}` } });
             toast.success("Brand deleted successfully!");
             refreshData();
-        // --- START: แก้ไขบรรทัดนี้ ---
         } catch (error) {
-        // --- END ---
             toast.error(error.response?.data?.error || "Failed to delete brand.");
         } finally {
             setBrandToDelete(null);
@@ -94,6 +92,14 @@ export default function BrandPage() {
                 {canManage && <Button onClick={handleAddNew}>Add New Brand</Button>}
             </CardHeader>
             <CardContent>
+                <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                    <Input
+                        placeholder="Search by brand name..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="flex-grow"
+                    />
+                </div>
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
