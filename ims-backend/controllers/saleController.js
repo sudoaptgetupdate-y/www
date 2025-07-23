@@ -240,8 +240,7 @@ saleController.voidSale = async (req, res, next) => {
                 await tx.inventoryItem.updateMany({
                     where: { id: { in: itemIdsToUpdate } },
                     data: {
-                        status: 'IN_STOCK',
-                        saleId: null
+                        status: 'IN_STOCK'
                     },
                 });
 

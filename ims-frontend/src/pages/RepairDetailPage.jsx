@@ -4,15 +4,27 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowLeft, Printer, CheckSquare, Square, Wrench } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 export default function RepairDetailPage() {
     const { repairId } = useParams();
@@ -96,117 +108,130 @@ export default function RepairDetailPage() {
     if (!repairOrder) return <p>Record not found.</p>;
     
     const itemsStillAtRepair = repairOrder.items.filter(i => !i.returnedAt);
+    const formattedRepairId = repairOrder.id.toString().padStart(6, '0');
 
     return (
-        <div className="space-y-4 printable-area">
+        <div className="space-y-6">
             <div className="flex justify-between items-center no-print">
-                <Button variant="outline" onClick={() => navigate(-1)}>
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
-                </Button>
-                <div>
-                    {itemsStillAtRepair.length > 0 && (
+                 <div>
+                    <h1 className="text-2xl font-bold">Repair Order Details</h1>
+                    <p className="text-muted-foreground">Viewing details for Repair ID #{formattedRepairId}</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => navigate(-1)}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
+                    </Button>
+                     <Button variant="outline" onClick={() => window.print()}>
+                        <Printer className="mr-2 h-4 w-4" /> Print / PDF
+                    </Button>
+                     {itemsStillAtRepair.length > 0 && (
                         <Button onClick={() => setIsReturnDialogOpen(true)}>
                             <Wrench className="mr-2"/> Receive Items from Repair
                         </Button>
                     )}
-                    <Button variant="outline" className="ml-2" onClick={() => window.print()}>
-                        <Printer className="mr-2 h-4 w-4" /> Print
-                    </Button>
                 </div>
             </div>
             
-            <div className="print-header hidden">
-                <h1>ใบส่งซ่อมสินค้า / Repair Order</h1>
-            </div>
+            <Card className="printable-area p-4 sm:p-6 md:p-8">
+                <div className="print-header hidden">
+                    <h1 className="text-xl font-bold">ใบส่งซ่อมสินค้า / Repair Order</h1>
+                </div>
 
-            <Card>
-                <CardHeader>
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-2">
+                <CardHeader className="p-0">
+                    <div className="flex justify-between items-start mb-6">
                         <div>
-                            <CardTitle>Repair Order Details</CardTitle>
-                            <CardDescription>Record ID: #{repairOrder.id}</CardDescription>
+                             <StatusBadge status={repairOrder.status} className="w-32 text-base" />
+                             <p className="text-sm mt-2"><strong>Repair ID:</strong> #{formattedRepairId}</p>
+                             <p className="text-sm"><strong>Date Sent:</strong> {new Date(repairOrder.repairDate).toLocaleString()}</p>
+                             <p className="text-sm"><strong>Created By:</strong> {repairOrder.createdBy?.name || 'N/A'}</p>
                         </div>
-                         <div className="flex flex-col items-start sm:items-end gap-2">
-                             <StatusBadge status={repairOrder.status} />
-                             <div className="text-sm text-muted-foreground pt-1">
-                                <p><strong>Date Sent:</strong> {new Date(repairOrder.repairDate).toLocaleString()}</p>
-                                <p><strong>Created By:</strong> {repairOrder.createdBy?.name || 'N/A'}</p>
-                            </div>
-                         </div>
                     </div>
-                </CardHeader>
-                <CardContent className="pt-2">
-                     <div className="grid md:grid-cols-2 gap-4 text-sm print:flex print:gap-4">
-                        <div className="space-y-1 rounded-lg border p-3">
-                            <p className="font-semibold text-base">From (Sender):</p>
-                            <p className="font-bold text-lg">{repairOrder.sender?.name || 'N/A'}</p>
+                    
+                     <div className="grid md:grid-cols-2 gap-6 text-sm">
+                        <div className="space-y-1 border p-4 rounded-lg">
+                            <p className="text-muted-foreground font-semibold">FROM (SENDER):</p>
+                            <p className="font-bold text-xl">{repairOrder.sender?.name || 'N/A'}</p>
                             <p><strong>Contact:</strong> {repairOrder.sender?.contactPerson || '-'}</p>
                             <p><strong>Phone:</strong> {repairOrder.sender?.phone || '-'}</p>
                             <p><strong>Address:</strong> {repairOrder.sender?.address || '-'}</p>
                         </div>
-                        <div className="space-y-1 rounded-lg border p-3">
-                            <p className="font-semibold text-base">To (Receiver):</p>
-                            <p className="font-bold text-lg">{repairOrder.receiver?.name || 'N/A'}</p>
+                        <div className="space-y-1 border p-4 rounded-lg">
+                            <p className="text-muted-foreground font-semibold">TO (RECEIVER):</p>
+                            <p className="font-bold text-xl">{repairOrder.receiver?.name || 'N/A'}</p>
                             <p><strong>Contact:</strong> {repairOrder.receiver?.contactPerson || '-'}</p>
                             <p><strong>Phone:</strong> {repairOrder.receiver?.phone || '-'}</p>
                             <p><strong>Address:</strong> {repairOrder.receiver?.address || '-'}</p>
                         </div>
                     </div>
-                    <Separator className="my-3"/>
-                    <div>
-                        <p className="font-semibold">Notes / Problem Description:</p>
-                        <p className="whitespace-pre-wrap text-muted-foreground">{repairOrder.notes || 'N/A'}</p>
+
+                    {repairOrder.notes && (
+                        <div className="mt-6">
+                            <p className="font-semibold">Notes / Problem Description:</p>
+                            <p className="whitespace-pre-wrap text-sm text-muted-foreground border p-3 rounded-md bg-muted/30">{repairOrder.notes}</p>
+                        </div>
+                    )}
+                </CardHeader>
+
+                <CardContent className="p-0 mt-6">
+                    <p className="font-semibold mb-2 text-base">Items Sent for Repair ({repairOrder.items.length})</p>
+                    <div className="border rounded-lg overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b bg-muted/40">
+                                    <th className="p-2 text-left">Identifier</th>
+                                    <th className="p-2 text-left">Product Model</th>
+                                    <th className="p-2 text-left">Serial Number</th>
+                                    <th className="p-2 text-left">Owner</th>
+                                    <th className="p-2 text-left">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {repairOrder.items.map(item => {
+                                    const isSold = item.inventoryItem?.saleId !== null;
+                                    const displayOwner = isSold ? 'CUSTOMER' : item.inventoryItem?.ownerType;
+
+                                    return (
+                                    <tr key={item.inventoryItemId} className="border-b">
+                                        <td className="p-2 font-semibold">{item.inventoryItem?.assetCode || item.inventoryItem?.serialNumber || 'N/A'}</td>
+                                        <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
+                                        <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
+                                        <td className="p-2">
+                                            <StatusBadge status={displayOwner} />
+                                        </td>
+                                        <td className="p-2">
+                                            {item.returnedAt ? (
+                                                <StatusBadge status={item.repairOutcome} />
+                                            ) : (
+                                                <StatusBadge status="REPAIRING" />
+                                            )}
+                                        </td>
+                                    </tr>
+                                )})}
+                            </tbody>
+                        </table>
                     </div>
                 </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader><CardTitle>Items Sent for Repair ({repairOrder.items.length})</CardTitle></CardHeader>
-                <CardContent>
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="p-2 text-left">Asset Code</th>
-                                <th className="p-2 text-left">Product Model</th>
-                                <th className="p-2 text-left">Serial Number</th>
-                                <th className="p-2 text-left">MAC Address</th>
-                                <th className="p-2 text-left">Owner</th>
-                                <th className="p-2 text-left">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {repairOrder.items.map(item => {
-                                // --- START: นี่คือ Logic ที่แก้ไข ---
-                                const isSold = item.inventoryItem?.saleId !== null;
-                                const displayOwner = isSold ? 'CUSTOMER' : item.inventoryItem?.ownerType;
-                                // --- END: นี่คือ Logic ที่แก้ไข ---
-
-                                return (
-                                <tr key={item.inventoryItemId} className="border-b">
-                                    <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
-                                    <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
-                                    <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
-                                    <td className="p-2">{item.inventoryItem?.macAddress || 'N/A'}</td>
-                                    <td className="p-2">
-                                        <StatusBadge status={displayOwner} />
-                                    </td>
-                                    <td className="p-2">
-                                        {item.returnedAt ? (
-                                            <StatusBadge status={item.repairOutcome} />
-                                        ) : (
-                                            <StatusBadge status="REPAIRING" />
-                                        )}
-                                    </td>
-                                </tr>
-                            )})}
-                        </tbody>
-                    </table>
-                </CardContent>
+            
+                 <div className="signature-section hidden">
+                    <div className="signature-box">
+                        <div className="signature-line"></div>
+                        <p>( ..................................................... )</p>
+                        <p>ผู้ส่งมอบสินค้า</p>
+                    </div>
+                    <div className="signature-box">
+                        <div className="signature-line"></div>
+                        <p>( ..................................................... )</p>
+                        <p>ผู้รับสินค้า</p>
+                    </div>
+                </div>
             </Card>
 
             <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
                 <DialogContent className="max-w-2xl">
-                    <DialogHeader><DialogTitle>Receive Items from Repair</DialogTitle></DialogHeader>
+                    <DialogHeader>
+                        <DialogTitle>Receive Items from Repair</DialogTitle>
+                        <DialogDescription>Select items that have been returned and specify their repair outcome.</DialogDescription>
+                    </DialogHeader>
                     <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto">
                         {itemsToReturn.map(item => (
                             <div key={item.inventoryItemId} className="flex items-start gap-4 border p-4 rounded-md">
@@ -236,23 +261,26 @@ export default function RepairDetailPage() {
                     </div>
                     <DialogFooter>
                         <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-                        <Button onClick={handleConfirmReturn}>Confirm Return</Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button disabled={itemsToReturn.filter(i => i.isSelected).length === 0}>Confirm Return</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirm Item Return</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to process the return for the selected items with their specified outcomes? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleConfirmReturn}>Continue</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            
-            <div className="signature-section hidden">
-                <div className="signature-box">
-                    <div className="signature-line"></div>
-                    <p>( ..................................................... )</p>
-                    <p>ผู้ส่งมอบสินค้า</p>
-                </div>
-                 <div className="signature-box">
-                    <div className="signature-line"></div>
-                    <p>( ..................................................... )</p>
-                    <p>ผู้รับสินค้า</p>
-                </div>
-            </div>
         </div>
     );
 }

@@ -20,7 +20,7 @@ const STATUS_CONFIG = {
   DISABLED: { label: "Disabled", variant: "destructive" },
 
   // Owner Types
-  COMPANY: { label: "Company", variant: "default" },
+  COMPANY: { label: "Company", variant: "warning" }, // <-- แก้ไขบรรทัดนี้
   CUSTOMER: { label: "Customer", variant: "info" },
 
   // Inventory & Asset Statuses

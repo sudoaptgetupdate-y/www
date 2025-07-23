@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, CheckSquare, Square, Printer } from "lucide-react";
+import { ArrowLeft, CheckSquare, Square, Printer, CornerDownLeft } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -19,6 +19,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export default function AssetAssignmentDetailPage() {
@@ -28,6 +29,8 @@ export default function AssetAssignmentDetailPage() {
     const [assignment, setAssignment] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedToReturn, setSelectedToReturn] = useState([]);
+    const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
+
 
     const fetchDetails = async () => {
         if (!assignmentId || !token) return;
@@ -65,6 +68,7 @@ export default function AssetAssignmentDetailPage() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             toast.success("Assets have been returned successfully.");
+            setIsReturnDialogOpen(false);
             fetchDetails();
             setSelectedToReturn([]);
         } catch (error) {
@@ -72,68 +76,121 @@ export default function AssetAssignmentDetailPage() {
         }
     };
 
-    const handlePrint = () => {
-        window.print();
-    };
-
     if (loading) return <p>Loading assignment details...</p>;
     if (!assignment) return <p>Record not found.</p>;
 
     const itemsToReturn = assignment.items.filter(item => !item.returnedAt);
+    const formattedAssignmentId = assignment.id.toString().padStart(6, '0');
 
     return (
-        <div className="space-y-6 printable-area">
+        <div className="space-y-6">
             <div className="flex justify-between items-center no-print">
-                <Button variant="outline" onClick={() => navigate(-1)}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back
-                </Button>
-                <Button onClick={handlePrint}>
-                    <Printer className="mr-2 h-4 w-4" />
-                    Print
-                </Button>
+                <div>
+                    <h1 className="text-2xl font-bold">Assignment Details</h1>
+                    <p className="text-muted-foreground">Viewing details for Assignment ID #{formattedAssignmentId}</p>
+                </div>
+                 <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => navigate(-1)}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to List
+                    </Button>
+                     <Button variant="outline" onClick={() => window.print()}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print / PDF
+                    </Button>
+                    {itemsToReturn.length > 0 && (
+                        <Button onClick={() => setIsReturnDialogOpen(true)}>
+                            <CornerDownLeft className="mr-2"/> Receive Returned Assets
+                        </Button>
+                    )}
+                </div>
             </div>
 
-            <div className="print-header hidden">
-                <h1>ใบเบิกจ่ายทรัพย์สิน / Asset Assignment Note</h1>
-                <p>เอกสารฉบับนี้เป็นการยืนยันการเบิกจ่ายทรัพย์สิน</p>
-            </div>
+            <Card className="printable-area p-4 sm:p-6 md:p-8">
+                 <div className="print-header hidden">
+                    <h1 className="text-xl font-bold">ใบเบิกจ่ายทรัพย์สิน / Asset Assignment Note</h1>
+                </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex justify-between items-start">
-                       <span>Assignment Details</span>
-                       <StatusBadge status={assignment.status} />
-                    </CardTitle>
-                    <CardDescription>Record ID: #{assignment.id}</CardDescription>
-                </CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-4 text-sm print:flex print:justify-between">
-                    <div>
-                        <p className="font-semibold">Assignee (Employee)</p><p>{assignment.assignee?.name || 'N/A'}</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 print:text-right">
-                        <div><p className="font-semibold">Approved By</p><p>{assignment.approvedBy?.name || 'N/A'}</p></div>
-                        <div><p className="font-semibold">Assignment Date</p><p>{new Date(assignment.assignedDate).toLocaleString()}</p></div>
-                        {assignment.returnDate && (
-                             <div><p className="font-semibold">Completion Date</p><p>{new Date(assignment.returnDate).toLocaleString()}</p></div>
-                        )}
+                <CardHeader className="p-0">
+                    <div className="flex justify-between items-start">
+                        <div className="grid gap-1">
+                            <CardTitle className="text-lg">Assignee (Employee)</CardTitle>
+                            <CardDescription>{assignment.assignee?.name || 'N/A'}</CardDescription>
+                            <p className="text-sm text-muted-foreground">Username: {assignment.assignee?.username || 'N/A'}</p>
+                            <p className="text-sm text-muted-foreground">Email: {assignment.assignee?.email || 'N/A'}</p>
+                        </div>
+                        <div className="text-right">
+                             <StatusBadge status={assignment.status} className="w-32 text-base" />
+                             <p className="text-sm mt-2"><strong>Assignment ID:</strong> #{formattedAssignmentId}</p>
+                             <p className="text-sm"><strong>Assigned Date:</strong> {new Date(assignment.assignedDate).toLocaleString()}</p>
+                             <p className="text-sm"><strong>Approved By:</strong> {assignment.approvedBy?.name || 'N/A'}</p>
+                             {assignment.returnDate && (
+                                <p className="text-sm"><strong>Completion Date:</strong> {new Date(assignment.returnDate).toLocaleString()}</p>
+                            )}
+                        </div>
                     </div>
                     {assignment.notes && (
-                        <div className="md:col-span-2 pt-2">
-                            <p className="font-semibold">Notes</p>
-                            <p className="whitespace-pre-wrap text-muted-foreground">{assignment.notes}</p>
+                        <div className="mt-4">
+                            <p className="font-semibold">Notes:</p>
+                            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{assignment.notes}</p>
                         </div>
                     )}
-                </CardContent>
+                </CardHeader>
+
+                 <CardContent className="p-0 mt-6">
+                     <p className="font-semibold mb-2 text-base">Assigned Assets ({assignment.items.length})</p>
+                    <div className="border rounded-lg overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b bg-muted/40">
+                                    <th className="p-2 text-left">Asset Code</th>
+                                    <th className="p-2 text-left">Product Model</th>
+                                    <th className="p-2 text-left">Serial Number</th>
+                                    <th className="p-2 text-left">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {assignment.items.map(item => (
+                                    <tr key={item.inventoryItem.id} className="border-b">
+                                        <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
+                                        <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
+                                        <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
+                                        <td className="p-2">
+                                            <StatusBadge status={item.returnedAt ? 'RETURNED' : 'ASSIGNED'} />
+                                            {item.returnedAt && (
+                                                <span className="text-xs text-muted-foreground ml-2">
+                                                    on {new Date(item.returnedAt).toLocaleDateString()}
+                                                </span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                 </CardContent>
+
+                <div className="signature-section hidden">
+                    <div className="signature-box">
+                        <div className="signature-line"></div>
+                        <p>( {assignment.approvedBy?.name || '.....................................................'} )</p>
+                        <p>เจ้าหน้าที่ผู้จ่ายทรัพย์สิน</p>
+                    </div>
+                    <div className="signature-box">
+                        <div className="signature-line"></div>
+                        <p>( {assignment.assignee?.name || '.....................................................'} )</p>
+                        <p>พนักงานผู้รับทรัพย์สิน</p>
+                    </div>
+                </div>
             </Card>
 
-            {itemsToReturn.length > 0 && (
-                <Card className="no-print">
-                    <CardHeader>
-                        <CardTitle>Assets to Return</CardTitle>
-                        <CardDescription>Select assets that the employee is returning.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
+            <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
+                 <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Receive Returned Assets</DialogTitle>
+                        <DialogDescription>Select assets that the employee is returning.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 max-h-[60vh] overflow-y-auto">
                         <div className="border rounded-md">
                             <table className="w-full text-sm">
                                 <thead>
@@ -158,17 +215,16 @@ export default function AssetAssignmentDetailPage() {
                                                 }
                                             </td>
                                             <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
-                                            {/* --- START: ส่วนที่แก้ไข --- */}
                                             <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
-                                            {/* --- END --- */}
                                             <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                    </CardContent>
-                    <CardFooter>
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button disabled={selectedToReturn.length === 0}>
@@ -190,57 +246,9 @@ export default function AssetAssignmentDetailPage() {
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
-                    </CardFooter>
-                </Card>
-            )}
-
-            <Card>
-                 <CardHeader><CardTitle>All Assigned Assets ({assignment.items.length})</CardTitle></CardHeader>
-                 <CardContent>
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="p-2 text-left">Asset Code</th>
-                                <th className="p-2 text-left">Product Model</th>
-                                <th className="p-2 text-left">Serial Number</th>
-                                <th className="p-2 text-left">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {assignment.items.map(item => (
-                                <tr key={item.inventoryItem.id} className="border-b">
-                                    <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
-                                    {/* --- START: ส่วนที่แก้ไข --- */}
-                                    <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
-                                    {/* --- END --- */}
-                                    <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
-                                    <td className="p-2">
-                                        <StatusBadge status={item.returnedAt ? 'RETURNED' : 'ASSIGNED'} />
-                                        {item.returnedAt && (
-                                            <span className="text-xs text-muted-foreground ml-2">
-                                                on {new Date(item.returnedAt).toLocaleDateString()}
-                                            </span>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                 </CardContent>
-            </Card>
-
-            <div className="signature-section hidden">
-                <div className="signature-box">
-                    <div className="signature-line"></div>
-                    <p>( ..................................................... )</p>
-                    <p>เจ้าหน้าที่ผู้จ่ายทรัพย์สิน</p>
-                </div>
-                <div className="signature-box">
-                    <div className="signature-line"></div>
-                    <p>( ..................................................... )</p>
-                    <p>พนักงานผู้รับทรัพย์สิน</p>
-                </div>
-            </div>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

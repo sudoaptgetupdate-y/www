@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, CheckSquare, Square, Printer } from "lucide-react";
+import { ArrowLeft, CheckSquare, Square, Printer, CornerDownLeft } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -17,9 +17,10 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
+    AlertDialogTrigger, // <-- Missing import added here
 } from "@/components/ui/alert-dialog";
-import { StatusBadge } from "@/components/ui/StatusBadge"; 
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export default function BorrowingDetailPage() {
     const { borrowingId } = useParams();
@@ -28,6 +29,7 @@ export default function BorrowingDetailPage() {
     const [borrowing, setBorrowing] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedToReturn, setSelectedToReturn] = useState([]);
+    const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
 
     const fetchDetails = async () => {
         if (!borrowingId || !token) return;
@@ -37,8 +39,8 @@ export default function BorrowingDetailPage() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setBorrowing(response.data);
-            setSelectedToReturn(response.data.items.filter(item => !item.returnedAt).map(item => item.id));
-        } catch (error)
+        }
+        catch (error)
         {
             toast.error("Failed to fetch borrowing details.");
         } finally {
@@ -55,10 +57,6 @@ export default function BorrowingDetailPage() {
             prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
         );
     };
-    
-    const handlePrint = () => {
-        window.print();
-    };
 
     const handleReturnItems = async () => {
         if (selectedToReturn.length === 0) {
@@ -66,12 +64,13 @@ export default function BorrowingDetailPage() {
             return;
         }
         try {
-            await axiosInstance.patch(`/borrowings/${borrowingId}/return`, 
+            await axiosInstance.patch(`/borrowings/${borrowingId}/return`,
                 { itemIdsToReturn: selectedToReturn },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             toast.success("Items have been returned successfully.");
-            fetchDetails(); 
+            setIsReturnDialogOpen(false);
+            fetchDetails();
             setSelectedToReturn([]);
         } catch (error) {
             toast.error(error.response?.data?.error || "Failed to process return.");
@@ -81,81 +80,117 @@ export default function BorrowingDetailPage() {
     if (loading) return <p>Loading details...</p>;
     if (!borrowing) return <p>Record not found.</p>;
 
-    const itemsToReturn = borrowing.items.filter(item => !item.returnedAt);
+    const itemsToReturn = borrowing.items.filter(item => !item.returnedAt && item.inventoryItem);
+    const formattedBorrowingId = borrowing.id.toString().padStart(6, '0');
 
     return (
-        <div className="space-y-6 printable-area">
+        <div className="space-y-6">
             <div className="flex justify-between items-center no-print">
-                <Button variant="outline" onClick={() => navigate(-1)}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back
-                </Button>
-                <Button onClick={handlePrint}>
-                    <Printer className="mr-2 h-4 w-4" />
-                    Print
-                </Button>
+                 <div>
+                    <h1 className="text-2xl font-bold">Borrowing Details</h1>
+                    <p className="text-muted-foreground">Viewing details for Borrowing ID #{formattedBorrowingId}</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => navigate(-1)}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to List
+                    </Button>
+                     <Button variant="outline" onClick={() => window.print()}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print / PDF
+                    </Button>
+                    {itemsToReturn.length > 0 && (
+                        <Button onClick={() => setIsReturnDialogOpen(true)}>
+                            <CornerDownLeft className="mr-2"/> Receive Returned Items
+                        </Button>
+                    )}
+                </div>
             </div>
 
-            <div className="print-header hidden">
-                <h1>ใบยืม-คืนสินค้า / Borrowing Note</h1>
-                <p>เอกสารฉบับนี้เป็นการยืนยันการยืมสินค้า</p>
-            </div>
+            <Card className="printable-area p-4 sm:p-6 md:p-8">
+                <div className="print-header hidden">
+                    <h1 className="text-xl font-bold">ใบยืม-คืนสินค้า / Borrowing Note</h1>
+                </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Borrowing Details</CardTitle>
-                    <CardDescription>Record ID: {borrowing.id}</CardDescription>
-                </CardHeader>
-                <CardContent className="grid md:grid-cols-3 gap-4 text-sm print:flex print:justify-between">
-                    <div>
-                        <p className="font-semibold">Customer</p>
-                        {/* --- START: ส่วนที่แก้ไข --- */}
-                        <p>{borrowing.borrower?.name || 'N/A'}</p>
-                        {/* --- END --- */}
+                <CardHeader className="p-0">
+                    <div className="flex justify-between items-start">
+                        <div className="grid gap-1">
+                            <CardTitle className="text-lg">Customer (Borrower)</CardTitle>
+                            <CardDescription>{borrowing.borrower?.name || 'N/A'}</CardDescription>
+                            <p className="text-sm text-muted-foreground">{borrowing.borrower?.address || "No address provided"}</p>
+                            <p className="text-sm text-muted-foreground">Phone: {borrowing.borrower?.phone || 'N/A'}</p>
+                        </div>
+                        <div className="text-right">
+                             <StatusBadge status={borrowing.status} className="w-24 text-base" />
+                             <p className="text-sm mt-2"><strong>Borrowing ID:</strong> #{formattedBorrowingId}</p>
+                             <p className="text-sm"><strong>Borrow Date:</strong> {new Date(borrowing.borrowDate).toLocaleString()}</p>
+                             <p className="text-sm"><strong>Due Date:</strong> {borrowing.dueDate ? new Date(borrowing.dueDate).toLocaleDateString() : 'N/A'}</p>
+                             <p className="text-sm"><strong>Approved By:</strong> {borrowing.approvedBy?.name || 'N/A'}</p>
+                        </div>
                     </div>
-                    <div className="md:col-span-2 grid grid-cols-2 gap-4 print:text-right">
-                        <div>
-                            <p className="font-semibold">Borrow Date</p>
-                            <p>{new Date(borrowing.borrowDate).toLocaleString()}</p>
-                        </div>
-                        <div>
-                            <p className="font-semibold">Due Date</p>
-                            <p>{borrowing.dueDate ? new Date(borrowing.dueDate).toLocaleDateString() : 'N/A'}</p>
-                        </div>
-                        <div>
-                            <p className="font-semibold">Approved By</p>
-                            {/* --- START: ส่วนที่แก้ไข --- */}
-                            <p>{borrowing.approvedBy?.name || 'N/A'}</p>
-                            {/* --- END --- */}
-                        </div>
-                        <div>
-                            <p className="font-semibold">Status</p>
-                            <div><StatusBadge status={borrowing.status} /></div>
-                        </div>
-                        {borrowing.returnDate && (
-                            <div>
-                                <p className="font-semibold">Final Return Date</p>
-                                <p>{new Date(borrowing.returnDate).toLocaleString()}</p>
-                            </div>
-                        )}
-                    </div>
-                    {borrowing.notes && (
-                        <div className="md:col-span-3 pt-4">
-                            <p className="font-semibold">Notes</p>
-                            <p className="whitespace-pre-wrap text-muted-foreground">{borrowing.notes}</p>
+                     {borrowing.notes && (
+                        <div className="mt-4">
+                            <p className="font-semibold">Notes:</p>
+                            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{borrowing.notes}</p>
                         </div>
                     )}
+                </CardHeader>
+                
+                <CardContent className="p-0 mt-6">
+                     <p className="font-semibold mb-2 text-base">Borrowed Items ({borrowing.items.length})</p>
+                    <div className="border rounded-lg overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b bg-muted/40">
+                                    <th className="p-2 text-left">Product Model</th>
+                                    <th className="p-2 text-left">Serial Number</th>
+                                    <th className="p-2 text-left">MAC Address</th>
+                                    <th className="p-2 text-left">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {borrowing.items.map(boi => (
+                                    <tr key={boi.inventoryItemId} className="border-b">
+                                        <td className="p-2">{boi.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
+                                        <td className="p-2">{boi.inventoryItem?.serialNumber || 'N/A'}</td>
+                                        <td className="p-2">{boi.inventoryItem?.macAddress || 'N/A'}</td>
+                                        <td className="p-2">
+                                            <StatusBadge status={boi.returnedAt ? 'RETURNED' : 'BORROWED'} />
+                                            {boi.returnedAt && (
+                                                <span className="text-xs text-muted-foreground ml-2">
+                                                    on {new Date(boi.returnedAt).toLocaleDateString()}
+                                                </span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </CardContent>
+                
+                <div className="signature-section hidden">
+                    <div className="signature-box">
+                        <p className="signature-line"></p>
+                        <p>( {borrowing.approvedBy?.name || '.....................................................'} )</p>
+                        <p>เจ้าหน้าที่</p>
+                    </div>
+                    <div className="signature-box">
+                        <p className="signature-line"></p>
+                        <p>( {borrowing.borrower?.name || '.....................................................'} )</p>
+                        <p>ผู้ยืมสินค้า</p>
+                    </div>
+                </div>
             </Card>
 
-            {itemsToReturn.length > 0 && (
-                <Card className="no-print">
-                    <CardHeader>
-                        <CardTitle>Items to Return</CardTitle>
-                        <CardDescription>Select items that the customer is returning now.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="border rounded-md">
+            <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Receive Returned Items</DialogTitle>
+                        <DialogDescription>Select items that the customer is returning now.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 max-h-[60vh] overflow-y-auto">
+                         <div className="border rounded-md">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b">
@@ -166,26 +201,27 @@ export default function BorrowingDetailPage() {
                                 </thead>
                                 <tbody>
                                     {itemsToReturn.map(item => (
-                                        <tr 
-                                            key={item.id} 
+                                        <tr
+                                            key={item.inventoryItemId}
                                             className="border-b cursor-pointer hover:bg-slate-50"
-                                            onClick={() => handleToggleReturnItem(item.id)}
+                                            onClick={() => handleToggleReturnItem(item.inventoryItemId)}
                                         >
                                             <td className="p-2 text-center">
-                                                {selectedToReturn.includes(item.id) 
-                                                    ? <CheckSquare className="h-5 w-5 text-primary mx-auto" /> 
+                                                {selectedToReturn.includes(item.inventoryItemId)
+                                                    ? <CheckSquare className="h-5 w-5 text-primary mx-auto" />
                                                     : <Square className="h-5 w-5 text-muted-foreground mx-auto" />
                                                 }
                                             </td>
-                                            <td className="p-2">{item.productModel?.modelNumber || 'N/A'}</td>
-                                            <td className="p-2">{item.serialNumber || 'N/A'}</td>
+                                            <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
+                                            <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                    </CardContent>
-                    <CardFooter>
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button disabled={selectedToReturn.length === 0}>
@@ -207,55 +243,9 @@ export default function BorrowingDetailPage() {
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
-                    </CardFooter>
-                </Card>
-            )}
-
-            <Card>
-                 <CardHeader><CardTitle>Borrowed Items List ({borrowing.items.length})</CardTitle></CardHeader>
-                 <CardContent>
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="p-2 text-left">Product Model</th>
-                                <th className="p-2 text-left">Serial Number</th>
-                                <th className="p-2 text-left">MAC Address</th>
-                                <th className="p-2 text-left">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {borrowing.items.map(item => (
-                                <tr key={item.id} className="border-b">
-                                    <td className="p-2">{item.productModel?.modelNumber || 'N/A'}</td>
-                                    <td className="p-2">{item.serialNumber || 'N/A'}</td>
-                                    <td className="p-2">{item.macAddress || 'N/A'}</td>
-                                    <td className="p-2">
-                                        <StatusBadge status={item.returnedAt ? 'RETURNED' : 'BORROWED'} />
-                                        {item.returnedAt && (
-                                            <span className="text-xs text-muted-foreground ml-2">
-                                                on {new Date(item.returnedAt).toLocaleDateString()}
-                                            </span>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                 </CardContent>
-            </Card>
-
-            <div className="signature-section hidden">
-                <div className="signature-box">
-                    <div className="signature-line"></div>
-                    <p>( ..................................................... )</p>
-                    <p>เจ้าหน้าที่</p>
-                </div>
-                <div className="signature-box">
-                    <div className="signature-line"></div>
-                    <p>( ..................................................... )</p>
-                    <p>ผู้ยืมสินค้า</p>
-                </div>
-            </div>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

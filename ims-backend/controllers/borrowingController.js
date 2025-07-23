@@ -1,4 +1,5 @@
-// controllers/borrowingController.js
+// ims-backend/controllers/borrowingController.js
+
 const { PrismaClient, EventType } = require('@prisma/client');
 const prisma = new PrismaClient();
 const borrowingController = {};
@@ -281,17 +282,11 @@ borrowingController.getBorrowingById = async (req, res, next) => {
             err.statusCode = 404;
             throw err;
         }
-
-        const formattedBorrowing = {
-            ...borrowing,
-            items: borrowing.items.map(boi => ({
-                ...boi.inventoryItem,
-                returnedAt: boi.returnedAt,
-                borrowingId: boi.borrowingId 
-            }))
-        };
         
-        res.status(200).json(formattedBorrowing);
+        // --- START: แก้ไขส่วนนี้ ---
+        // ไม่ต้องแปลงข้อมูลแล้ว ส่งกลับไปตรงๆ
+        res.status(200).json(borrowing);
+        // --- END ---
 
     } catch (error) {
         next(error);
