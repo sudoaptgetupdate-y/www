@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import useAuthStore from "@/store/authStore";
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
-import axiosInstance from "@/api/axiosInstance"; // --- 1. Import axiosInstance ---
+import axiosInstance from "@/api/axiosInstance";
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -19,7 +19,6 @@ function useDebounce(value, delay) {
     return debouncedValue;
 }
 
-// --- 2. แก้ไข apiUrl ให้รับแค่ส่วนท้าย (path) ---
 export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, initialFilters = {}) {
     const token = useAuthStore((state) => state.token);
     const [data, setData] = useState([]);
@@ -34,6 +33,11 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, initialFilt
     const [filters, setFilters] = useState(initialFilters);
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
+    // --- START: เพิ่ม State สำหรับ Sort ---
+    const [sortBy, setSortBy] = useState('updatedAt');
+    const [sortOrder, setSortOrder] = useState('desc');
+    // --- END ---
+
     const location = useLocation();
 
     const fetchData = useCallback(async () => {
@@ -45,9 +49,12 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, initialFilt
                 limit: pagination.itemsPerPage,
                 search: debouncedSearchTerm,
                 ...filters,
+                // --- START: เพิ่ม parameter สำหรับ Sort ---
+                sortBy,
+                sortOrder,
+                // --- END ---
             };
             
-            // --- 3. เปลี่ยนไปใช้ axiosInstance และ apiPath ---
             const response = await axiosInstance.get(apiPath, {
                 headers: { Authorization: `Bearer ${token}` },
                 params,
@@ -60,11 +67,19 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, initialFilt
         } finally {
             setIsLoading(false);
         }
-    }, [token, apiPath, pagination.currentPage, pagination.itemsPerPage, debouncedSearchTerm, JSON.stringify(filters)]);
+    }, [token, apiPath, pagination.currentPage, pagination.itemsPerPage, debouncedSearchTerm, JSON.stringify(filters), sortBy, sortOrder]); // <-- เพิ่ม sortBy, sortOrder
 
     useEffect(() => {
         fetchData();
     }, [fetchData, location.key]);
+
+    // --- START: เพิ่มฟังก์ชันสำหรับจัดการ Sort ---
+    const handleSortChange = (newSortBy) => {
+        setSortBy(newSortBy);
+        setSortOrder(prevOrder => (sortBy === newSortBy && prevOrder === 'asc' ? 'desc' : 'asc'));
+        setPagination(prev => ({ ...prev, currentPage: 1 }));
+    };
+    // --- END ---
 
     const handleSearchChange = (value) => {
         setSearchTerm(value);
@@ -95,10 +110,13 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, initialFilt
         isLoading,
         searchTerm,
         filters,
+        sortBy,
+        sortOrder,
         handleSearchChange,
         handlePageChange,
         handleItemsPerPageChange,
         handleFilterChange,
+        handleSortChange, // <-- ส่งฟังก์ชันออกไป
         refreshData: fetchData
     };
 }

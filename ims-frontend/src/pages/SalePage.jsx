@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, ArrowUpDown } from "lucide-react"; // <-- เพิ่ม ArrowUpDown
 import { StatusBadge } from "@/components/ui/StatusBadge"; 
 
 const SkeletonRow = () => (
@@ -28,6 +28,14 @@ const SkeletonRow = () => (
     </tr>
 );
 
+const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort }) => (
+    <th className="p-2 text-left cursor-pointer hover:bg-slate-50" onClick={() => onSort(sortKey)}>
+        <div className="flex items-center gap-2">
+            {children}
+            {currentSortBy === sortKey && <ArrowUpDown className={`h-4 w-4 ${sortOrder === 'desc' ? 'text-slate-400' : ''}`} />}
+        </div>
+    </th>
+);
 
 export default function SalePage() {
     const navigate = useNavigate();
@@ -40,6 +48,9 @@ export default function SalePage() {
         isLoading, 
         searchTerm,
         filters,
+        sortBy,
+        sortOrder,
+        handleSortChange,
         handleSearchChange, 
         handlePageChange, 
         handleItemsPerPageChange,
@@ -59,7 +70,7 @@ export default function SalePage() {
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
-                        placeholder="Search by Customer, Seller Name or Sale ID..."
+                        placeholder="Search by Customer, Seller, or Sale ID..."
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="flex-grow"
@@ -78,7 +89,6 @@ export default function SalePage() {
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm whitespace-nowrap">
                         <colgroup>
-                            {/* --- START: เพิ่ม colgroup --- */}
                             <col className="w-[10%]" />
                             <col className="w-[25%]" />
                             <col className="w-[20%]" />
@@ -86,18 +96,23 @@ export default function SalePage() {
                             <col className="w-[80px]" />
                             <col className="w-[15%]" />
                             <col className="w-[100px]" />
-                            {/* --- END --- */}
                         </colgroup>
                         <thead>
                             <tr className="border-b">
-                                {/* --- START: เพิ่ม th --- */}
-                                <th className="p-2 text-left">Sale ID</th>
-                                {/* --- END --- */}
-                                <th className="p-2 text-left">Customer</th>
-                                <th className="p-2 text-left">Sale Date</th>
+                                <SortableHeader sortKey="id" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Sale ID
+                                </SortableHeader>
+                                <SortableHeader sortKey="customer" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Customer
+                                </SortableHeader>
+                                <SortableHeader sortKey="saleDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Sale Date
+                                </SortableHeader>
                                 <th className="p-2 text-center">Status</th>
                                 <th className="p-2 text-center">Items</th>
-                                <th className="p-2 text-right">Total (inc. VAT)</th>
+                                <SortableHeader sortKey="total" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Total (inc. VAT)
+                                </SortableHeader>
                                 <th className="p-2 text-center">Actions</th>
                             </tr>
                         </thead>
@@ -106,9 +121,7 @@ export default function SalePage() {
                                 [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
                             ) : sales.map((sale) => (
                                 <tr key={sale.id} className="border-b">
-                                    {/* --- START: เพิ่ม td --- */}
                                     <td className="p-2 font-semibold">#{sale.id}</td>
-                                    {/* --- END --- */}
                                     <td className="p-2 text-left">{sale.customer?.name || 'N/A'}</td>
                                     <td className="p-2 text-left">{new Date(sale.saleDate).toLocaleString()}</td>
                                     <td className="p-2 text-center">

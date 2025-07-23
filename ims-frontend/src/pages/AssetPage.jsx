@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle, MoreHorizontal, History, Edit, ArrowRightLeft, Archive } from "lucide-react";
+import { PlusCircle, MoreHorizontal, History, Edit, ArrowRightLeft, Archive, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -34,6 +34,15 @@ const SkeletonRow = () => (
     </tr>
 );
 
+const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort }) => (
+    <th className="p-2 text-left cursor-pointer hover:bg-slate-50" onClick={() => onSort(sortKey)}>
+        <div className="flex items-center gap-2">
+            {children}
+            {currentSortBy === sortKey && <ArrowUpDown className={`h-4 w-4 ${sortOrder === 'desc' ? 'text-slate-400' : ''}`} />}
+        </div>
+    </th>
+);
+
 export default function AssetPage() {
     const navigate = useNavigate();
     const token = useAuthStore((state) => state.token);
@@ -46,6 +55,9 @@ export default function AssetPage() {
         isLoading,
         searchTerm,
         filters,
+        sortBy, 
+        sortOrder,
+        handleSortChange,
         handleSearchChange,
         handlePageChange,
         handleItemsPerPageChange,
@@ -129,11 +141,9 @@ export default function AssetPage() {
                             <SelectItem value="All">All Statuses</SelectItem>
                             <SelectItem value="IN_WAREHOUSE">In Warehouse</SelectItem>
                             <SelectItem value="ASSIGNED">Assigned</SelectItem>
-                            <SelectItem value="DECOMMISSIONED">Decommissioned</SelectItem>
+                            <SelectItem value="DECOMMISSIONED">Archived</SelectItem>
                             <SelectItem value="DEFECTIVE">Defective</SelectItem>
-                            {/* --- START: เพิ่มสถานะ REPAIRING --- */}
                             <SelectItem value="REPAIRING">Repairing</SelectItem>
-                            {/* --- END --- */}
                         </SelectContent>
                     </Select>
                 </div>
@@ -149,9 +159,15 @@ export default function AssetPage() {
                         </colgroup>
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2">Asset Code</th>
-                                <th className="p-2">Product Model</th>
-                                <th className="p-2">Serial Number</th>
+                                <SortableHeader sortKey="assetCode" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Asset Code
+                                </SortableHeader>
+                                <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Product Model
+                                </SortableHeader>
+                                <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Serial Number
+                                </SortableHeader>
                                 <th className="p-2 text-center">Status</th>
                                 <th className="p-2">Assigned To</th>
                                 <th className="p-2 text-center">Actions</th>

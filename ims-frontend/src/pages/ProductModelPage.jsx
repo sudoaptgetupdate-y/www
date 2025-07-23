@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, ArrowUpDown } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
@@ -30,6 +30,15 @@ const SkeletonRow = () => (
     </tr>
 );
 
+const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort, className = "" }) => (
+    <th className={`p-2 cursor-pointer hover:bg-slate-50 ${className}`} onClick={() => onSort(sortKey)}>
+        <div className="flex items-center gap-2">
+            {children}
+            {currentSortBy === sortKey && <ArrowUpDown className={`h-4 w-4 ${sortOrder === 'desc' ? 'text-slate-400' : ''}`} />}
+        </div>
+    </th>
+);
+
 const initialFormData = {
     modelNumber: "",
     description: "",
@@ -45,6 +54,7 @@ export default function ProductModelPage() {
 
     const {
         data: productModels, pagination, isLoading, searchTerm, filters,
+        sortBy, sortOrder, handleSortChange,
         handleSearchChange, handlePageChange, handleItemsPerPageChange, handleFilterChange, refreshData
     } = usePaginatedFetch("/product-models", 10, { categoryId: "All", brandId: "All" });
     
@@ -123,9 +133,7 @@ export default function ProductModelPage() {
 
     return (
         <Card>
-            {/* --- START: แก้ไขบรรทัดนี้ --- */}
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            {/* --- END --- */}
                 <CardTitle>Product Models</CardTitle>
                 {canManage &&
                     <Button onClick={() => openDialog()}>
@@ -154,10 +162,18 @@ export default function ProductModelPage() {
                     <table className="w-full text-sm whitespace-nowrap">
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left">Model Number</th>
-                                <th className="p-2 text-left">Category</th>
-                                <th className="p-2 text-left">Brand</th>
-                                <th className="p-2 text-left">Price</th>
+                                <SortableHeader sortKey="modelNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Model Number
+                                </SortableHeader>
+                                <SortableHeader sortKey="category" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Category
+                                </SortableHeader>
+                                <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Brand
+                                </SortableHeader>
+                                <SortableHeader sortKey="sellingPrice" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange} className="text-left">
+                                    Price
+                                </SortableHeader>
                                 {canManage && <th className="p-2 text-center">Actions</th>}
                             </tr>
                         </thead>

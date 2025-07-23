@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, ArrowUpDown } from "lucide-react"; // <-- เพิ่ม ArrowUpDown
 import { StatusBadge } from "@/components/ui/StatusBadge"; 
 
 const SkeletonRow = () => (
@@ -24,6 +24,15 @@ const SkeletonRow = () => (
     </tr>
 );
 
+const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort }) => (
+    <th className="p-2 text-left cursor-pointer hover:bg-slate-50" onClick={() => onSort(sortKey)}>
+        <div className="flex items-center gap-2">
+            {children}
+            {currentSortBy === sortKey && <ArrowUpDown className={`h-4 w-4 ${sortOrder === 'desc' ? 'text-slate-400' : ''}`} />}
+        </div>
+    </th>
+);
+
 export default function BorrowingPage() {
     const navigate = useNavigate();
     const currentUser = useAuthStore((state) => state.user);
@@ -35,6 +44,9 @@ export default function BorrowingPage() {
         isLoading, 
         searchTerm,
         filters,
+        sortBy,
+        sortOrder,
+        handleSortChange,
         handleSearchChange, 
         handlePageChange, 
         handleItemsPerPageChange,
@@ -54,7 +66,7 @@ export default function BorrowingPage() {
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
-                        placeholder="Search by Customer, Admin, or ID..."
+                        placeholder="Search by Customer, Admin, or Serial Number..."
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="flex-grow"
@@ -74,7 +86,6 @@ export default function BorrowingPage() {
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm whitespace-nowrap">
                          <colgroup>
-                            {/* --- START: เพิ่ม colgroup --- */}
                             <col className="w-[10%]" />
                             <col className="w-[20%]" />
                             <col className="w-[15%]" />
@@ -83,16 +94,21 @@ export default function BorrowingPage() {
                             <col className="w-[15%]" />
                             <col className="w-[15%]" />
                             <col className="w-[100px]" />
-                            {/* --- END --- */}
                         </colgroup>
                         <thead>
                             <tr className="border-b">
-                                {/* --- START: เพิ่ม th --- */}
-                                <th className="p-2 text-left">Record ID</th>
-                                {/* --- END --- */}
-                                <th className="p-2 text-left">Customer</th>
-                                <th className="p-2 text-left">Borrow Date</th>
-                                <th className="p-2 text-left">Due Date</th>
+                                <SortableHeader sortKey="id" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Record ID
+                                </SortableHeader>
+                                <SortableHeader sortKey="customer" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Customer
+                                </SortableHeader>
+                                <SortableHeader sortKey="borrowDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Borrow Date
+                                </SortableHeader>
+                                <SortableHeader sortKey="dueDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    Due Date
+                                </SortableHeader>
                                 <th className="p-2 text-center">Status</th>
                                 <th className="p-2 text-center">Item Status</th>
                                 <th className="p-2 text-left">Approved By</th>
@@ -104,9 +120,7 @@ export default function BorrowingPage() {
                                 [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
                             ) : borrowings.map((b) => (
                                 <tr key={b.id} className="border-b">
-                                    {/* --- START: เพิ่ม td --- */}
                                     <td className="p-2 font-semibold">#{b.id}</td>
-                                    {/* --- END --- */}
                                     <td className="p-2">{b.borrower?.name || 'N/A'}</td>
                                     <td className="p-2">{new Date(b.borrowDate).toLocaleDateString()}</td>
                                     <td className="p-2">{b.dueDate ? new Date(b.dueDate).toLocaleDateString() : 'N/A'}</td>
