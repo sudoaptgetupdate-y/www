@@ -75,7 +75,6 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         const categoryIdFilter = req.query.categoryId || 'All';
         const brandIdFilter = req.query.brandId || 'All';
         
-        // --- START: แก้ไข Logic การกรองข้อมูล ---
         let where = { 
             itemType: ItemType.SALE
         };
@@ -98,7 +97,6 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         if (brandIdFilter && brandIdFilter !== 'All') {
             where.productModel = { ...where.productModel, brandId: parseInt(brandIdFilter) };
         }
-        // --- END: แก้ไข Logic การกรองข้อมูล ---
 
         const include = {
             productModel: { include: { category: true, brand: true } },
@@ -106,6 +104,11 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
             borrowingRecords: {
                 where: { returnedAt: null },
                 select: { borrowingId: true }
+            },
+            repairRecords: {
+                orderBy: { sentAt: 'desc' },
+                take: 1,
+                select: { repairId: true }
             }
         };
 
@@ -116,8 +119,13 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
 
         const formattedItems = items.map(item => {
             const activeBorrowing = item.borrowingRecords.length > 0 ? item.borrowingRecords[0] : null;
-            const { borrowingRecords, ...restOfItem } = item;
-            return { ...restOfItem, borrowingId: activeBorrowing ? activeBorrowing.borrowingId : null };
+            const activeRepair = item.repairRecords.length > 0 ? item.repairRecords[0] : null;
+            const { borrowingRecords, repairRecords, ...restOfItem } = item;
+            return { 
+                ...restOfItem, 
+                borrowingId: activeBorrowing ? activeBorrowing.borrowingId : null,
+                repairId: activeRepair ? activeRepair.repairId : null
+            };
         });
 
         res.status(200).json({
@@ -317,9 +325,5 @@ inventoryController.markAsDefective = (req, res, next) => {
 inventoryController.markAsInStock = (req, res, next) => {
     updateItemStatus(res, req, next, 'DEFECTIVE', 'IN_STOCK', EventType.UPDATE, 'Item returned to stock from defective status.');
 };
-
-// --- START: ลบฟังก์ชัน getInventoryItemHistory เดิมทิ้งทั้งหมด ---
-// ฟังก์ชันนี้จะถูกย้ายไปสร้างใหม่ใน Controller กลาง
-// --- END ---
 
 module.exports = inventoryController;

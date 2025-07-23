@@ -282,7 +282,6 @@ export default function InventoryPage() {
                                         <td className="p-2 truncate">{item.serialNumber || '-'}</td>
                                         <td className="p-2 truncate">{item.macAddress || '-'}</td>
                                         <td className="p-2 text-center">
-                                            {/* --- START: แก้ไขส่วนนี้ --- */}
                                             <StatusBadge
                                                 status={item.status}
                                                 className="w-24"
@@ -291,11 +290,17 @@ export default function InventoryPage() {
                                                         navigate(`/sales/${item.saleId}`);
                                                     } else if (item.status === 'BORROWED' && item.borrowingId) {
                                                         navigate(`/borrowings/${item.borrowingId}`);
+                                                    } 
+                                                    else if ((item.status === 'REPAIRING' || item.status === 'RETURNED_TO_CUSTOMER') && item.repairId) {
+                                                        navigate(`/repairs/${item.repairId}`);
                                                     }
                                                 }}
-                                                interactive={item.status === 'SOLD' || item.status === 'BORROWED'}
+                                                interactive={
+                                                    item.status === 'SOLD' || 
+                                                    item.status === 'BORROWED' || 
+                                                    ((item.status === 'REPAIRING' || item.status === 'RETURNED_TO_CUSTOMER') && item.repairId)
+                                                }
                                             />
-                                            {/* --- END --- */}
                                         </td>
                                         <td className="p-2">{item.addedBy.name}</td>
                                         <td className="p-2 text-center">
