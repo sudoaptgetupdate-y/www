@@ -1,10 +1,22 @@
 // ims-backend/controllers/inventoryController.js
 
-const { PrismaClient, ItemType, HistoryEventType, ItemOwner } = require('@prisma/client');
+const { PrismaClient, ItemType, EventType, ItemOwner } = require('@prisma/client');
 const prisma = new PrismaClient();
 const inventoryController = {};
 
 const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+
+// Helper function to create event logs consistently
+const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
+    return tx.eventLog.create({
+        data: {
+            inventoryItemId,
+            userId,
+            eventType,
+            details,
+        },
+    });
+};
 
 inventoryController.addInventoryItem = async (req, res, next) => {
     try {
@@ -22,25 +34,28 @@ inventoryController.addInventoryItem = async (req, res, next) => {
             return next(err);
         }
 
-        const newItem = await prisma.inventoryItem.create({
-            data: {
-                itemType: ItemType.SALE,
-                ownerType: ItemOwner.COMPANY,
-                serialNumber: serialNumber || null,
-                macAddress: macAddress || null,
-                productModelId,
-                addedById: userId,
-                status: 'IN_STOCK',
-            },
-        });
+        const newItem = await prisma.$transaction(async (tx) => {
+            const createdItem = await tx.inventoryItem.create({
+                data: {
+                    itemType: ItemType.SALE,
+                    ownerType: ItemOwner.COMPANY,
+                    serialNumber: serialNumber || null,
+                    macAddress: macAddress || null,
+                    productModelId,
+                    addedById: userId,
+                    status: 'IN_STOCK',
+                },
+            });
 
-        await prisma.assetHistory.create({
-            data: {
-                inventoryItemId: newItem.id,
-                userId: userId,
-                type: HistoryEventType.CREATE,
-                details: `Item created with S/N: ${serialNumber || 'N/A'}.`
-            }
+            await createEventLog(
+                tx,
+                createdItem.id,
+                userId,
+                EventType.CREATE,
+                { details: `Item created with S/N: ${serialNumber || 'N/A'}.` }
+            );
+            
+            return createdItem;
         });
 
         res.status(201).json(newItem);
@@ -59,42 +74,30 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         const statusFilter = req.query.status || 'All';
         const categoryIdFilter = req.query.categoryId || 'All';
         const brandIdFilter = req.query.brandId || 'All';
-
+        
         // --- START: แก้ไข Logic การกรองข้อมูล ---
-        const whereConditions = [
-            { itemType: ItemType.SALE },
-            { ownerType: 'COMPANY' }
-        ];
+        let where = { 
+            itemType: ItemType.SALE
+        };
 
         if (statusFilter && statusFilter !== 'All') {
-            whereConditions.push({ status: statusFilter });
-        } else {
-            // ถ้าไม่ได้เลือก filter สถานะ หรือเลือก "All" ให้กรองสถานะของลูกค้าออกเสมอ
-            whereConditions.push({ status: { notIn: ['RETURNED_TO_CUSTOMER'] } });
+            where.status = statusFilter;
         }
 
         if (searchTerm) {
-            whereConditions.push({
-                OR: [
-                    { serialNumber: { contains: searchTerm } },
-                    { macAddress: { equals: searchTerm } },
-                    { productModel: { modelNumber: { contains: searchTerm } } },
-                ]
-            });
+            where.OR = [
+                { serialNumber: { contains: searchTerm } },
+                { macAddress: { equals: searchTerm } },
+                { productModel: { modelNumber: { contains: searchTerm } } },
+            ];
         }
         
-        const modelFilters = {};
         if (categoryIdFilter && categoryIdFilter !== 'All') {
-            modelFilters.categoryId = parseInt(categoryIdFilter);
+            where.productModel = { ...where.productModel, categoryId: parseInt(categoryIdFilter) };
         }
         if (brandIdFilter && brandIdFilter !== 'All') {
-            modelFilters.brandId = parseInt(brandIdFilter);
+            where.productModel = { ...where.productModel, brandId: parseInt(brandIdFilter) };
         }
-        if (Object.keys(modelFilters).length > 0) {
-            whereConditions.push({ productModel: modelFilters });
-        }
-
-        const where = { AND: whereConditions };
         // --- END: แก้ไข Logic การกรองข้อมูล ---
 
         const include = {
@@ -170,7 +173,7 @@ inventoryController.updateInventoryItem = async (req, res, next) => {
         if (isNaN(itemId)) {
             const err = new Error('Invalid Item ID.');
             err.statusCode = 400;
-            throw err;
+            return next(err);
         }
         
         if (typeof productModelId !== 'number') {
@@ -194,14 +197,13 @@ inventoryController.updateInventoryItem = async (req, res, next) => {
                     productModelId
                 },
             }),
-            prisma.assetHistory.create({
-                data: {
-                    inventoryItemId: itemId,
-                    userId: actorId,
-                    type: HistoryEventType.UPDATE,
-                    details: `Item details updated.`
-                }
-            })
+            createEventLog(
+                prisma,
+                itemId,
+                actorId,
+                EventType.UPDATE,
+                { details: `Item details updated.` }
+            )
         ]);
 
         res.status(200).json(updatedItem);
@@ -238,7 +240,7 @@ inventoryController.deleteInventoryItem = async (req, res, next) => {
         }
 
         await prisma.$transaction(async (tx) => {
-            await tx.assetHistory.deleteMany({ where: { inventoryItemId: itemId } });
+            await tx.eventLog.deleteMany({ where: { inventoryItemId: itemId } });
             await tx.borrowingOnItems.deleteMany({ where: { inventoryItemId: itemId } });
             await tx.inventoryItem.delete({ where: { id: itemId } });
         });
@@ -277,14 +279,13 @@ const updateItemStatus = async (res, req, next, expectedStatus, newStatus, event
                 where: { id: itemId },
                 data: { status: newStatus },
             }),
-            prisma.assetHistory.create({
-                data: {
-                    inventoryItemId: itemId,
-                    userId: actorId,
-                    type: eventType,
-                    details: details || `Status changed to ${newStatus}.`
-                }
-            })
+            createEventLog(
+                prisma,
+                itemId,
+                actorId,
+                eventType,
+                { details: details || `Status changed from ${item.status} to ${newStatus}.` }
+            )
         ]);
 
         res.status(200).json(updatedItem);
@@ -294,161 +295,31 @@ const updateItemStatus = async (res, req, next, expectedStatus, newStatus, event
 };
 
 inventoryController.decommissionItem = (req, res, next) => {
-    updateItemStatus(res, req, next, ['IN_STOCK', 'DEFECTIVE'], 'DECOMMISSIONED', HistoryEventType.DECOMMISSION, 'Item decommissioned.');
+    updateItemStatus(res, req, next, ['IN_STOCK', 'DEFECTIVE'], 'DECOMMISSIONED', EventType.DECOMMISSION, 'Item decommissioned.');
 };
 
 inventoryController.reinstateItem = (req, res, next) => {
-    updateItemStatus(res, req, next, 'DECOMMISSIONED', 'IN_STOCK', HistoryEventType.REINSTATE, 'Item reinstated to stock.');
+    updateItemStatus(res, req, next, 'DECOMMISSIONED', 'IN_STOCK', EventType.REINSTATE, 'Item reinstated to stock.');
 };
 
 inventoryController.markAsReserved = (req, res, next) => {
-    updateItemStatus(res, req, next, 'IN_STOCK', 'RESERVED', HistoryEventType.UPDATE, 'Item marked as reserved.');
+    updateItemStatus(res, req, next, 'IN_STOCK', 'RESERVED', EventType.UPDATE, 'Item marked as reserved.');
 };
 
 inventoryController.unreserveItem = (req, res, next) => {
-    updateItemStatus(res, req, next, 'RESERVED', 'IN_STOCK', HistoryEventType.UPDATE, 'Item unreserved and returned to stock.');
+    updateItemStatus(res, req, next, 'RESERVED', 'IN_STOCK', EventType.UPDATE, 'Item unreserved and returned to stock.');
 };
 
 inventoryController.markAsDefective = (req, res, next) => {
-    updateItemStatus(res, req, next, ['IN_STOCK', 'RESERVED'], 'DEFECTIVE', HistoryEventType.UPDATE, 'Item marked as defective.');
+    updateItemStatus(res, req, next, ['IN_STOCK', 'RESERVED'], 'DEFECTIVE', EventType.UPDATE, 'Item marked as defective.');
 };
 
 inventoryController.markAsInStock = (req, res, next) => {
-    updateItemStatus(res, req, next, 'DEFECTIVE', 'IN_STOCK', HistoryEventType.UPDATE, 'Item returned to stock from defective status.');
+    updateItemStatus(res, req, next, 'DEFECTIVE', 'IN_STOCK', EventType.UPDATE, 'Item returned to stock from defective status.');
 };
 
-inventoryController.getInventoryItemHistory = async (req, res, next) => {
-    const { id } = req.params;
-    
-    try {
-        const itemId = parseInt(id);
-        if (isNaN(itemId)) {
-            const err = new Error('Invalid Item ID.');
-            err.statusCode = 400;
-            throw err;
-        }
-
-        const item = await prisma.inventoryItem.findUnique({
-            where: { id: itemId },
-            include: { productModel: true }
-        });
-
-        if (!item) {
-            const err = new Error('Item not found.');
-            err.statusCode = 404;
-            throw err;
-        }
-
-        const history = [];
-
-        const assetHistoryEvents = await prisma.assetHistory.findMany({
-            where: { 
-                inventoryItemId: itemId,
-                type: { notIn: ['RETURN', 'REPAIR_SENT', 'REPAIR_RETURNED'] }
-            },
-            include: { user: { select: { name: true } } },
-            orderBy: { createdAt: 'asc' }
-        });
-
-        assetHistoryEvents.forEach(event => {
-            history.push({
-                type: event.type,
-                date: event.createdAt,
-                details: event.details,
-                user: event.user?.name || 'System',
-                transactionId: null,
-                transactionType: 'SYSTEM'
-            });
-        });
-
-        const saleRecord = await prisma.sale.findFirst({
-            where: { itemsSold: { some: { id: itemId } } },
-            include: { customer: true, soldBy: true, voidedBy: true }
-        });
-        if (saleRecord) {
-            history.push({
-                type: 'SALE',
-                date: saleRecord.saleDate,
-                details: `Sold to ${saleRecord.customer?.name || 'N/A'}`,
-                user: saleRecord.soldBy?.name || 'N/A',
-                transactionId: saleRecord.id,
-                transactionType: 'SALE'
-            });
-            if (saleRecord.status === 'VOIDED' && saleRecord.voidedAt) {
-                history.push({
-                    type: 'VOID',
-                    date: saleRecord.voidedAt,
-                    details: `Sale voided`,
-                    user: saleRecord.voidedBy?.name || 'N/A',
-                    transactionId: saleRecord.id,
-                    transactionType: 'SALE'
-                });
-            }
-        }
-
-        const borrowingRecords = await prisma.borrowingOnItems.findMany({
-            where: { inventoryItemId: itemId },
-            include: { borrowing: { include: { borrower: true, approvedBy: true } } },
-            orderBy: { assignedAt: 'asc' }
-        });
-        borrowingRecords.forEach(record => {
-            history.push({
-                type: 'BORROW',
-                date: record.assignedAt,
-                details: `Borrowed by ${record.borrowing?.borrower?.name || 'N/A'}`,
-                user: record.borrowing?.approvedBy?.name || 'N/A',
-                transactionId: record.borrowingId,
-                transactionType: 'BORROWING'
-            });
-            if (record.returnedAt) {
-                history.push({
-                    type: 'RETURN',
-                    date: record.returnedAt,
-                    details: `Returned by ${record.borrowing?.borrower?.name || 'N/A'}`,
-                    user: record.borrowing?.approvedBy?.name || 'N/A',
-                    transactionId: record.borrowingId,
-                    transactionType: 'BORROWING'
-                });
-            }
-        });
-
-        const repairRecords = await prisma.repairOnItems.findMany({
-            where: { inventoryItemId: itemId },
-            include: { repair: { include: { receiver: true, createdBy: true } } },
-            orderBy: { sentAt: 'asc' }
-        });
-        repairRecords.forEach(record => {
-            history.push({
-                type: 'REPAIR_SENT',
-                date: record.sentAt,
-                details: `Sent to ${record.repair?.receiver?.name || 'N/A'}`,
-                user: record.repair?.createdBy?.name || 'N/A',
-                transactionId: record.repairId,
-                transactionType: 'REPAIR'
-            });
-            if (record.returnedAt) {
-                const outcome = record.repairOutcome === 'REPAIRED_SUCCESSFULLY' ? 'Success' : 'Failed';
-                history.push({
-                    type: 'REPAIR_RETURNED',
-                    date: record.returnedAt,
-                    details: `Returned from ${record.repair?.receiver?.name || 'N/A'} (Outcome: ${outcome})`,
-                    user: record.repair?.createdBy?.name || 'N/A',
-                    transactionId: record.repairId,
-                    transactionType: 'REPAIR'
-                });
-            }
-        });
-        
-        const sortedHistory = history.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        res.status(200).json({
-            itemDetails: item,
-            history: sortedHistory
-        });
-
-    } catch (error) {
-        next(error);
-    }
-};
+// --- START: ลบฟังก์ชัน getInventoryItemHistory เดิมทิ้งทั้งหมด ---
+// ฟังก์ชันนี้จะถูกย้ายไปสร้างใหม่ใน Controller กลาง
+// --- END ---
 
 module.exports = inventoryController;

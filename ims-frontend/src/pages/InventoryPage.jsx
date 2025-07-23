@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { ProductModelCombobox } from "@/components/ui/ProductModelCombobox";
-import { MoreHorizontal, View, ShoppingCart, ArrowRightLeft, Edit, Trash2, PlusCircle, Archive, History, ShieldAlert, ArchiveRestore, ShieldCheck } from "lucide-react"; // <-- เพิ่ม ShieldCheck
+import { MoreHorizontal, View, ShoppingCart, ArrowRightLeft, Edit, Trash2, PlusCircle, Archive, History, ShieldAlert, ArchiveRestore, ShieldCheck } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,7 @@ import {
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
+//ลบ Switch ออกจาก import เพราะไม่ได้ใช้แล้ว
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -62,14 +63,16 @@ export default function InventoryPage() {
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
+    // --- START: แก้ไขค่าเริ่มต้นของ Filter ---
     const {
         data: inventoryItems, pagination, isLoading, searchTerm, filters,
         handleSearchChange, handlePageChange, handleItemsPerPageChange, handleFilterChange, refreshData
     } = usePaginatedFetch("/inventory", 10, { 
-        status: "All",
+        status: "IN_STOCK", // <<-- เปลี่ยนค่าเริ่มต้นเป็น "IN_STOCK"
         categoryId: "All",
         brandId: "All"
     });
+    // --- END ---
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -247,9 +250,23 @@ export default function InventoryPage() {
                             <SelectItem value="RESERVED">Reserved</SelectItem>
                             <SelectItem value="DEFECTIVE">Defective</SelectItem>
                             <SelectItem value="DECOMMISSIONED">Decommissioned</SelectItem>
+                            <SelectItem value="RETURNED_TO_CUSTOMER">Serviced (Customer)</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
+
+                {/* --- START: ลบ Switch ออกจากส่วนนี้ --- */}
+                {/* <div className="flex items-center space-x-2 mb-4">
+                    <Switch
+                        id="include-customer-items"
+                        checked={filters.includeCustomerItems === 'true'}
+                        onCheckedChange={(checked) => handleFilterChange('includeCustomerItems', String(checked))}
+                    />
+                    <Label htmlFor="include-customer-items">Include Customer Items</Label>
+                </div>
+                */}
+                {/* --- END --- */}
+                
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-left text-sm whitespace-nowrap">
                         <colgroup>
@@ -324,12 +341,11 @@ export default function InventoryPage() {
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuItem
                                                                 onClick={() => openDialog(item)}
-                                                                disabled={item.status === 'SOLD' || item.status === 'BORROWED' || item.status === 'DECOMMISSIONED'}
+                                                                disabled={!['IN_STOCK', 'RESERVED', 'DEFECTIVE'].includes(item.status)}
                                                             >
                                                                 <Edit className="mr-2 h-4 w-4" /> Edit
                                                             </DropdownMenuItem>
                                                             
-                                                            {/* --- START: ส่วนที่แก้ไข --- */}
                                                             {item.status === 'IN_STOCK' && (
                                                                 <>
                                                                     <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'reserve', 'Item marked as RESERVED.')}>
@@ -350,7 +366,6 @@ export default function InventoryPage() {
                                                                     <ShieldCheck className="mr-2 h-4 w-4" /> Mark as In Stock
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            {/* --- END: ส่วนที่แก้ไข --- */}
 
                                                             {item.status === 'DECOMMISSIONED' ? (
                                                                 <DropdownMenuItem onClick={() => handleReinstateItem(item.id)}>
@@ -370,7 +385,7 @@ export default function InventoryPage() {
                                                             <DropdownMenuItem
                                                                 className="text-red-600 focus:text-red-500"
                                                                 onSelect={(e) => e.preventDefault()}
-                                                                disabled={item.status === 'SOLD' || item.status === 'BORROWED' || item.status === 'DEFECTIVE'}
+                                                                disabled={!['IN_STOCK', 'RESERVED', 'DECOMMISSIONED'].includes(item.status)}
                                                                 onClick={() => setItemToDelete(item)}
                                                             >
                                                                 <Trash2 className="mr-2 h-4 w-4" /> Delete

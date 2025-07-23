@@ -14,6 +14,7 @@ const addressRoute = require('./routes/addressRoute');
 const repairRoute = require('./routes/repairRoute');
 // --- END: Import routes ใหม่ ---
 
+const historyRoute = require('./routes/historyRoute');
 const assetAssignmentRoute = require('./routes/assetAssignmentRoute');
 const assetRoute = require('./routes/assetRoute');
 const categoryRoute = require('./routes/categoryRoute');
@@ -37,6 +38,7 @@ app.use(morgan('dev'));
 // --- API Routes ---
 app.use('/api/assets', assetRoute);
 app.use('/api/inventory', inventoryRoute);
+app.use('/api/history', historyRoute);
 app.use('/api/asset-assignments', assetAssignmentRoute);
 app.use('/api/categories', categoryRoute);
 app.use('/api/customers', customerRoute);

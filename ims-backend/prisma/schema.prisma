@@ -72,18 +72,23 @@ enum ItemOwner {
   CUSTOMER
 }
 
-// --- START: เพิ่ม Enum ใหม่ ---
-enum HistoryEventType {
+// --- START: แก้ไข Enum ---
+// รวม Event Type ทั้งหมดไว้ที่นี่ที่เดียว
+enum EventType {
   CREATE
   UPDATE
+  SALE
+  VOID
+  BORROW
+  RETURN_FROM_BORROW
   ASSIGN
-  RETURN
+  RETURN_FROM_ASSIGN
   DECOMMISSION
   REINSTATE
   REPAIR_SENT
   REPAIR_RETURNED
 }
-// --- END: เพิ่ม Enum ใหม่ ---
+// --- END: แก้ไข Enum ---
 
 
 // --- Models ---
@@ -110,8 +115,8 @@ model User {
   receivedAssignments   AssetAssignment[] @relation("ReceivedAssignments")
   createdRepairs        Repair[]
   
-  // Relation ไปยัง AssetHistory
-  assetHistoryEvents    AssetHistory[] // <-- เปลี่ยนชื่อ Relation
+  // Relation ไปยัง EventLog ใหม่
+  events                EventLog[]
 }
 
 model Customer {
@@ -150,7 +155,8 @@ model InventoryItem {
   repairRecords       RepairOnItems[]
 
   // --- START: แก้ไข Relation ---
-  historyEvents       AssetHistory[] // เปลี่ยนชื่อ Relation ให้ชัดเจน
+  // ลบ Relation ไปยัง AssetHistory เดิม และให้ EventLog อ้างอิงมาหาแทน
+  eventLogs           EventLog[]
   // --- END: แก้ไข Relation ---
 
   @@index([status])
@@ -306,18 +312,19 @@ model RepairOnItems {
 }
 
 // --- START: สร้าง Model ใหม่สำหรับ Event History ---
-model AssetHistory {
-  id              Int              @id @default(autoincrement())
+model EventLog {
+  id              Int       @id @default(autoincrement())
   inventoryItemId Int
-  inventoryItem   InventoryItem    @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
   
-  userId          Int?             // User ที่กระทำการ (อาจเป็น null ได้สำหรับ event เริ่มต้น)
-  user            User?            @relation(fields: [userId], references: [id])
-
-  type            HistoryEventType // ประเภทของเหตุการณ์
-  details         String?          // รายละเอียดเพิ่มเติม
-  createdAt       DateTime         @default(now())
+  userId          Int?
+  user            User?     @relation(fields: [userId], references: [id])
+  
+  eventType       EventType // ประเภทของเหตุการณ์
+  details         Json      // เก็บข้อมูลรายละเอียดเป็น JSON เพื่อความยืดหยุ่น
+  createdAt       DateTime  @default(now())
 
   @@index([inventoryItemId])
+  @@index([eventType])
 }
 // --- END: สร้าง Model ใหม่ ---

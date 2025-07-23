@@ -9,27 +9,28 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { 
     ArrowLeft, ShoppingCart, ArrowRightLeft, CornerUpLeft, Package, 
-    ArchiveX, Wrench, ShieldCheck, History as HistoryIcon, PlusCircle, Edit, ArchiveRestore, ShieldAlert
+    ArchiveX, Wrench, ShieldCheck, History as HistoryIcon, PlusCircle, Edit, ArchiveRestore, ShieldAlert 
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { getStatusProperties } from "@/lib/statusUtils";
 
 const eventConfig = {
+    CREATE: { icon: <PlusCircle className="h-4 w-4" /> },
+    UPDATE: { icon: <Edit className="h-4 w-4" /> },
     SALE: { icon: <ShoppingCart className="h-4 w-4" /> },
     VOID: { icon: <ArchiveX className="h-4 w-4" /> },
     BORROW: { icon: <ArrowRightLeft className="h-4 w-4" /> },
-    RETURN: { icon: <CornerUpLeft className="h-4 w-4" /> },
+    RETURN_FROM_BORROW: { icon: <CornerUpLeft className="h-4 w-4" /> },
+    ASSIGN: { icon: <ArrowRightLeft className="h-4 w-4" /> },
+    RETURN_FROM_ASSIGN: { icon: <CornerUpLeft className="h-4 w-4" /> },
+    DECOMMISSION: { icon: <ArchiveX className="h-4 w-4" /> },
+    REINSTATE: { icon: <ArchiveRestore className="h-4 w-4" /> },
     REPAIR_SENT: { icon: <Wrench className="h-4 w-4" /> },
     REPAIR_RETURNED: { icon: <ShieldCheck className="h-4 w-4" /> },
     REPAIR_SUCCESS: { icon: <ShieldCheck className="h-4 w-4" /> },
     REPAIR_FAILED: { icon: <ShieldAlert className="h-4 w-4" /> },
-    CREATE: { icon: <PlusCircle className="h-4 w-4" /> },
-    UPDATE: { icon: <Edit className="h-4 w-4" /> },
-    DECOMMISSION: { icon: <ArchiveX className="h-4 w-4" /> },
-    REINSTATE: { icon: <ArchiveRestore className="h-4 w-4" /> },
-    DEFECTIVE: { icon: <ShieldAlert className="h-4 w-4" /> },
-    IN_STOCK: { icon: <ShieldCheck className="h-4 w-4" /> },
-    RESERVED: { icon: <ArchiveRestore className="h-4 w-4" /> }
 };
+
 
 export default function InventoryHistoryPage() {
     const { itemId } = useParams();
@@ -43,9 +44,11 @@ export default function InventoryHistoryPage() {
         const fetchData = async () => {
             if (!itemId || !token) return;
             try {
-                const response = await axiosInstance.get(`/inventory/${itemId}/history`, {
+                // --- START: แก้ไข Endpoint ที่เรียกใช้ ---
+                const response = await axiosInstance.get(`/history/${itemId}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                // --- END ---
                 setItemDetails(response.data.itemDetails);
                 setHistory(response.data.history);
             } catch (error) {
@@ -57,20 +60,24 @@ export default function InventoryHistoryPage() {
         fetchData();
     }, [itemId, token]);
 
-    const getTransactionLink = (type, id) => {
-        switch (type) {
+    // --- START: แก้ไข Logic การสร้าง Link ---
+    const getTransactionLink = (eventType, details) => {
+        if (!details) return null;
+        switch (eventType) {
             case 'SALE':
             case 'VOID':
-                return `/sales/${id}`;
-            case 'BORROWING':
+                return `/sales/${details.saleId}`;
             case 'BORROW':
-                return `/borrowings/${id}`;
-            case 'REPAIR':
-                return `/repairs/${id}`;
+            case 'RETURN_FROM_BORROW':
+                return `/borrowings/${details.borrowingId}`;
+            case 'REPAIR_SENT':
+            case 'REPAIR_RETURNED':
+                return `/repairs/${details.repairId}`;
             default:
                 return null;
         }
     };
+    // --- END ---
 
     if (loading) return <p>Loading history...</p>;
     if (!itemDetails) return <p>Item not found.</p>;
@@ -107,39 +114,32 @@ export default function InventoryHistoryPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {history.length > 0 ? history.map((h, index) => {
-                                const link = h.transactionId ? getTransactionLink(h.transactionType, h.transactionId) : null;
+                            {history.length > 0 ? history.map((event) => {
+                                const link = getTransactionLink(event.eventType, event.details);
                                 
-                                const getDisplayInfo = (historyItem) => {
-                                    if (historyItem.type === 'REPAIR_RETURNED') {
-                                        if (historyItem.details.includes('Success')) {
-                                            return { status: 'REPAIR_SUCCESS', icon: eventConfig.REPAIR_SUCCESS.icon };
+                                // --- START: แก้ไข Logic การแสดงผล Badge ---
+                                const getDisplayInfo = (historyEvent) => {
+                                    if (historyEvent.eventType === 'REPAIR_RETURNED') {
+                                        if (historyEvent.details.outcome === 'REPAIRED_SUCCESSFULLY') {
+                                            return { status: 'REPAIR_SUCCESS' };
                                         }
-                                        if (historyItem.details.includes('Failed')) {
-                                            return { status: 'REPAIR_FAILED', icon: eventConfig.REPAIR_FAILED.icon };
+                                        if (historyEvent.details.outcome === 'UNREPAIRABLE') {
+                                            return { status: 'REPAIR_FAILED' };
                                         }
                                     }
-                                    
-                                    let status = historyItem.type;
-                                    if (historyItem.type === 'UPDATE') {
-                                        const details = historyItem.details.toLowerCase();
-                                        if (details.includes('sold to')) status = 'SALE';
-                                        else if (details.includes('voided')) status = 'VOID';
-                                        else if (details.includes('marked as defective')) status = 'DEFECTIVE';
-                                        else if (details.includes('returned to stock from defective')) status = 'IN_STOCK';
-                                        else if (details.includes('marked as reserved')) status = 'RESERVED';
-                                        else if (details.includes('unreserved and returned to stock')) status = 'IN_STOCK';
-                                    }
-                                    return { status, icon: eventConfig[status]?.icon };
+                                    return { status: historyEvent.eventType };
                                 };
 
-                                const { status: displayStatus, icon: eventIcon } = getDisplayInfo(h);
+                                const { status: displayStatus } = getDisplayInfo(event);
+                                const eventIcon = eventConfig[displayStatus]?.icon;
+                                const { label: eventLabel } = getStatusProperties(displayStatus);
+                                // --- END ---
 
                                 return (
-                                <tr key={index} className="border-b">
-                                    <td className="p-2">{new Date(h.date).toLocaleString()}</td>
-                                    <td className="p-2">{h.details}</td>
-                                    <td className="p-2">{h.user || '-'}</td>
+                                <tr key={event.id} className="border-b">
+                                    <td className="p-2">{new Date(event.createdAt).toLocaleString()}</td>
+                                    <td className="p-2">{event.details?.details || 'N/A'}</td>
+                                    <td className="p-2">{event.user?.name || 'System'}</td>
                                     <td className="p-2 text-center">
                                          <StatusBadge
                                             status={displayStatus}
@@ -147,7 +147,7 @@ export default function InventoryHistoryPage() {
                                             {...(link && { onClick: () => navigate(link) })}
                                         >
                                             {eventIcon}
-                                            <span className="ml-1.5">{displayStatus.replace(/_/g, ' ')}</span>
+                                            <span className="ml-1.5">{eventLabel}</span>
                                         </StatusBadge>
                                     </td>
                                 </tr>

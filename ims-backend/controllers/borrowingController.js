@@ -1,13 +1,24 @@
 // controllers/borrowingController.js
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient, EventType } = require('@prisma/client');
 const prisma = new PrismaClient();
 const borrowingController = {};
+
+// Helper function to create event logs consistently
+const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
+    return tx.eventLog.create({
+        data: {
+            inventoryItemId,
+            userId,
+            eventType,
+            details,
+        },
+    });
+};
 
 borrowingController.createBorrowing = async (req, res, next) => {
     const { customerId, inventoryItemIds, dueDate, notes } = req.body;
     const approvedById = req.user.id;
 
-    // --- START: Input Validation ---
     if (typeof customerId !== 'number') {
         const err = new Error('Customer ID must be a number.');
         err.statusCode = 400;
@@ -23,7 +34,6 @@ borrowingController.createBorrowing = async (req, res, next) => {
         err.statusCode = 400;
         return next(err);
     }
-    // --- END: Input Validation ---
 
     try {
         const newBorrowing = await prisma.$transaction(async (tx) => {
@@ -34,6 +44,13 @@ borrowingController.createBorrowing = async (req, res, next) => {
             if (itemsToBorrow.length !== inventoryItemIds.length) {
                 const err = new Error('One or more items are not available or not found.');
                 err.statusCode = 400;
+                throw err;
+            }
+
+            const customer = await tx.customer.findUnique({ where: { id: customerId } });
+             if (!customer) {
+                const err = new Error('Customer not found.');
+                err.statusCode = 404;
                 throw err;
             }
 
@@ -59,6 +76,22 @@ borrowingController.createBorrowing = async (req, res, next) => {
                 data: { status: 'BORROWED' },
             });
 
+            // --- START: แก้ไขส่วนการบันทึกประวัติ ---
+            for (const itemId of inventoryItemIds) {
+                await createEventLog(
+                    tx,
+                    itemId,
+                    approvedById,
+                    EventType.BORROW,
+                    {
+                        borrowerName: customer.name,
+                        borrowingId: createdBorrowing.id,
+                        details: `Item borrowed by ${customer.name}.`
+                    }
+                );
+            }
+            // --- END ---
+
             return tx.borrowing.findUnique({
                 where: { id: createdBorrowing.id },
                 include: {
@@ -79,8 +112,8 @@ borrowingController.createBorrowing = async (req, res, next) => {
 borrowingController.returnItems = async (req, res, next) => {
     const { borrowingId } = req.params;
     const { itemIdsToReturn } = req.body;
+    const actorId = req.user.id;
 
-    // --- START: Input Validation ---
     const id = parseInt(borrowingId);
     if (isNaN(id)) {
         const err = new Error('Invalid Borrowing ID.');
@@ -92,10 +125,19 @@ borrowingController.returnItems = async (req, res, next) => {
         err.statusCode = 400;
         return next(err);
     }
-    // --- END: Input Validation ---
 
     try {
         await prisma.$transaction(async (tx) => {
+             const borrowing = await tx.borrowing.findUnique({
+                where: { id: id },
+                include: { borrower: true }
+            });
+            if (!borrowing) {
+                const err = new Error('Borrowing record not found.');
+                err.statusCode = 404;
+                throw err;
+            }
+
             await tx.borrowingOnItems.updateMany({
                 where: {
                     borrowingId: id,
@@ -108,6 +150,22 @@ borrowingController.returnItems = async (req, res, next) => {
                 where: { id: { in: itemIdsToReturn } },
                 data: { status: 'IN_STOCK' },
             });
+
+            // --- START: แก้ไขส่วนการบันทึกประวัติ ---
+            for (const itemId of itemIdsToReturn) {
+                await createEventLog(
+                    tx,
+                    itemId,
+                    actorId,
+                    EventType.RETURN_FROM_BORROW,
+                    {
+                        borrowerName: borrowing.borrower.name,
+                        borrowingId: id,
+                        details: `Item returned from ${borrowing.borrower.name}.`
+                    }
+                );
+            }
+            // --- END ---
 
             const remainingItems = await tx.borrowingOnItems.count({
                 where: {

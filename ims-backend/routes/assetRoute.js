@@ -11,13 +11,14 @@ const adminAccess = ['ADMIN', 'SUPER_ADMIN'];
 // Routes for assets
 router.get('/', authCheck, assetController.getAllAssets);
 router.get('/:id', authCheck, assetController.getAssetById);
-router.get('/:id/history', authCheck, assetController.getAssetHistory);
 
-// --- START: เพิ่ม Routes ใหม่ ---
+// --- START: ปิดการใช้งาน Route นี้ชั่วคราว ---
+// router.get('/:id/history', authCheck, assetController.getAssetHistory);
+// --- END ---
+
 router.post('/', authCheck, roleCheck(adminAccess), assetController.createAsset);
 router.put('/:id', authCheck, roleCheck(adminAccess), assetController.updateAsset);
 router.delete('/:id', authCheck, roleCheck(adminAccess), assetController.deleteAsset);
-// --- END: เพิ่ม Routes ใหม่ ---
 
 router.patch('/:id/decommission', authCheck, roleCheck(adminAccess), assetController.decommissionAsset);
 router.patch('/:id/reinstate', authCheck, roleCheck(adminAccess), assetController.reinstateAsset);

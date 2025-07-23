@@ -1,8 +1,20 @@
 // ims-backend/controllers/repairController.js
 
-const { PrismaClient, ItemStatus, ItemOwner, RepairStatus, RepairOutcome, ItemType, HistoryEventType } = require('@prisma/client');
+const { PrismaClient, ItemStatus, ItemOwner, RepairStatus, RepairOutcome, ItemType, EventType } = require('@prisma/client');
 const prisma = new PrismaClient();
 const repairController = {};
+
+// Helper function to create event logs consistently
+const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
+    return tx.eventLog.create({
+        data: {
+            inventoryItemId,
+            userId,
+            eventType,
+            details,
+        },
+    });
+};
 
 repairController.createRepairOrder = async (req, res, next) => {
     const { senderId, receiverId, notes, items } = req.body;
@@ -64,15 +76,19 @@ repairController.createRepairOrder = async (req, res, next) => {
                 include: { receiver: true }
             });
 
-            // --- START: แก้ไขส่วนนี้ ---
-            const historyEvents = allItemIds.map(itemId => ({
-                inventoryItemId: itemId,
-                userId: createdById,
-                type: HistoryEventType.REPAIR_SENT,
-                details: `Sent to repair at ${repairOrder.receiver?.name || 'N/A'}. Repair ID: ${repairOrder.id}`
-            }));
-            // --- END ---
-            await tx.assetHistory.createMany({ data: historyEvents });
+            for (const itemId of allItemIds) {
+                await createEventLog(
+                    tx,
+                    itemId,
+                    createdById,
+                    EventType.REPAIR_SENT,
+                    {
+                        receiverName: repairOrder.receiver?.name || 'N/A',
+                        repairId: repairOrder.id,
+                        details: `Sent to repair at ${repairOrder.receiver?.name || 'N/A'}.`
+                    }
+                );
+            }
 
             return repairOrder;
         });
@@ -245,7 +261,7 @@ repairController.returnItemsFromRepair = async (req, res, next) => {
                 
                 const isSoldItem = inventoryItem.saleId !== null;
                 if (inventoryItem.ownerType === ItemOwner.CUSTOMER || isSoldItem) {
-                    newStatus = ItemStatus.SOLD;
+                    newStatus = ItemStatus.RETURNED_TO_CUSTOMER;
                 } else {
                     if (repairOutcome === RepairOutcome.REPAIRED_SUCCESSFULLY) {
                         newStatus = inventoryItem.itemType === ItemType.ASSET ? ItemStatus.IN_WAREHOUSE : ItemStatus.IN_STOCK;
@@ -259,16 +275,18 @@ repairController.returnItemsFromRepair = async (req, res, next) => {
                     data: { status: newStatus },
                 });
 
-                // --- START: แก้ไขส่วนนี้ ---
-                await tx.assetHistory.create({
-                    data: {
-                        inventoryItemId,
-                        userId: actorId,
-                        type: HistoryEventType.REPAIR_RETURNED,
-                        details: `Returned from ${repairOrder?.receiver?.name || 'N/A'}. Outcome: ${repairOutcome}. Repair ID: ${id}`
+                await createEventLog(
+                    tx,
+                    inventoryItemId,
+                    actorId,
+                    EventType.REPAIR_RETURNED,
+                    {
+                        receiverName: repairOrder?.receiver?.name || 'N/A',
+                        repairId: id,
+                        outcome: repairOutcome,
+                        details: `Returned from ${repairOrder?.receiver?.name || 'N/A'}.`
                     }
-                });
-                // --- END ---
+                );
             }
 
             const remainingItems = await tx.repairOnItems.count({

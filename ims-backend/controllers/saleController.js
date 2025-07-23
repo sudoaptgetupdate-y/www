@@ -1,14 +1,25 @@
 // controllers/saleController.js
-const { PrismaClient, HistoryEventType } = require('@prisma/client');
+const { PrismaClient, EventType } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const saleController = {};
+
+// Helper function to create event logs consistently
+const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
+    return tx.eventLog.create({
+        data: {
+            inventoryItemId,
+            userId,
+            eventType,
+            details,
+        },
+    });
+};
 
 saleController.createSale = async (req, res, next) => {
     const { customerId, inventoryItemIds } = req.body;
     const soldById = req.user.id; 
 
-    // --- START: Input Validation ---
     if (typeof customerId !== 'number') {
         const err = new Error('Customer ID must be a number.');
         err.statusCode = 400;
@@ -19,7 +30,6 @@ saleController.createSale = async (req, res, next) => {
         err.statusCode = 400;
         return next(err);
     }
-    // --- END: Input Validation ---
 
     try {
         const sale = await prisma.$transaction(async (tx) => {
@@ -63,18 +73,21 @@ saleController.createSale = async (req, res, next) => {
                 data: { status: 'SOLD', saleId: newSale.id },
             });
 
-            // --- START: นี่คือส่วนที่แก้ไข ---
-            // ลบการสร้าง AssetHistory ที่ซ้ำซ้อนออกไปจากตรงนี้
-            /*
-            const historyEvents = inventoryItemIds.map(itemId => ({
-                inventoryItemId: itemId,
-                userId: soldById,
-                type: HistoryEventType.UPDATE, 
-                details: `Item sold to ${customer.name}. Sale ID: ${newSale.id}`
-            }));
-            await tx.assetHistory.createMany({ data: historyEvents });
-            */
-            // --- END: นี่คือส่วนที่แก้ไข ---
+            // --- START: แก้ไขส่วนการบันทึกประวัติ ---
+            for (const itemId of inventoryItemIds) {
+                await createEventLog(
+                    tx,
+                    itemId,
+                    soldById,
+                    EventType.SALE,
+                    { 
+                        customerName: customer.name,
+                        saleId: newSale.id,
+                        details: `Item sold to ${customer.name}.`
+                    }
+                );
+            }
+            // --- END ---
 
             return tx.sale.findUnique({
                 where: { id: newSale.id },
@@ -92,8 +105,6 @@ saleController.createSale = async (req, res, next) => {
         next(error);
     }
 };
-
-// ... (โค้ดส่วนที่เหลือของไฟล์เหมือนเดิม ไม่ต้องเปลี่ยนแปลง)
 
 saleController.getAllSales = async (req, res, next) => {
     try {
@@ -233,6 +244,21 @@ saleController.voidSale = async (req, res, next) => {
                         saleId: null
                     },
                 });
+
+                // --- START: แก้ไขส่วนการบันทึกประวัติ ---
+                for (const itemId of itemIdsToUpdate) {
+                    await createEventLog(
+                        tx,
+                        itemId,
+                        voidedById,
+                        EventType.VOID,
+                        {
+                            saleId: saleId,
+                            details: `Sale ID: ${saleId} was voided.`
+                        }
+                    );
+                }
+                // --- END ---
             }
 
             return await tx.sale.update({
@@ -255,6 +281,7 @@ saleController.voidSale = async (req, res, next) => {
 saleController.updateSale = async (req, res, next) => {
     const { id } = req.params;
     const { customerId, inventoryItemIds } = req.body;
+    const actorId = req.user.id;
 
     try {
         const saleId = parseInt(id);
@@ -263,8 +290,7 @@ saleController.updateSale = async (req, res, next) => {
             err.statusCode = 400;
             throw err;
         }
-
-        // --- START: Input Validation ---
+        
         if (typeof customerId !== 'number') {
             const err = new Error('Customer ID must be a number.');
             err.statusCode = 400;
@@ -275,7 +301,6 @@ saleController.updateSale = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: Input Validation ---
 
         const updatedSale = await prisma.$transaction(async (tx) => {
             const originalSale = await tx.sale.findUnique({
@@ -316,6 +341,16 @@ saleController.updateSale = async (req, res, next) => {
                     data: { status: 'SOLD', saleId: saleId },
                 });
             }
+
+            // Note: For simplicity, we are not creating detailed event logs for each item change in an update.
+            // A single 'UPDATE' event for the sale could be logged if needed.
+            await createEventLog(
+                tx,
+                -1, // Or a specific item if applicable, using -1 for a general sale event
+                actorId,
+                EventType.UPDATE,
+                { details: `Sale ID: ${saleId} was updated.` }
+            );
 
             return await tx.sale.update({
                 where: { id: saleId },

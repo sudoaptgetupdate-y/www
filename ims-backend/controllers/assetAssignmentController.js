@@ -1,16 +1,25 @@
 // ims-backend/controllers/assetAssignmentController.js
 
-const { PrismaClient, HistoryEventType, AssignmentStatus } = require('@prisma/client');
+const { PrismaClient, EventType, AssignmentStatus } = require('@prisma/client');
 const prisma = new PrismaClient();
 const assetAssignmentController = {};
 
-const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+// Helper function to create event logs consistently
+const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
+    return tx.eventLog.create({
+        data: {
+            inventoryItemId,
+            userId,
+            eventType,
+            details,
+        },
+    });
+};
 
 assetAssignmentController.createAssignment = async (req, res, next) => {
     const { assigneeId, inventoryItemIds, notes } = req.body;
     const approvedById = req.user.id;
 
-    // --- START: Input Validation ---
     if (typeof assigneeId !== 'number') {
         const err = new Error('Assignee ID must be a number.');
         err.statusCode = 400;
@@ -21,7 +30,6 @@ assetAssignmentController.createAssignment = async (req, res, next) => {
         err.statusCode = 400;
         return next(err);
     }
-    // --- END: Input Validation ---
 
     try {
         const newAssignment = await prisma.$transaction(async (tx) => {
@@ -66,17 +74,21 @@ assetAssignmentController.createAssignment = async (req, res, next) => {
                 data: { status: 'ASSIGNED' },
             });
 
-            // --- START: แก้ไขส่วนนี้ ---
-            const historyEvents = inventoryItemIds.map(itemId => ({
-                inventoryItemId: itemId,
-                userId: approvedById,
-                type: HistoryEventType.ASSIGN,
-                details: `Assigned to ${assignee.name}. Assignment ID: ${createdAssignment.id}`
-            }));
-            // --- END: แก้ไขส่วนนี้ ---
-            await tx.assetHistory.createMany({
-                data: historyEvents
-            });
+            // --- START: แก้ไขส่วนการบันทึกประวัติ ---
+            for (const itemId of inventoryItemIds) {
+                 await createEventLog(
+                    tx,
+                    itemId,
+                    approvedById,
+                    EventType.ASSIGN,
+                    { 
+                        assignee: assignee.name,
+                        assignmentId: createdAssignment.id,
+                        notes: `Assigned to ${assignee.name}.`
+                    }
+                );
+            }
+            // --- END ---
 
             return createdAssignment;
         });
@@ -93,7 +105,6 @@ assetAssignmentController.returnItems = async (req, res, next) => {
     const { itemIdsToReturn } = req.body;
     const actorId = req.user.id;
 
-    // --- START: Input Validation ---
     const id = parseInt(assignmentId);
     if (isNaN(id)) {
         const err = new Error('Invalid Assignment ID.');
@@ -105,7 +116,6 @@ assetAssignmentController.returnItems = async (req, res, next) => {
         err.statusCode = 400;
         return next(err);
     }
-    // --- END: Input Validation ---
 
     try {
         await prisma.$transaction(async (tx) => {
@@ -129,17 +139,21 @@ assetAssignmentController.returnItems = async (req, res, next) => {
                 data: { status: 'IN_WAREHOUSE' },
             });
 
-            // --- START: แก้ไขส่วนนี้ ---
-            const historyEvents = itemIdsToReturn.map(itemId => ({
-                inventoryItemId: itemId,
-                userId: actorId,
-                type: HistoryEventType.RETURN,
-                details: `Returned from ${assignment.assignee?.name || 'N/A'}. Assignment ID: ${id}`
-            }));
-            // --- END: แก้ไขส่วนนี้ ---
-            await tx.assetHistory.createMany({
-                data: historyEvents
-            });
+            // --- START: แก้ไขส่วนการบันทึกประวัติ ---
+            for (const itemId of itemIdsToReturn) {
+                await createEventLog(
+                    tx,
+                    itemId,
+                    actorId,
+                    EventType.RETURN_FROM_ASSIGN,
+                    {
+                        returnedFrom: assignment.assignee?.name || 'N/A',
+                        assignmentId: id,
+                        notes: `Returned from ${assignment.assignee?.name || 'N/A'}.`
+                    }
+                );
+            }
+            // --- END ---
 
             const remainingItems = await tx.assetAssignmentOnItems.count({
                 where: {
@@ -165,7 +179,6 @@ assetAssignmentController.returnItems = async (req, res, next) => {
     }
 };
 
-// ... (โค้ดส่วนที่เหลือของไฟล์เหมือนเดิม)
 assetAssignmentController.getAllAssignments = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -243,7 +256,7 @@ assetAssignmentController.getAssignmentById = async (req, res, next) => {
     try {
         const id = parseInt(assignmentId);
         if (isNaN(id)) {
-            const err = new Error("Invalid Assignment ID.");
+            const err = new Error("Invalid Assignment ID provided.");
             err.statusCode = 400;
             throw err;
         }

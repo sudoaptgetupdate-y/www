@@ -49,15 +49,14 @@ const STATUS_CONFIG = {
   PARTIALLY_RETURNED: { label: "Partial Return", variant: "info" },
   REPAIRING: { label: "Repairing", variant: "warning" },
 
-  // --- START: เพิ่มสถานะใหม่สำหรับการซ่อม ---
   REPAIR_SUCCESS: { label: "Repair Success", variant: "success" },
   REPAIR_FAILED: { label: "Repair Failed", variant: "destructive" },
-  // --- END ---
 
   // Repair Outcomes & Status
   REPAIRED_SUCCESSFULLY: { label: "Success", variant: "success" },
   UNREPAIRABLE: { label: "Failed", variant: "destructive" },
-  RETURNED_TO_CUSTOMER: { label: "Closed", variant: "secondary" },
+  
+  RETURNED_TO_CUSTOMER: { label: "Serviced", variant: "info" },
 
   // Asset Statuses & History Events
   ASSIGNED: { label: "Assigned", variant: "warning" },

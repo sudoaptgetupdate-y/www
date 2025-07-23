@@ -18,7 +18,7 @@ const eventConfig = {
     CREATE: { icon: <PlusCircle className="h-4 w-4" /> },
     UPDATE: { icon: <Edit className="h-4 w-4" /> },
     ASSIGN: { icon: <ArrowRightLeft className="h-4 w-4" /> },
-    RETURN: { icon: <CornerUpLeft className="h-4 w-4" /> },
+    RETURN_FROM_ASSIGN: { icon: <CornerUpLeft className="h-4 w-4" /> },
     DECOMMISSION: { icon: <ArchiveX className="h-4 w-4" /> },
     REINSTATE: { icon: <ArchiveRestore className="h-4 w-4" /> },
     REPAIR_SENT: { icon: <Wrench className="h-4 w-4" /> },
@@ -38,12 +38,13 @@ export default function AssetHistoryPage() {
         const fetchData = async () => {
             if (!assetId || !token) return;
             try {
-                const [assetRes, historyRes] = await Promise.all([
-                    axiosInstance.get(`/assets/${assetId}`, { headers: { Authorization: `Bearer ${token}` } }),
-                    axiosInstance.get(`/assets/${assetId}/history`, { headers: { Authorization: `Bearer ${token}` } })
-                ]);
-                setAsset(assetRes.data);
-                setHistory(historyRes.data);
+                // --- START: แก้ไข Endpoint ที่เรียกใช้ ---
+                const response = await axiosInstance.get(`/history/${assetId}`, { 
+                    headers: { Authorization: `Bearer ${token}` } 
+                });
+                // --- END ---
+                setAsset(response.data.itemDetails);
+                setHistory(response.data.history);
             } catch (error) {
                 toast.error("Failed to fetch asset history.");
             } finally {
@@ -53,21 +54,19 @@ export default function AssetHistoryPage() {
         fetchData();
     }, [assetId, token]);
     
-    // --- START: แก้ไขฟังก์ชันนี้ ---
-    const getTransactionLink = (details) => {
+    // --- START: แก้ไข Logic การสร้าง Link ---
+    const getTransactionLink = (eventType, details) => {
         if (!details) return null;
-        
-        let assignmentMatch = details.match(/Assignment ID: (\d+)/);
-        if (assignmentMatch && assignmentMatch[1]) {
-            return `/asset-assignments/${assignmentMatch[1]}`;
+        switch (eventType) {
+            case 'ASSIGN':
+            case 'RETURN_FROM_ASSIGN':
+                return `/asset-assignments/${details.assignmentId}`;
+            case 'REPAIR_SENT':
+            case 'REPAIR_RETURNED':
+                return `/repairs/${details.repairId}`;
+            default:
+                return null;
         }
-
-        let repairMatch = details.match(/Repair ID: (\d+)/);
-        if (repairMatch && repairMatch[1]) {
-            return `/repairs/${repairMatch[1]}`;
-        }
-        
-        return null;
     };
     // --- END ---
     
@@ -102,30 +101,32 @@ export default function AssetHistoryPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {history.length > 0 ? history.map((h) => {
-                                const link = getTransactionLink(h.details);
+                            {history.length > 0 ? history.map((event) => {
+                                const link = getTransactionLink(event.eventType, event.details);
 
-                                const getDisplayInfo = (historyItem) => {
-                                    if (historyItem.type === 'REPAIR_RETURNED') {
-                                        if (historyItem.details.includes('REPAIRED_SUCCESSFULLY')) {
+                                // --- START: แก้ไข Logic การแสดงผล Badge ---
+                                const getDisplayInfo = (historyEvent) => {
+                                     if (historyEvent.eventType === 'REPAIR_RETURNED') {
+                                        if (historyEvent.details.outcome === 'REPAIRED_SUCCESSFULLY') {
                                             return { status: 'REPAIR_SUCCESS' };
                                         }
-                                        if (historyItem.details.includes('UNREPAIRABLE')) {
+                                        if (historyEvent.details.outcome === 'UNREPAIRABLE') {
                                             return { status: 'REPAIR_FAILED' };
                                         }
                                     }
-                                    return { status: historyItem.type };
+                                    return { status: historyEvent.eventType };
                                 };
                                 
-                                const { status: displayStatus } = getDisplayInfo(h);
+                                const { status: displayStatus } = getDisplayInfo(event);
                                 const eventIcon = eventConfig[displayStatus]?.icon;
                                 const { label: eventLabel } = getStatusProperties(displayStatus);
+                                // --- END ---
 
                                 return (
-                                    <tr key={h.id} className="border-b">
-                                        <td className="p-2">{new Date(h.createdAt).toLocaleString()}</td>
-                                        <td className="p-2">{h.details}</td>
-                                        <td className="p-2">{h.user?.name || 'System'}</td>
+                                    <tr key={event.id} className="border-b">
+                                        <td className="p-2">{new Date(event.createdAt).toLocaleString()}</td>
+                                        <td className="p-2">{event.details?.details || 'N/A'}</td>
+                                        <td className="p-2">{event.user?.name || 'System'}</td>
                                         <td className="p-2 text-center">
                                             <StatusBadge
                                                 status={displayStatus}
