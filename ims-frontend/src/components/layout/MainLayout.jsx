@@ -27,9 +27,10 @@ const NavItem = ({ to, icon, text, isCollapsed, handleclick }) => (
         to={to}
         onClick={handleclick}
         className={({ isActive }) => cn(
-            "flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm transition-colors",
+            "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm transition-colors relative font-medium",
+            "text-slate-600 hover:bg-slate-200 hover:text-slate-900",
             isCollapsed && "justify-center",
-            isActive ? 'bg-slate-700 font-semibold' : 'hover:bg-slate-800'
+            isActive && "bg-blue-100 text-blue-700"
         )}
     >
         {icon}
@@ -42,7 +43,6 @@ const NavItem = ({ to, icon, text, isCollapsed, handleclick }) => (
     </NavLink>
 );
 
-
 const MainLayout = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -52,7 +52,6 @@ const MainLayout = () => {
     const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
 
     const handleLogout = () => {
         logout();
@@ -66,29 +65,31 @@ const MainLayout = () => {
     }
 
     const SidebarContent = () => (
-        <div className="flex flex-col h-full text-slate-200 relative">
-            <Button
+        <div className="flex flex-col h-full relative">
+             <Button
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                variant="ghost"
+                variant="outline"
                 size="icon"
-                className="absolute top-1/2 -right-3 z-10 h-6 w-6 rounded-full bg-slate-700 text-white hover:bg-slate-600 hover:text-white hidden md:flex"
+                className="absolute top-[75px] -right-4 z-10 h-8 w-8 rounded-full bg-white hidden md:flex"
             >
                 {isSidebarCollapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
             </Button>
 
-            <div className="p-4 border-b border-slate-700 flex justify-between items-center h-[65px]">
-                <h1 className={cn("text-2xl font-bold transition-all", isSidebarCollapsed && "opacity-0 hidden")}>IMS</h1>
-                <h1 className={cn("text-2xl font-bold transition-all", !isSidebarCollapsed && "opacity-0 hidden")}>I</h1>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-slate-400 hover:text-white">
+            <div className="p-4 border-b flex items-center gap-3 h-[65px]">
+                <div className="bg-primary p-2 rounded-lg">
+                    <Layers className="text-primary-foreground" size={24}/>
+                </div>
+                <h1 className={cn("text-xl font-bold text-slate-800 transition-all", isSidebarCollapsed && "opacity-0 hidden")}>IMS</h1>
+                <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-slate-500 hover:text-slate-800 ml-auto">
                     <X size={24} />
                 </button>
             </div>
             
-            <nav className="flex-1 px-2 py-4 space-y-2 overflow-y-auto">
-                <NavItem to="/dashboard" icon={<Boxes size={18} />} text={t('dashboard')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+            <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+                 <NavItem to="/dashboard" icon={<Boxes size={18} />} text={t('dashboard')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                 
                 <div>
-                    <p className={cn("px-3 py-2 text-slate-400 text-xs font-bold uppercase", isSidebarCollapsed && "text-center")}>
+                    <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
                         {isSidebarCollapsed ? t('business').charAt(0) : t('business')}
                     </p>
                     <div className="space-y-1">
@@ -99,7 +100,7 @@ const MainLayout = () => {
                 </div>
 
                 <div>
-                    <p className={cn("px-3 py-2 text-slate-400 text-xs font-bold uppercase", isSidebarCollapsed && "text-center")}>
+                    <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
                          {isSidebarCollapsed ? t('repair').charAt(0) : t('repair')}
                     </p>
                     <div className="space-y-1">
@@ -109,7 +110,7 @@ const MainLayout = () => {
                 </div>
 
                 <div>
-                    <p className={cn("px-3 py-2 text-slate-400 text-xs font-bold uppercase", isSidebarCollapsed && "text-center")}>
+                    <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
                         {isSidebarCollapsed ? t('products').charAt(0) : t('products')}
                     </p>
                      <div className="space-y-1">
@@ -121,7 +122,7 @@ const MainLayout = () => {
                 </div>
 
                 <div>
-                    <p className={cn("px-3 py-2 text-slate-400 text-xs font-bold uppercase", isSidebarCollapsed && "text-center")}>
+                    <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
                         {isSidebarCollapsed ? t('assets').charAt(0) : t('assets')}
                     </p>
                     <div className="space-y-1">
@@ -131,8 +132,8 @@ const MainLayout = () => {
                 </div>
 
                 {isSuperAdmin && (
-                     <div className="!mt-auto pt-2 border-t border-slate-700">
-                        <p className={cn("px-3 py-2 text-slate-400 text-xs font-bold uppercase", isSidebarCollapsed && "text-center")}>
+                     <div className="pt-2">
+                        <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
                             {isSidebarCollapsed ? t('system').charAt(0) : t('system')}
                         </p>
                         <div className="space-y-1">
@@ -145,19 +146,19 @@ const MainLayout = () => {
     );
 
     return (
-        <div className="relative min-h-screen md:flex">
+        <div className="relative min-h-screen md:flex bg-slate-50">
             {isMobileMenuOpen && (
                 <div
-                    className="fixed inset-0 bg-black opacity-50 z-20 md:hidden"
+                    className="fixed inset-0 bg-black/60 z-20 md:hidden"
                     onClick={() => setIsMobileMenuOpen(false)}
                 ></div>
             )}
 
             <aside
                 className={cn(
-                    "bg-slate-900 transform transition-all duration-300 ease-in-out",
-                    "fixed inset-y-0 left-0 z-30",
-                    isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full w-64",
+                    "bg-white border-r",
+                    "fixed inset-y-0 left-0 z-30 transform transition-transform duration-300 ease-in-out",
+                    isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full",
                     "md:relative md:translate-x-0",
                     isSidebarCollapsed ? "md:w-20" : "md:w-64"
                 )}
@@ -166,24 +167,24 @@ const MainLayout = () => {
             </aside>
             
             <div className="flex-1 flex flex-col max-h-screen font-sarabun">
-                <header className="bg-white shadow-sm flex justify-between items-center p-2 md:p-4 h-[65px]">
+                <header className="bg-white/80 backdrop-blur-sm sticky top-0 z-10 border-b flex justify-between items-center px-4 h-[65px]">
                     <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(true)}>
                         <Menu className="h-6 w-6" />
                     </Button>
-
-                    <div className="hidden md:block flex-1"></div>
-
+                    <div className="hidden md:block flex-1">
+                        {/* Can be used for breadcrumbs or page title later */}
+                    </div>
                     <div className="flex items-center gap-2">
                         <LanguageToggle />
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100">
+                                <Button variant="ghost" className="flex items-center gap-3 p-2 rounded-lg h-11">
                                     <UserCircle className="h-8 w-8 text-slate-500" />
                                     <div className="hidden sm:block text-left">
-                                        <p className="font-semibold text-sm">{currentUser?.name || 'User'}</p>
+                                        <p className="font-semibold text-sm text-slate-800">{currentUser?.name || 'User'}</p>
                                         <p className="text-xs text-slate-500">{currentUser?.role}</p>
                                     </div>
-                                </button>
+                                </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-56" align="end">
                                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
@@ -202,20 +203,16 @@ const MainLayout = () => {
                     </div>
                 </header>
 
-                <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-gray-100">
+                <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
                     <motion.div
                         key={location.pathname}
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        transition={{ duration: 0.35, ease: "easeOut" }}
                     >
                         <Outlet />
                     </motion.div>
                 </main>
-                
-                <footer className="p-4 bg-white text-center text-sm text-muted-foreground border-t no-print">
-                    © 2025 NTPLC Engineer Of Nakhon Si Thammarat. All Rights Reserved. - Version 1.0.0
-                </footer>
             </div>
         </div>
     );
