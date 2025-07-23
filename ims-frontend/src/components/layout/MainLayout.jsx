@@ -19,6 +19,8 @@ import {
 import useAuthStore from "@/store/authStore";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { LanguageToggle } from "@/components/ui/LanguageToggle";
+import { useTranslation } from 'react-i18next';
 
 const NavItem = ({ to, icon, text, isCollapsed, handleclick }) => (
     <NavLink
@@ -42,6 +44,7 @@ const NavItem = ({ to, icon, text, isCollapsed, handleclick }) => (
 
 
 const MainLayout = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
     const logout = useAuthStore((state) => state.logout);
@@ -64,7 +67,6 @@ const MainLayout = () => {
 
     const SidebarContent = () => (
         <div className="flex flex-col h-full text-slate-200 relative">
-            {/* --- START: แก้ไขส่วนปุ่ม Toggle --- */}
             <Button
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                 variant="ghost"
@@ -73,7 +75,6 @@ const MainLayout = () => {
             >
                 {isSidebarCollapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
             </Button>
-            {/* --- END --- */}
 
             <div className="p-4 border-b border-slate-700 flex justify-between items-center h-[65px]">
                 <h1 className={cn("text-2xl font-bold transition-all", isSidebarCollapsed && "opacity-0 hidden")}>IMS</h1>
@@ -84,58 +85,58 @@ const MainLayout = () => {
             </div>
             
             <nav className="flex-1 px-2 py-4 space-y-2 overflow-y-auto">
-                <NavItem to="/dashboard" icon={<Boxes size={18} />} text="Dashboard" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                <NavItem to="/dashboard" icon={<Boxes size={18} />} text={t('dashboard')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                 
                 <div>
                     <p className={cn("px-3 py-2 text-slate-400 text-xs font-bold uppercase", isSidebarCollapsed && "text-center")}>
-                        {isSidebarCollapsed ? "B" : "Business"}
+                        {isSidebarCollapsed ? t('business').charAt(0) : t('business')}
                     </p>
                     <div className="space-y-1">
-                        <NavItem to="/sales" icon={<ShoppingCart size={18}/>} text="Sales" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/borrowings" icon={<ArrowRightLeft size={18}/>} text="Borrowing" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/customers" icon={<UsersIcon size={18}/>} text="Customers" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/sales" icon={<ShoppingCart size={18}/>} text={t('sales')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/borrowings" icon={<ArrowRightLeft size={18}/>} text={t('borrowing')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/customers" icon={<UsersIcon size={18}/>} text={t('customers')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                     </div>
                 </div>
 
                 <div>
                     <p className={cn("px-3 py-2 text-slate-400 text-xs font-bold uppercase", isSidebarCollapsed && "text-center")}>
-                         {isSidebarCollapsed ? "R" : "Repair"}
+                         {isSidebarCollapsed ? t('repair').charAt(0) : t('repair')}
                     </p>
                     <div className="space-y-1">
-                        <NavItem to="/repairs" icon={<Wrench size={18}/>} text="Repair Orders" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/addresses" icon={<BookUser size={18}/>} text="Address Book" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/repairs" icon={<Wrench size={18}/>} text={t('repairOrders')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/addresses" icon={<BookUser size={18}/>} text={t('addressBook')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                     </div>
                 </div>
 
                 <div>
                     <p className={cn("px-3 py-2 text-slate-400 text-xs font-bold uppercase", isSidebarCollapsed && "text-center")}>
-                        {isSidebarCollapsed ? "P" : "Products"}
+                        {isSidebarCollapsed ? t('products').charAt(0) : t('products')}
                     </p>
                      <div className="space-y-1">
-                        <NavItem to="/inventory" icon={<Package size={18}/>} text="Inventory" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/product-models" icon={<Boxes size={18}/>} text="Models" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/brands" icon={<Building2 size={18}/>} text="Brands" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/categories" icon={<Tag size={18}/>} text="Categories" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/inventory" icon={<Package size={18}/>} text={t('inventory')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/product-models" icon={<Boxes size={18}/>} text={t('models')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/brands" icon={<Building2 size={18}/>} text={t('brands')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/categories" icon={<Tag size={18}/>} text={t('categories')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                     </div>
                 </div>
 
                 <div>
                     <p className={cn("px-3 py-2 text-slate-400 text-xs font-bold uppercase", isSidebarCollapsed && "text-center")}>
-                        {isSidebarCollapsed ? "A" : "Assets"}
+                        {isSidebarCollapsed ? t('assets').charAt(0) : t('assets')}
                     </p>
                     <div className="space-y-1">
-                        <NavItem to="/asset-assignments" icon={<HardDrive size={18}/>} text="Assignments" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/assets" icon={<Layers size={18}/>} text="Asset List" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/asset-assignments" icon={<HardDrive size={18}/>} text={t('assignments')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/assets" icon={<Layers size={18}/>} text={t('assetList')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                     </div>
                 </div>
 
                 {isSuperAdmin && (
                      <div className="!mt-auto pt-2 border-t border-slate-700">
                         <p className={cn("px-3 py-2 text-slate-400 text-xs font-bold uppercase", isSidebarCollapsed && "text-center")}>
-                            {isSidebarCollapsed ? "S" : "System"}
+                            {isSidebarCollapsed ? t('system').charAt(0) : t('system')}
                         </p>
                         <div className="space-y-1">
-                            <NavItem to="/users" icon={<Settings size={18}/>} text="User Management" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                            <NavItem to="/users" icon={<Settings size={18}/>} text={t('userManagement')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                         </div>
                     </div>
                 )}
@@ -172,30 +173,33 @@ const MainLayout = () => {
 
                     <div className="hidden md:block flex-1"></div>
 
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100">
-                                <UserCircle className="h-8 w-8 text-slate-500" />
-                                <div className="hidden sm:block text-left">
-                                    <p className="font-semibold text-sm">{currentUser?.name || 'User'}</p>
-                                    <p className="text-xs text-slate-500">{currentUser?.role}</p>
-                                </div>
-                            </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56" align="end">
-                            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => navigate('/profile')}>
-                                <User className="mr-2 h-4 w-4" />
-                                <span>Profile</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50">
-                                <LogOut className="mr-2 h-4 w-4" />
-                                <span>Logout</span>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-2">
+                        <LanguageToggle />
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100">
+                                    <UserCircle className="h-8 w-8 text-slate-500" />
+                                    <div className="hidden sm:block text-left">
+                                        <p className="font-semibold text-sm">{currentUser?.name || 'User'}</p>
+                                        <p className="text-xs text-slate-500">{currentUser?.role}</p>
+                                    </div>
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56" align="end">
+                                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                                    <User className="mr-2 h-4 w-4" />
+                                    <span>Profile</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    <span>Logout</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </header>
 
                 <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-gray-100">

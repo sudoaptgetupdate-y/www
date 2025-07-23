@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import axiosInstance from '@/api/axiosInstance';
 import { toast } from 'sonner';
+import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -26,12 +27,13 @@ const SkeletonRow = () => (
 );
 
 export default function BrandPage() {
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
     const {
-        data: brands, pagination, isLoading, searchTerm, handleSearchChange, refreshData
+        data: brands, isLoading, searchTerm, handleSearchChange, refreshData
     } = usePaginatedFetch("/brands", 100); 
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -88,7 +90,7 @@ export default function BrandPage() {
     return (
         <Card>
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>Brands</CardTitle>
+                <CardTitle>{t('brands')}</CardTitle>
                 {canManage && <Button onClick={handleAddNew}>Add New Brand</Button>}
             </CardHeader>
             <CardContent>
@@ -104,8 +106,8 @@ export default function BrandPage() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left">Name</th>
-                                {canManage && <th className="p-2 text-center">Actions</th>}
+                                <th className="p-2 text-left">{t('tableHeader_name')}</th>
+                                {canManage && <th className="p-2 text-center">{t('tableHeader_actions')}</th>}
                             </tr>
                         </thead>
                         <tbody>

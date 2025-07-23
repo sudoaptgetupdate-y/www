@@ -19,6 +19,7 @@ import axiosInstance from '@/api/axiosInstance';
 import { toast } from 'sonner';
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 import { BrandCombobox } from "@/components/ui/BrandCombobox";
+import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -48,6 +49,7 @@ const initialFormData = {
 };
 
 export default function ProductModelPage() {
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
@@ -134,7 +136,7 @@ export default function ProductModelPage() {
     return (
         <Card>
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>Product Models</CardTitle>
+                <CardTitle>Product {t('models')}</CardTitle>
                 {canManage &&
                     <Button onClick={() => openDialog()}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Product Model
@@ -163,18 +165,18 @@ export default function ProductModelPage() {
                         <thead>
                             <tr className="border-b">
                                 <SortableHeader sortKey="modelNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    Model Number
+                                    {t('tableHeader_productModel')}
                                 </SortableHeader>
                                 <SortableHeader sortKey="category" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    Category
+                                    {t('tableHeader_category')}
                                 </SortableHeader>
                                 <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    Brand
+                                    {t('tableHeader_brand')}
                                 </SortableHeader>
                                 <SortableHeader sortKey="sellingPrice" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange} className="text-left">
-                                    Price
+                                    {t('tableHeader_price')}
                                 </SortableHeader>
-                                {canManage && <th className="p-2 text-center">Actions</th>}
+                                {canManage && <th className="p-2 text-center">{t('tableHeader_actions')}</th>}
                             </tr>
                         </thead>
                         <tbody>

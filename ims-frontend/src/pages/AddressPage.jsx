@@ -14,6 +14,7 @@ import {
 import axiosInstance from '@/api/axiosInstance';
 import { toast } from 'sonner';
 import AddressFormDialog from "@/components/dialogs/AddressFormDialog";
+import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -26,6 +27,7 @@ const SkeletonRow = () => (
 );
 
 export default function AddressPage() {
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
@@ -68,7 +70,7 @@ export default function AddressPage() {
     return (
         <Card>
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>Addresses / Repair Centers</CardTitle>
+                <CardTitle>{t('addressBook')} / Repair Centers</CardTitle>
                 {canManage && <Button onClick={handleAddNew}>Add New Address</Button>}
             </CardHeader>
             <CardContent>
@@ -84,11 +86,11 @@ export default function AddressPage() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left">Name</th>
-                                <th className="p-2 text-left">Contact Person</th>
-                                <th className="p-2 text-left">Phone</th>
-                                <th className="p-2 text-left">Address</th>
-                                {canManage && <th className="p-2 text-center">Actions</th>}
+                                <th className="p-2 text-left">{t('tableHeader_name')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_contactPerson')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_phone')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_address')}</th>
+                                {canManage && <th className="p-2 text-center">{t('tableHeader_actions')}</th>}
                             </tr>
                         </thead>
                         <tbody>

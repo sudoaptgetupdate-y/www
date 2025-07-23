@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge"; 
+import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -25,6 +26,7 @@ const SkeletonRow = () => (
 
 export default function AssetAssignmentPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const { user: currentUser } = useAuthStore((state) => state);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
@@ -43,7 +45,7 @@ export default function AssetAssignmentPage() {
     return (
         <Card>
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>Asset Assignments</CardTitle>
+                <CardTitle>Asset {t('assignments')}</CardTitle>
                 {canManage && (
                     <Button onClick={() => navigate('/asset-assignments/new')}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Create New Assignment
@@ -74,14 +76,14 @@ export default function AssetAssignmentPage() {
                     <table className="w-full text-sm whitespace-nowrap">
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left">Assignment ID</th>
-                                <th className="p-2 text-left">Assigned To</th>
-                                <th className="p-2 text-left">Assigned Date</th>
-                                <th className="p-2 text-left">Return Date</th>
-                                <th className="p-2 text-center">Status</th>
-                                <th className="p-2 text-center">Item Status</th>
-                                <th className="p-2 text-left">Approved By</th>
-                                <th className="p-2 text-center">Actions</th>
+                                <th className="p-2 text-left">{t('tableHeader_assignmentId')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_assignedTo')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_assignedDate')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_returnDate')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_status')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_itemStatus')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_approvedBy')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -94,14 +96,12 @@ export default function AssetAssignmentPage() {
                                     <td className="p-2">{new Date(a.assignedDate).toLocaleDateString()}</td>
                                     <td className="p-2">{a.returnDate ? new Date(a.returnDate).toLocaleDateString() : 'N/A'}</td>
                                     <td className="p-2 text-center">
-                                        {/* --- START: แก้ไขส่วนนี้ --- */}
                                         <StatusBadge 
                                             status={a.status} 
                                             className="w-32"
                                             onClick={() => navigate(`/asset-assignments/${a.id}`)}
                                             interactive
                                         />
-                                        {/* --- END --- */}
                                     </td>
                                     <td className="p-2 text-center">{a.returnedItemCount}/{a.totalItemCount} Returned</td>
                                     <td className="p-2">{a.approvedBy.name}</td>

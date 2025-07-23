@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge"; 
+import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -24,6 +25,7 @@ const SkeletonRow = () => (
 
 export default function RepairListPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const { user: currentUser } = useAuthStore((state) => state);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
@@ -42,7 +44,7 @@ export default function RepairListPage() {
     return (
         <Card>
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>Repair Orders</CardTitle>
+                <CardTitle>{t('repairOrders')}</CardTitle>
                 {canManage && (
                     <Button onClick={() => navigate('/repairs/new')}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Create New Repair Order
@@ -74,12 +76,12 @@ export default function RepairListPage() {
                     <table className="w-full text-sm whitespace-nowrap">
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left">Repair ID</th>
-                                <th className="p-2 text-left">Sent To</th>
-                                <th className="p-2 text-left">Repair Date</th>
-                                <th className="p-2 text-center">Status</th>
-                                <th className="p-2 text-center">Item Status</th>
-                                <th className="p-2 text-center">Actions</th>
+                                <th className="p-2 text-left">{t('tableHeader_repairId')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_sentTo')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_repairDate')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_status')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_itemStatus')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -91,14 +93,12 @@ export default function RepairListPage() {
                                     <td className="p-2">{r.receiver?.name || 'N/A'}</td>
                                     <td className="p-2">{new Date(r.repairDate).toLocaleDateString()}</td>
                                     <td className="p-2 text-center">
-                                        {/* --- START: แก้ไขส่วนนี้ --- */}
                                         <StatusBadge 
                                             status={r.status} 
                                             className="w-32"
                                             onClick={() => navigate(`/repairs/${r.id}`)}
                                             interactive
                                         />
-                                        {/* --- END --- */}
                                     </td>
                                     <td className="p-2 text-center">{r.returnedItemCount}/{r.totalItemCount} Returned</td>
                                     <td className="p-2 text-center">

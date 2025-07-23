@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
@@ -14,6 +14,7 @@ import {
 import axiosInstance from '@/api/axiosInstance';
 import { toast } from 'sonner';
 import CategoryFormDialog from "@/components/dialogs/CategoryFormDialog";
+import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -25,12 +26,13 @@ const SkeletonRow = () => (
 );
 
 export default function CategoryPage() {
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
     const {
-        data: categories, pagination, isLoading, searchTerm, handleSearchChange, refreshData
+        data: categories, isLoading, searchTerm, handleSearchChange, refreshData
     } = usePaginatedFetch("/categories", 100); 
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -67,7 +69,7 @@ export default function CategoryPage() {
     return (
         <Card>
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>Categories</CardTitle>
+                <CardTitle>{t('categories')}</CardTitle>
                 {canManage &&
                     <Button onClick={handleAddNew}>
                         Add New Category
@@ -87,10 +89,10 @@ export default function CategoryPage() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left">Name</th>
-                                <th className="p-2 text-center">Requires S/N</th>
-                                <th className="p-2 text-center">Requires MAC</th>
-                                {canManage && <th className="p-2 text-center">Actions</th>}
+                                <th className="p-2 text-left">{t('tableHeader_name')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_requiresSn')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_requiresMac')}</th>
+                                {canManage && <th className="p-2 text-center">{t('tableHeader_actions')}</th>}
                             </tr>
                         </thead>
                         <tbody>

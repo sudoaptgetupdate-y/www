@@ -20,6 +20,7 @@ import axiosInstance from '@/api/axiosInstance';
 import { toast } from 'sonner';
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -42,6 +43,7 @@ const initialFormData = {
 
 export default function UserManagementPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const {
         data: users, pagination, isLoading, searchTerm, handleSearchChange, handlePageChange, handleItemsPerPageChange, refreshData
@@ -117,7 +119,7 @@ export default function UserManagementPage() {
     return (
         <Card>
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>User Management</CardTitle>
+                <CardTitle>{t('userManagement')}</CardTitle>
                 <Button onClick={() => openDialog()}>
                     <UserPlus className="mr-2 h-4 w-4" /> Add New User
                 </Button>
@@ -135,11 +137,11 @@ export default function UserManagementPage() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left">Name</th>
-                                <th className="p-2 text-left">Email</th>
-                                <th className="p-2 text-center">Role</th>
-                                <th className="p-2 text-center">Status</th>
-                                <th className="p-2 text-center">Actions</th>
+                                <th className="p-2 text-left">{t('tableHeader_name')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_email')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_role')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_status')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_actions')}</th>
                             </tr>
                         </thead>
                         <tbody>

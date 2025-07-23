@@ -17,6 +17,7 @@ import axiosInstance from '@/api/axiosInstance';
 import { toast } from 'sonner';
 import CustomerFormDialog from "@/components/dialogs/CustomerFormDialog";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -29,6 +30,7 @@ const SkeletonRow = () => (
 
 export default function CustomerPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
@@ -72,13 +74,10 @@ export default function CustomerPage() {
     return (
         <Card>
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>Customers</CardTitle>
-                {/* --- START: แก้ไขส่วนนี้ (ย้ายปุ่ม Add New มาไว้คนเดียว) --- */}
+                <CardTitle>{t('customers')}</CardTitle>
                 {canManage && <Button onClick={handleAddNew}>Add New Customer</Button>}
-                {/* --- END --- */}
             </CardHeader>
             <CardContent>
-                {/* --- START: เพิ่มส่วนนี้เข้ามา --- */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
                         placeholder="Search by name or code..."
@@ -87,15 +86,14 @@ export default function CustomerPage() {
                         className="flex-grow"
                     />
                 </div>
-                {/* --- END --- */}
                  <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm whitespace-nowrap">
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left">Code</th>
-                                <th className="p-2 text-left">Name</th>
-                                <th className="p-2 text-left">Phone</th>
-                                {canManage && <th className="p-2 text-center">Actions</th>}
+                                <th className="p-2 text-left">{t('tableHeader_code')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_name')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_phone')}</th>
+                                {canManage && <th className="p-2 text-center">{t('tableHeader_actions')}</th>}
                             </tr>
                         </thead>
                         <tbody>

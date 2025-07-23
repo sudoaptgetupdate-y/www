@@ -1,5 +1,5 @@
 // src/main.jsx
-
+import './i18n';
 import React, { lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
@@ -11,6 +11,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 import MainLayout from './components/layout/MainLayout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import './i18n';
 
 // Lazy load all the pages
 const DashboardRedirect = lazy(() => import('./components/auth/DashboardRedirect.jsx'));

@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { ProductModelCombobox } from "@/components/ui/ProductModelCombobox";
-import { MoreHorizontal, View, ShoppingCart, ArrowRightLeft, Edit, Trash2, PlusCircle, Archive, History, ShieldAlert, ArchiveRestore, ShieldCheck, ArrowUpDown } from "lucide-react"; // <-- เพิ่ม ArrowUpDown
+import { MoreHorizontal, View, ShoppingCart, ArrowRightLeft, Edit, Trash2, PlusCircle, Archive, History, ShieldAlert, ArchiveRestore, ShieldCheck, ArrowUpDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,8 +26,7 @@ import {
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
-
-// ... (Component SkeletonRow และอื่นๆ เหมือนเดิม)
+import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -58,7 +57,6 @@ const initialFormData = {
     status: "IN_STOCK",
 };
 
-// --- START: สร้าง Component สำหรับหัวตารางที่ Sort ได้ ---
 const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort }) => (
     <th className="p-2 text-left cursor-pointer hover:bg-slate-50" onClick={() => onSort(sortKey)}>
         <div className="flex items-center gap-2">
@@ -67,17 +65,17 @@ const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort })
         </div>
     </th>
 );
-// --- END ---
 
 export default function InventoryPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
     const {
         data: inventoryItems, pagination, isLoading, searchTerm, filters,
-        sortBy, sortOrder, handleSortChange, // <-- เพิ่ม
+        sortBy, sortOrder, handleSortChange,
         handleSearchChange, handlePageChange, handleItemsPerPageChange, handleFilterChange, refreshData
     } = usePaginatedFetch("/inventory", 10, { 
         status: "All",
@@ -85,7 +83,6 @@ export default function InventoryPage() {
         brandId: "All"
     });
 
-    // ... (ฟังก์ชันจัดการอื่นๆ เหมือนเดิม)
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [formData, setFormData] = useState(initialFormData);
@@ -228,7 +225,7 @@ export default function InventoryPage() {
     return (
         <Card>
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>Inventory Item Management</CardTitle>
+                <CardTitle>{t('inventory')} Management</CardTitle>
                  {canManage &&
                     <Button onClick={() => openDialog()}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Inventory Item
@@ -280,20 +277,18 @@ export default function InventoryPage() {
                         </colgroup>
                         <thead>
                             <tr className="border-b">
-                                {/* --- START: แก้ไข <th> --- */}
                                 <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    Product Model
+                                    {t('tableHeader_productModel')}
                                 </SortableHeader>
                                 <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    Serial Number
+                                    {t('tableHeader_serialNumber')}
                                 </SortableHeader>
                                 <SortableHeader sortKey="macAddress" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    MAC Address
+                                    {t('tableHeader_macAddress')}
                                 </SortableHeader>
-                                <th className="p-2 text-center">Status</th>
-                                <th className="p-2 text-left">Added By</th>
-                                <th className="p-2 text-center">Actions</th>
-                                {/* --- END --- */}
+                                <th className="p-2 text-center">{t('tableHeader_status')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_addedBy')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -431,7 +426,6 @@ export default function InventoryPage() {
                     </table>
                 </div>
             </CardContent>
-            {/* ... (ส่วน CardFooter และ Dialogs เหมือนเดิม) */}
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Label htmlFor="rows-per-page">Rows per page:</Label>
