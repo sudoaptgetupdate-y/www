@@ -42,9 +42,7 @@ const STATUS_CONFIG = {
   // Borrowing Statuses
   BORROW: { label: "Borrowed", variant: "warning" },
   BORROWED: { label: "Borrowed", variant: "warning" },
-  // --- START: แก้ไขบรรทัดนี้ ---
   RETURNED: { label: "Returned", variant: "success" },
-  // --- END ---
   OVERDUE: { label: "Overdue", variant: "destructive" },
   
   // Assignment & Repair Statuses
@@ -62,7 +60,7 @@ const STATUS_CONFIG = {
 
   // Asset Statuses & History Events
   ASSIGNED: { label: "Assigned", variant: "warning" },
-  DECOMMISSIONED: { label: "Decommissioned", variant: "destructive" },
+  DECOMMISSIONED: { label: "Archived", variant: "destructive" },
   
   // History Event Types
   CREATE: { label: "Created", variant: "success" },

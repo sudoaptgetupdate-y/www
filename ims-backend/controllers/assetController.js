@@ -210,6 +210,10 @@ assetController.getAllAssets = async (req, res, next) => {
             assignmentRecords: {
                 where: { returnedAt: null },
                 include: { assignment: { include: { assignee: { select: { name: true } } } } }
+            },
+            repairRecords: {
+                where: { returnedAt: null },
+                select: { repairId: true }
             }
         };
 
@@ -219,9 +223,17 @@ assetController.getAllAssets = async (req, res, next) => {
         ]);
 
         const formattedItems = items.map(item => {
-            const currentHolder = item.assignmentRecords[0]?.assignment.assignee.name || null;
-            const { assignmentRecords, ...restOfItem } = item;
-            return { ...restOfItem, assignedTo: { name: currentHolder } };
+            const currentAssignmentRecord = item.assignmentRecords[0] || null;
+            const currentHolder = currentAssignmentRecord?.assignment.assignee.name || null;
+            const assignmentId = currentAssignmentRecord?.assignment.id || null;
+            const activeRepair = item.repairRecords.length > 0 ? item.repairRecords[0] : null;
+            const { assignmentRecords, repairRecords, ...restOfItem } = item;
+            return { 
+                ...restOfItem, 
+                assignedTo: { name: currentHolder },
+                assignmentId: assignmentId,
+                repairId: activeRepair ? activeRepair.repairId : null
+            };
         });
 
         res.status(200).json({

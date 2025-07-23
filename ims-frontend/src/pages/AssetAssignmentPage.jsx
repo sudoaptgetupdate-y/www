@@ -42,9 +42,7 @@ export default function AssetAssignmentPage() {
 
     return (
         <Card>
-            {/* --- START: แก้ไขบรรทัดนี้ --- */}
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            {/* --- END --- */}
                 <CardTitle>Asset Assignments</CardTitle>
                 {canManage && (
                     <Button onClick={() => navigate('/asset-assignments/new')}>
@@ -96,7 +94,14 @@ export default function AssetAssignmentPage() {
                                     <td className="p-2">{new Date(a.assignedDate).toLocaleDateString()}</td>
                                     <td className="p-2">{a.returnDate ? new Date(a.returnDate).toLocaleDateString() : 'N/A'}</td>
                                     <td className="p-2 text-center">
-                                        <StatusBadge status={a.status} className="w-32" />
+                                        {/* --- START: แก้ไขส่วนนี้ --- */}
+                                        <StatusBadge 
+                                            status={a.status} 
+                                            className="w-32"
+                                            onClick={() => navigate(`/asset-assignments/${a.id}`)}
+                                            interactive
+                                        />
+                                        {/* --- END --- */}
                                     </td>
                                     <td className="p-2 text-center">{a.returnedItemCount}/{a.totalItemCount} Returned</td>
                                     <td className="p-2">{a.approvedBy.name}</td>

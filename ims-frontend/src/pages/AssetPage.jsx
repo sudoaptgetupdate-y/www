@@ -131,6 +131,9 @@ export default function AssetPage() {
                             <SelectItem value="ASSIGNED">Assigned</SelectItem>
                             <SelectItem value="DECOMMISSIONED">Decommissioned</SelectItem>
                             <SelectItem value="DEFECTIVE">Defective</SelectItem>
+                            {/* --- START: เพิ่มสถานะ REPAIRING --- */}
+                            <SelectItem value="REPAIRING">Repairing</SelectItem>
+                            {/* --- END --- */}
                         </SelectContent>
                     </Select>
                 </div>
@@ -160,12 +163,24 @@ export default function AssetPage() {
                             ) : assets.map((asset) => (
                                 <tr key={asset.id} className="border-b">
                                     <td className="p-2 font-semibold">{asset.assetCode}</td>
-                                    {/* --- START: ส่วนที่แก้ไข --- */}
                                     <td className="p-2">{asset.productModel?.modelNumber || 'N/A'}</td>
-                                    {/* --- END --- */}
                                     <td className="p-2">{asset.serialNumber || 'N/A'}</td>
                                     <td className="p-2 text-center">
-                                        <StatusBadge status={asset.status} className="w-28" />
+                                        <StatusBadge 
+                                            status={asset.status} 
+                                            className="w-28"
+                                            onClick={() => {
+                                                if (asset.status === 'ASSIGNED' && asset.assignmentId) {
+                                                    navigate(`/asset-assignments/${asset.assignmentId}`);
+                                                } else if (asset.status === 'REPAIRING' && asset.repairId) {
+                                                    navigate(`/repairs/${asset.repairId}`);
+                                                }
+                                            }}
+                                            interactive={
+                                                (asset.status === 'ASSIGNED' && asset.assignmentId) ||
+                                                (asset.status === 'REPAIRING' && asset.repairId)
+                                            }
+                                        />
                                     </td>
                                     <td className="p-2">{asset.assignedTo?.name || '-'}</td>
                                     <td className="p-2 text-center">
