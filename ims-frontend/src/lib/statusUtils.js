@@ -42,7 +42,9 @@ const STATUS_CONFIG = {
   // Borrowing Statuses
   BORROW: { label: "Borrowed", variant: "warning" },
   BORROWED: { label: "Borrowed", variant: "warning" },
-  RETURNED: { label: "Returned", variant: "secondary" },
+  // --- START: แก้ไขบรรทัดนี้ ---
+  RETURNED: { label: "Returned", variant: "success" },
+  // --- END ---
   OVERDUE: { label: "Overdue", variant: "destructive" },
   
   // Assignment & Repair Statuses

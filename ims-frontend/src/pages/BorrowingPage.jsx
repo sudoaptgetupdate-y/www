@@ -42,9 +42,7 @@ export default function BorrowingPage() {
 
     return (
         <Card>
-            {/* --- START: แก้ไขบรรทัดนี้ --- */}
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            {/* --- END --- */}
                 <CardTitle>Borrowing Records</CardTitle>
                 {canManage && (
                     <Button onClick={() => navigate('/borrowings/new')}>
@@ -103,7 +101,14 @@ export default function BorrowingPage() {
                                     <td className="p-2">{new Date(b.borrowDate).toLocaleDateString()}</td>
                                     <td className="p-2">{b.dueDate ? new Date(b.dueDate).toLocaleDateString() : 'N/A'}</td>
                                     <td className="p-2 text-center">
-                                        <StatusBadge status={b.status} className="w-24" />
+                                        {/* --- START: แก้ไขส่วนนี้ --- */}
+                                        <StatusBadge 
+                                            status={b.status} 
+                                            className="w-24" 
+                                            onClick={() => navigate(`/borrowings/${b.id}`)}
+                                            interactive
+                                        />
+                                        {/* --- END --- */}
                                     </td>
                                     <td className="p-2 text-center">{b.returnedItemCount}/{b.totalItemCount} Returned</td>
                                     <td className="p-2">{b.approvedBy?.name || 'N/A'}</td>

@@ -26,7 +26,6 @@ import {
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
-import { Switch } from "@/components/ui/switch";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -67,7 +66,7 @@ export default function InventoryPage() {
         data: inventoryItems, pagination, isLoading, searchTerm, filters,
         handleSearchChange, handlePageChange, handleItemsPerPageChange, handleFilterChange, refreshData
     } = usePaginatedFetch("/inventory", 10, { 
-        status: "IN_STOCK",
+        status: "All",
         categoryId: "All",
         brandId: "All"
     });
@@ -212,9 +211,7 @@ export default function InventoryPage() {
 
     return (
         <Card>
-            {/* --- START: แก้ไขบรรทัดนี้ --- */}
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            {/* --- END --- */}
                 <CardTitle>Inventory Item Management</CardTitle>
                  {canManage &&
                     <Button onClick={() => openDialog()}>
@@ -285,7 +282,20 @@ export default function InventoryPage() {
                                         <td className="p-2 truncate">{item.serialNumber || '-'}</td>
                                         <td className="p-2 truncate">{item.macAddress || '-'}</td>
                                         <td className="p-2 text-center">
-                                            <StatusBadge status={item.status} className="w-24" />
+                                            {/* --- START: แก้ไขส่วนนี้ --- */}
+                                            <StatusBadge
+                                                status={item.status}
+                                                className="w-24"
+                                                onClick={() => {
+                                                    if (item.status === 'SOLD' && item.saleId) {
+                                                        navigate(`/sales/${item.saleId}`);
+                                                    } else if (item.status === 'BORROWED' && item.borrowingId) {
+                                                        navigate(`/borrowings/${item.borrowingId}`);
+                                                    }
+                                                }}
+                                                interactive={item.status === 'SOLD' || item.status === 'BORROWED'}
+                                            />
+                                            {/* --- END --- */}
                                         </td>
                                         <td className="p-2">{item.addedBy.name}</td>
                                         <td className="p-2 text-center">

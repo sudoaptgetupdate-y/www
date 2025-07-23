@@ -41,9 +41,7 @@ export default function RepairListPage() {
 
     return (
         <Card>
-            {/* --- START: แก้ไขบรรทัดนี้ --- */}
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            {/* --- END --- */}
                 <CardTitle>Repair Orders</CardTitle>
                 {canManage && (
                     <Button onClick={() => navigate('/repairs/new')}>
@@ -93,7 +91,14 @@ export default function RepairListPage() {
                                     <td className="p-2">{r.receiver?.name || 'N/A'}</td>
                                     <td className="p-2">{new Date(r.repairDate).toLocaleDateString()}</td>
                                     <td className="p-2 text-center">
-                                        <StatusBadge status={r.status} className="w-32" />
+                                        {/* --- START: แก้ไขส่วนนี้ --- */}
+                                        <StatusBadge 
+                                            status={r.status} 
+                                            className="w-32"
+                                            onClick={() => navigate(`/repairs/${r.id}`)}
+                                            interactive
+                                        />
+                                        {/* --- END --- */}
                                     </td>
                                     <td className="p-2 text-center">{r.returnedItemCount}/{r.totalItemCount} Returned</td>
                                     <td className="p-2 text-center">
