@@ -1,134 +1,256 @@
 // src/pages/DashboardPage.jsx
+
 import { useEffect, useState } from 'react';
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from '@/store/authStore';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Pie, PieChart, Cell, Legend } from 'recharts';
-import { DollarSign, Package, Layers, ArrowRightLeft } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useNavigate } from 'react-router-dom';
+import { DollarSign, Package, Layers, Truck, ArrowUp, ArrowDown, ArrowRight, ArrowRightLeft, Wrench } from 'lucide-react';
+import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import { cn } from '@/lib/utils';
 
-const StatCard = ({ title, value, icon, description }) => (
-    <Card>
+// -- Reusable component for the main statistic cards with inline charts --
+const StatCard = ({ title, value, trendValue, trendDirection, icon: Icon, chartData, onClick }) => (
+    <Card 
+        className={cn("shadow-sm border-subtle", onClick && "cursor-pointer hover:bg-muted/50 transition-colors")}
+        onClick={onClick}
+    >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">{title}</CardTitle>
-            {icon}
+            <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+            <Icon className="h-5 w-5 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
-            <p className="text-xs text-muted-foreground">{description}</p>
+            <div className="flex items-end justify-between">
+                <div>
+                    <p className="text-3xl font-bold">{value}</p>
+                    <div className="flex items-center text-xs text-muted-foreground">
+                        {trendDirection === 'up' ? (
+                            <ArrowUp className="h-3 w-3 mr-1 text-emerald-500" />
+                        ) : (
+                            <ArrowDown className="h-3 w-3 mr-1 text-red-500" />
+                        )}
+                        <span className={trendDirection === 'up' ? 'text-emerald-500' : 'text-red-500'}>{trendValue}</span>
+                        <span>&nbsp;vs last week</span>
+                    </div>
+                </div>
+                <div className="h-12 w-24">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData}>
+                            <Line 
+                                type="monotone" 
+                                dataKey="value" 
+                                stroke={trendDirection === 'up' ? "hsl(var(--primary))" : "#ef4444"}
+                                strokeWidth={2} 
+                                dot={false} 
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
         </CardContent>
     </Card>
 );
 
-const COLORS = ['#22c55e', '#64748b', '#f97316', '#ef4444', '#3b82f6']; // Green, Slate, Orange, Red, Blue
+// -- Reusable component for displaying recent activity tables --
+const RecentActivityTable = ({ title, description, data, columns, viewAllLink }) => {
+    const navigate = useNavigate();
+
+    return (
+        <Card className="shadow-sm border-subtle h-full flex flex-col">
+            <CardHeader>
+                <CardTitle>{title}</CardTitle>
+                <CardDescription>{description}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            {columns.map((col) => (
+                                <TableHead key={col.key} className={col.className}>{col.header}</TableHead>
+                            ))}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {data.map((row) => (
+                            <TableRow 
+                                key={row.id} 
+                                className="cursor-pointer" 
+                                onClick={() => navigate(`${viewAllLink}/${row.id}`)}
+                            >
+                                {columns.map((col) => (
+                                    <TableCell key={`${row.id}-${col.key}`} className={col.className}>
+                                        {col.render(row)}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+            <CardFooter>
+                <Button variant="outline" size="sm" className="ml-auto" onClick={() => navigate(viewAllLink)}>
+                    View All <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 
 export default function DashboardPage() {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const token = useAuthStore((state) => state.token);
     const currentUser = useAuthStore((state) => state.user);
-
+    const navigate = useNavigate();
+    
+    // Mockup data
+    const mockTrendData = {
+        revenue: [{value: 3}, {value: 4}, {value: 2}, {value: 5}, {value: 8}, {value: 10}],
+        stock: [{value: 10}, {value: 8}, {value: 9}, {value: 7}, {value: 6}, {value: 5}],
+        borrowing: [{value: 2}, {value: 3}, {value: 3}, {value: 4}, {value: 5}, {value: 5}],
+        repairs: [{value: 1}, {value: 2}, {value: 1}, {value: 3}, {value: 2}, {value: 4}],
+    };
+    const mockRecentBorrowings = [
+        { id: 5, borrower: { name: 'Alice Johnson' }, status: 'BORROWED', borrowDate: new Date() },
+        { id: 4, borrower: { name: 'Bob Williams' }, status: 'RETURNED', borrowDate: new Date(new Date().setDate(new Date().getDate() - 1)) },
+    ];
+    const mockRecentRepairs = [
+        { id: 16, receiver: { name: 'Main Repair Center' }, status: 'REPAIRING', repairDate: new Date() },
+        { id: 15, receiver: { name: 'Secondary Hub' }, status: 'COMPLETED', repairDate: new Date(new Date().setDate(new Date().getDate() - 2)) },
+    ];
+    
     useEffect(() => {
         const fetchStats = async () => {
+            if (!token) return;
             try {
                 const response = await axiosInstance.get('/dashboard/stats', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                // Mockup extra data for new cards
+                response.data.activeBorrowings = 12; 
+                response.data.activeRepairs = 4;
                 setStats(response.data);
             } catch (error) {
-                toast.error("Could not load dashboard data.");
-                console.error(error);
+                toast.error("Failed to load dashboard data.");
             } finally {
                 setLoading(false);
             }
         };
-        if (token) fetchStats();
+        fetchStats();
     }, [token]);
 
-    if (loading) return <div className="text-center p-10">Loading Dashboard...</div>;
-    if (!stats) return <div className="text-center p-10">Could not load data.</div>;
+    const navigateWithFilter = (path, status) => {
+        // This function will navigate and pass filter state to the target page's usePaginatedFetch hook
+        navigate(path, { state: { status: status } });
+    };
 
-    const pieChartData = stats.stockStatus.map(s => ({ 
-        name: s.status.replace(/_/g, ' '), 
-        value: s._count.id 
-    }));
+    if (loading) {
+        return <p>Loading dashboard...</p>;
+    }
+    if (!stats) {
+        return <p>Could not load dashboard data.</p>;
+    }
+
+    // --- Column definitions for each table ---
+    const salesColumns = [
+        { key: 'customer', header: 'Customer', render: (row) => row.customer.name, className: "font-medium" },
+        { key: 'total', header: 'Total', render: (row) => new Intl.NumberFormat('th-TH').format(row.total), className: "text-right" },
+        { key: 'date', header: 'Date', render: (row) => new Date(row.saleDate).toLocaleDateString('en-GB'), className: "text-right text-muted-foreground" },
+    ];
+    
+    const borrowingColumns = [
+        { key: 'borrower', header: 'Borrower', render: (row) => row.borrower.name, className: "font-medium" },
+        { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} />, className: "text-center" },
+        { key: 'date', header: 'Date', render: (row) => new Date(row.borrowDate).toLocaleDateString('en-GB'), className: "text-right text-muted-foreground" },
+    ];
+
+    const repairColumns = [
+        { key: 'receiver', header: 'Sent To', render: (row) => row.receiver.name, className: "font-medium" },
+        { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} />, className: "text-center" },
+        { key: 'date', header: 'Sent Date', render: (row) => new Date(row.repairDate).toLocaleDateString('en-GB'), className: "text-right text-muted-foreground" },
+    ];
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-                <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Welcome back, {currentUser?.name}!</h1>
-                <p className="text-sm text-slate-500">Here's a summary of your operations.</p>
+        <div className="space-y-8">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Welcome back, {currentUser?.name.split(' ')[0]}!</h1>
+                <p className="text-muted-foreground">Here is the latest snapshot of your business.</p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatCard title="Total Revenue" value={`${stats.totalRevenue.toLocaleString()} THB`} icon={<DollarSign className="h-4 w-4 text-muted-foreground" />} description="All time revenue" />
-                <StatCard title="Items In Stock" value={stats.itemsInStock.toLocaleString()} icon={<Package className="h-4 w-4 text-muted-foreground" />} description="Items available for sale" />
-                <StatCard title="Total Company Assets" value={stats.totalAssets.toLocaleString()} icon={<Layers className="h-4 w-4 text-muted-foreground" />} description="All company-owned assets" />
-                <StatCard title="Assigned Assets" value={stats.assignedAssets.toLocaleString()} icon={<ArrowRightLeft className="h-4 w-4 text-muted-foreground" />} description="Assets currently with employees" />
+            {/* --- Main Stats Grid --- */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <StatCard 
+                    title="Total Revenue"
+                    value={new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 0 }).format(stats.totalRevenue || 0)}
+                    trendValue="+12.5%"
+                    trendDirection="up"
+                    icon={DollarSign}
+                    chartData={mockTrendData.revenue}
+                />
+                <StatCard 
+                    title="Items In Stock"
+                    value={stats.itemsInStock || 0}
+                    trendValue="-2.1%"
+                    trendDirection="down"
+                    icon={Package}
+                    chartData={mockTrendData.stock}
+                    onClick={() => navigate('/inventory')}
+                />
+                <StatCard 
+                    title="Active Borrowings"
+                    value={stats.activeBorrowings || 0}
+                    trendValue="+1 new"
+                    trendDirection="up"
+                    icon={ArrowRightLeft}
+                    chartData={mockTrendData.borrowing}
+                    onClick={() => navigateWithFilter('/borrowings', 'BORROWED')}
+                />
+                <StatCard 
+                    title="Active Repairs"
+                    value={stats.activeRepairs || 0}
+                    trendValue="+2 new"
+                    trendDirection="up"
+                    icon={Wrench}
+                    chartData={mockTrendData.repairs}
+                    onClick={() => navigateWithFilter('/repairs', 'REPAIRING')}
+                />
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-7">
-                <Card className="lg:col-span-4">
-                    <CardHeader>
-                        <CardTitle>Sales Last 7 Days</CardTitle>
-                        <CardDescription>Total number of sales transactions per day.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="pl-2">
-                        <ResponsiveContainer width="100%" height={350}>
-                            <BarChart data={stats.salesChartData}>
-                                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
-                                <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}/>
-                                <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </CardContent>
-                </Card>
-
-                <Card className="lg:col-span-3">
-                    <CardHeader>
-                        <CardTitle>Inventory Overview</CardTitle>
-                         <CardDescription>Current status of all items for sale.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ResponsiveContainer width="100%" height={350}>
-                             <PieChart>
-                                <Pie data={pieChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={2} labelLine={false}>
-                                    {pieChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                                </Pie>
-                                <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}/>
-                                <Legend />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </CardContent>
-                </Card>
+            {/* --- Main Content Grid --- */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1">
+                    <RecentActivityTable
+                        title="Latest Sales"
+                        description="The 5 most recent sales."
+                        data={stats.recentSales}
+                        columns={salesColumns}
+                        viewAllLink="/sales"
+                    />
+                </div>
+                <div className="lg:col-span-1">
+                     <RecentActivityTable
+                        title="Latest Borrowings"
+                        description="Recent item borrowing records."
+                        data={mockRecentBorrowings}
+                        columns={borrowingColumns}
+                        viewAllLink="/borrowings"
+                    />
+                </div>
+                <div className="lg:col-span-1">
+                     <RecentActivityTable
+                        title="Latest Repair Orders"
+                        description="Recent items sent for repair."
+                        data={mockRecentRepairs}
+                        columns={repairColumns}
+                        viewAllLink="/repairs"
+                    />
+                </div>
             </div>
-
-            <Card>
-                <CardHeader><CardTitle>Recent Sales</CardTitle></CardHeader>
-                <CardContent>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead>
-                                <tr className="border-b">
-                                    <th className="p-3 font-medium text-muted-foreground">Customer</th>
-                                    <th className="p-3 font-medium text-muted-foreground">Date</th>
-                                    <th className="p-3 font-medium text-muted-foreground text-center">Items</th>
-                                    <th className="p-3 font-medium text-muted-foreground text-right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>{stats.recentSales.map(sale => (
-                                <tr key={sale.id} className="border-b">
-                                    <td className="p-3 font-medium text-slate-800">{sale.customer.name}</td>
-                                    <td className="p-3 text-muted-foreground">{new Date(sale.saleDate).toLocaleString()}</td>
-                                    <td className="p-3 text-center">{sale.itemsSold.length}</td>
-                                    <td className="p-3 text-right font-semibold">{sale.total.toLocaleString()} THB</td>
-                                </tr>
-                            ))}</tbody>
-                        </table>
-                    </div>
-                </CardContent>
-            </Card>
         </div>
     );
 }

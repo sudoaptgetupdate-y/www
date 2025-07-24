@@ -1,6 +1,6 @@
 // src/pages/RepairListPage.jsx
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // *** 1. Import useLocation ***
 import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
-import { StatusBadge } from "@/components/ui/StatusBadge"; 
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
@@ -29,17 +29,22 @@ export default function RepairListPage() {
     const { user: currentUser } = useAuthStore((state) => state);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
-    const { 
-        data: repairs, 
-        pagination, 
-        isLoading, 
+    // *** 2. รับค่า state จากการ navigate ***
+    const location = useLocation();
+    const initialStatus = location.state?.status || "All";
+
+    const {
+        data: repairs,
+        pagination,
+        isLoading,
         searchTerm,
         filters,
         handleSearchChange,
         handlePageChange,
         handleItemsPerPageChange,
         handleFilterChange
-    } = usePaginatedFetch("/repairs", 10, { status: "All" });
+    // *** 3. ส่งค่า initialStatus ให้กับ usePaginatedFetch ***
+    } = usePaginatedFetch("/repairs", 10, { status: initialStatus });
 
     return (
         <Card>
@@ -93,8 +98,8 @@ export default function RepairListPage() {
                                     <td className="p-2">{r.receiver?.name || 'N/A'}</td>
                                     <td className="p-2">{new Date(r.repairDate).toLocaleDateString()}</td>
                                     <td className="p-2 text-center">
-                                        <StatusBadge 
-                                            status={r.status} 
+                                        <StatusBadge
+                                            status={r.status}
                                             className="w-32"
                                             onClick={() => navigate(`/repairs/${r.id}`)}
                                             interactive

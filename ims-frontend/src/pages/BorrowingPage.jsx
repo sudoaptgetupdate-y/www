@@ -1,6 +1,6 @@
 // src/pages/BorrowingPage.jsx
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle, ArrowUpDown } from "lucide-react"; // <-- เพิ่ม ArrowUpDown
+import { PlusCircle, ArrowUpDown } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge"; 
 
 const SkeletonRow = () => (
@@ -38,6 +38,11 @@ export default function BorrowingPage() {
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
+    // *** START: รับค่า state จากการ navigate ***
+    const location = useLocation();
+    const initialStatus = location.state?.status || "All";
+    // *** END ***
+
     const { 
         data: borrowings, 
         pagination, 
@@ -51,7 +56,9 @@ export default function BorrowingPage() {
         handlePageChange, 
         handleItemsPerPageChange,
         handleFilterChange
-    } = usePaginatedFetch("/borrowings", 10, { status: "All" });
+    // *** START: ส่งค่า initialStatus ให้กับ usePaginatedFetch ***
+    } = usePaginatedFetch("/borrowings", 10, { status: initialStatus });
+    // *** END ***
 
     return (
         <Card>

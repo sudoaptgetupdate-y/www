@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import useAuthStore from "@/store/authStore";
 import { toast } from "sonner";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axiosInstance from "@/api/axiosInstance";
 
 function useDebounce(value, delay) {
@@ -19,8 +19,18 @@ function useDebounce(value, delay) {
     return debouncedValue;
 }
 
-export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, initialFilters = {}) {
+export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, defaultFilters = {}) {
     const token = useAuthStore((state) => state.token);
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    // ฟังก์ชันนี้จะคำนวณค่า filter เริ่มต้นที่ถูกต้องเสมอ
+    const getInitialFilters = useCallback(() => {
+        const locationState = location.state || {};
+        // ถ้ามี state จาก location ให้ใช้ค่านั้นเป็นหลัก ถ้าไม่มีให้ใช้ค่า default
+        return locationState.status ? { ...defaultFilters, status: locationState.status } : defaultFilters;
+    }, [location.state, JSON.stringify(defaultFilters)]);
+
     const [data, setData] = useState([]);
     const [pagination, setPagination] = useState({
         currentPage: 1,
@@ -30,15 +40,18 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, initialFilt
     });
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filters, setFilters] = useState(initialFilters);
+    const [filters, setFilters] = useState(getInitialFilters());
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-    // --- START: เพิ่ม State สำหรับ Sort ---
     const [sortBy, setSortBy] = useState('updatedAt');
     const [sortOrder, setSortOrder] = useState('desc');
-    // --- END ---
 
-    const location = useLocation();
+    // useEffect นี้จะคอย "Sync" state ภายใน (filters)
+    // ให้ตรงกับ props หรือ location state ที่อาจมีการเปลี่ยนแปลง
+    useEffect(() => {
+        setFilters(getInitialFilters());
+        setPagination(p => ({ ...p, currentPage: 1 }));
+    }, [location.state, getInitialFilters]);
 
     const fetchData = useCallback(async () => {
         if (!token) return;
@@ -49,10 +62,8 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, initialFilt
                 limit: pagination.itemsPerPage,
                 search: debouncedSearchTerm,
                 ...filters,
-                // --- START: เพิ่ม parameter สำหรับ Sort ---
                 sortBy,
                 sortOrder,
-                // --- END ---
             };
             
             const response = await axiosInstance.get(apiPath, {
@@ -67,19 +78,17 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, initialFilt
         } finally {
             setIsLoading(false);
         }
-    }, [token, apiPath, pagination.currentPage, pagination.itemsPerPage, debouncedSearchTerm, JSON.stringify(filters), sortBy, sortOrder]); // <-- เพิ่ม sortBy, sortOrder
+    }, [token, apiPath, pagination.currentPage, pagination.itemsPerPage, debouncedSearchTerm, JSON.stringify(filters), sortBy, sortOrder]);
 
     useEffect(() => {
         fetchData();
-    }, [fetchData, location.key]);
+    }, [fetchData]); // Dependency array ที่ถูกต้องคือ fetchData
 
-    // --- START: เพิ่มฟังก์ชันสำหรับจัดการ Sort ---
     const handleSortChange = (newSortBy) => {
         setSortBy(newSortBy);
         setSortOrder(prevOrder => (sortBy === newSortBy && prevOrder === 'asc' ? 'desc' : 'asc'));
         setPagination(prev => ({ ...prev, currentPage: 1 }));
     };
-    // --- END ---
 
     const handleSearchChange = (value) => {
         setSearchTerm(value);
@@ -100,6 +109,9 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, initialFilt
     };
     
     const handleFilterChange = (filterName, value) => {
+        if (location.state?.status) {
+            navigate(location.pathname, { replace: true, state: {} });
+        }
         setFilters(prev => ({ ...prev, [filterName]: value }));
         setPagination(prev => ({ ...prev, currentPage: 1 }));
     };
@@ -116,7 +128,7 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, initialFilt
         handlePageChange,
         handleItemsPerPageChange,
         handleFilterChange,
-        handleSortChange, // <-- ส่งฟังก์ชันออกไป
+        handleSortChange,
         refreshData: fetchData
     };
 }
