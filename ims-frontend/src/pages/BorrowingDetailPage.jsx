@@ -85,27 +85,27 @@ export default function BorrowingDetailPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center no-print">
-                 <div>
-                    <h1 className="text-2xl font-bold">Borrowing Details</h1>
-                    <p className="text-muted-foreground">Viewing details for Borrowing ID #{formattedBorrowingId}</p>
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => navigate(-1)}>
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to List
-                    </Button>
-                     <Button variant="outline" onClick={() => window.print()}>
-                        <Printer className="mr-2 h-4 w-4" />
-                        Print / PDF
-                    </Button>
-                    {itemsToReturn.length > 0 && (
-                        <Button onClick={() => setIsReturnDialogOpen(true)}>
-                            <CornerDownLeft className="mr-2"/> Receive Returned Items
-                        </Button>
-                    )}
-                </div>
-            </div>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
+     <div>
+        <h1 className="text-2xl font-bold">Borrowing Details</h1>
+        <p className="text-muted-foreground">Viewing details for Borrowing ID #{formattedBorrowingId}</p>
+    </div>
+    <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={() => navigate(-1)}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to List
+        </Button>
+         <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print / PDF
+        </Button>
+        {itemsToReturn.length > 0 && (
+            <Button onClick={() => setIsReturnDialogOpen(true)}>
+                <CornerDownLeft className="mr-2"/> Receive Returned Items
+            </Button>
+        )}
+    </div>
+</div>
 
             <Card className="printable-area p-4 sm:p-6 md:p-8">
                 <div className="print-header hidden">
