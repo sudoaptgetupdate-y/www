@@ -13,9 +13,6 @@ const adminAccess = ['ADMIN', 'SUPER_ADMIN'];
 router.get('/', authCheck, inventoryController.getAllInventoryItems);
 router.get('/:id', authCheck, inventoryController.getInventoryItemById);
 
-// --- START: ปิดการใช้งาน Route นี้ชั่วคราว ---
-// router.get('/:id/history', authCheck, inventoryController.getInventoryItemHistory);
-// --- END ---
 
 router.post('/', authCheck, roleCheck(adminAccess), inventoryController.addInventoryItem);
 router.put('/:id', authCheck, roleCheck(adminAccess), inventoryController.updateInventoryItem);

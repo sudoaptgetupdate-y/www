@@ -204,7 +204,7 @@ borrowingController.getAllBorrowings = async (req, res, next) => {
             orderBy = { [sortBy]: sortOrder };
         }
 
-        const [borrowings, totalItems] = await prisma.$transaction([
+        const [borrowings, totalItems] = await Promise.all([
             prisma.borrowing.findMany({
                 skip,
                 take: limit,

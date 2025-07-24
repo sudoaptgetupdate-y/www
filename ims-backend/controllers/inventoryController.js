@@ -74,10 +74,8 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         const statusFilter = req.query.status || 'All';
         const categoryIdFilter = req.query.categoryId || 'All';
         const brandIdFilter = req.query.brandId || 'All';
-        // --- START: เพิ่มการรับค่า Sort ---
         const sortBy = req.query.sortBy || 'updatedAt';
         const sortOrder = req.query.sortOrder || 'desc';
-        // --- END ---
         
         let where = { 
             itemType: ItemType.SALE
@@ -102,14 +100,12 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
             where.productModel = { ...where.productModel, brandId: parseInt(brandIdFilter) };
         }
 
-        // --- START: สร้าง Logic สำหรับ orderBy ---
         let orderBy = {};
         if (sortBy === 'productModel') {
             orderBy = { productModel: { modelNumber: sortOrder } };
         } else {
             orderBy = { [sortBy]: sortOrder };
         }
-        // --- END ---
 
         const include = {
             productModel: { include: { category: true, brand: true } },
@@ -125,7 +121,7 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
             }
         };
 
-        const [items, totalItems] = await prisma.$transaction([
+        const [items, totalItems] = await Promise.all([
             prisma.inventoryItem.findMany({ where, skip, take: limit, orderBy, include }),
             prisma.inventoryItem.count({ where })
         ]);
@@ -156,7 +152,6 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
     }
 };
 
-// ... (ส่วนที่เหลือของไฟล์เหมือนเดิม)
 inventoryController.getInventoryItemById = async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -246,7 +241,10 @@ inventoryController.deleteInventoryItem = async (req, res, next) => {
 
         const itemToDelete = await prisma.inventoryItem.findFirst({
             where: { id: itemId, itemType: 'SALE' },
-            include: { borrowingRecords: { where: { returnedAt: null } } }
+            include: { 
+                borrowingRecords: { where: { returnedAt: null } },
+                repairRecords: true // <-- เพิ่มการ include repairRecords
+            }
         });
 
         if (!itemToDelete) {
@@ -260,10 +258,20 @@ inventoryController.deleteInventoryItem = async (req, res, next) => {
             err.statusCode = 400;
             throw err;
         }
+        // --- START: เพิ่มเงื่อนไขการตรวจสอบ ---
+        if (itemToDelete.repairRecords.length > 0) {
+            const err = new Error('Cannot delete item. It has repair history and cannot be deleted.');
+            err.statusCode = 400;
+            throw err;
+        }
+        // --- END ---
 
         await prisma.$transaction(async (tx) => {
+            // ลบ event logs, borrowing records, และ repair records ก่อน
             await tx.eventLog.deleteMany({ where: { inventoryItemId: itemId } });
             await tx.borrowingOnItems.deleteMany({ where: { inventoryItemId: itemId } });
+            await tx.repairOnItems.deleteMany({ where: { inventoryItemId: itemId }}); // <-- เพิ่มการลบ repair records
+            // จากนั้นจึงลบตัว item หลัก
             await tx.inventoryItem.delete({ where: { id: itemId } });
         });
 

@@ -171,21 +171,22 @@ customerController.getCustomerHistory = async (req, res, next) => {
         }
 
         // ... (rest of the function logic is fine)
-        const sales = await prisma.sale.findMany({
-            where: { customerId: customerId },
-            include: { itemsSold: { include: { productModel: true } } },
-            orderBy: { saleDate: 'desc' }
-        });
-
-        const borrowings = await prisma.borrowing.findMany({
-            where: { borrowerId: customerId },
-            include: { 
-                items: {
-                    include: { inventoryItem: { include: { productModel: true } } }
-                }
-            },
-            orderBy: { borrowDate: 'desc' }
-        });
+        const [sales, borrowings] = await Promise.all([
+    prisma.sale.findMany({
+        where: { customerId: customerId },
+        include: { itemsSold: { include: { productModel: true } } },
+        orderBy: { saleDate: 'desc' }
+    }),
+    prisma.borrowing.findMany({
+        where: { borrowerId: customerId },
+        include: { 
+            items: {
+                include: { inventoryItem: { include: { productModel: true } } }
+            }
+        },
+        orderBy: { borrowDate: 'desc' }
+    })
+]);
 
         const salesHistory = sales.map(sale => ({
             type: 'SALE',
@@ -223,23 +224,24 @@ customerController.getCustomerSummary = async (req, res, next) => {
             throw err;
         }
         // ... (rest of the function logic is fine)
-        const purchases = await prisma.sale.findMany({
-            where: { customerId, status: 'COMPLETED' },
-            include: { itemsSold: { include: { productModel: true } } },
-            orderBy: { saleDate: 'desc' }
-        });
-
-        const borrowings = await prisma.borrowing.findMany({
-            where: { borrowerId: customerId },
-            include: {
-                items: { 
-                    include: {
-                        inventoryItem: { include: { productModel: true } }
-                    }
+        const [purchases, borrowings] = await Promise.all([
+    prisma.sale.findMany({
+        where: { customerId, status: 'COMPLETED' },
+        include: { itemsSold: { include: { productModel: true } } },
+        orderBy: { saleDate: 'desc' }
+    }),
+    prisma.borrowing.findMany({
+        where: { borrowerId: customerId },
+        include: {
+            items: { 
+                include: {
+                    inventoryItem: { include: { productModel: true } }
                 }
-            },
-            orderBy: { borrowDate: 'desc' }
-        });
+            }
+        },
+        orderBy: { borrowDate: 'desc' }
+    })
+]);
 
         const allBorrowedItems = borrowings.flatMap(b =>
             b.items.map(boi => ({

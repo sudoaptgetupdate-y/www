@@ -12,10 +12,6 @@ const adminAccess = ['ADMIN', 'SUPER_ADMIN'];
 router.get('/', authCheck, assetController.getAllAssets);
 router.get('/:id', authCheck, assetController.getAssetById);
 
-// --- START: ปิดการใช้งาน Route นี้ชั่วคราว ---
-// router.get('/:id/history', authCheck, assetController.getAssetHistory);
-// --- END ---
-
 router.post('/', authCheck, roleCheck(adminAccess), assetController.createAsset);
 router.put('/:id', authCheck, roleCheck(adminAccess), assetController.updateAsset);
 router.delete('/:id', authCheck, roleCheck(adminAccess), assetController.deleteAsset);

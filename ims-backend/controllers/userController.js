@@ -318,16 +318,18 @@ userController.getUserAssetSummary = async (req, res, next) => {
             err.statusCode = 400;
             throw err;
         }
-        const currentlyAssigned = await prisma.assetAssignmentOnItems.count({
-            where: { 
-                assignment: { assigneeId: id },
-                returnedAt: null
-            }
-        });
-
-        const totalEverAssigned = await prisma.assetAssignmentOnItems.count({
-            where: { assignment: { assigneeId: id } }
-        });
+        
+        const [currentlyAssigned, totalEverAssigned] = await Promise.all([
+            prisma.assetAssignmentOnItems.count({
+                where: { 
+                    assignment: { assigneeId: id },
+                    returnedAt: null
+                }
+            }),
+            prisma.assetAssignmentOnItems.count({
+                where: { assignment: { assigneeId: id } }
+            })
+        ]);
 
         res.status(200).json({
             currentlyAssigned,

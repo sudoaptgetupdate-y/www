@@ -145,7 +145,10 @@ assetController.deleteAsset = async (req, res, next) => {
 
         const assetToDelete = await prisma.inventoryItem.findFirst({
             where: { id: assetId, itemType: 'ASSET' },
-            include: { assignmentRecords: { where: { returnedAt: null } } }
+            include: { 
+                assignmentRecords: { where: { returnedAt: null } },
+                repairRecords: true // <-- เพิ่มการ include repairRecords
+            }
         });
 
         if (!assetToDelete) {
@@ -158,10 +161,19 @@ assetController.deleteAsset = async (req, res, next) => {
             err.statusCode = 400;
             throw err;
         }
+        // --- START: เพิ่มเงื่อนไขการตรวจสอบ ---
+        if (assetToDelete.repairRecords.length > 0) {
+            const err = new Error('Cannot delete asset. It has repair history and cannot be deleted.');
+            err.statusCode = 400;
+            throw err;
+        }
+        // --- END ---
 
         await prisma.$transaction(async (tx) => {
-            await tx.assetAssignmentOnItems.deleteMany({ where: { inventoryItemId: assetId } });
+            // ลบ event logs และ assignment records ก่อน
             await tx.eventLog.deleteMany({ where: { inventoryItemId: assetId } });
+            await tx.assetAssignmentOnItems.deleteMany({ where: { inventoryItemId: assetId } });
+            // จากนั้นจึงลบตัว asset หลัก
             await tx.inventoryItem.delete({ where: { id: assetId } });
         });
 
@@ -226,7 +238,7 @@ assetController.getAllAssets = async (req, res, next) => {
             }
         };
 
-        const [items, totalItems] = await prisma.$transaction([
+        const [items, totalItems] = await Promise.all([
             prisma.inventoryItem.findMany({ where, skip, take: limit, orderBy, include }),
             prisma.inventoryItem.count({ where })
         ]);
