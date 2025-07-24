@@ -64,6 +64,66 @@ inventoryController.addInventoryItem = async (req, res, next) => {
     }
 };
 
+inventoryController.addBatchInventoryItems = async (req, res, next) => {
+    try {
+        const { productModelId, items } = req.body;
+        const userId = req.user.id;
+
+        if (typeof productModelId !== 'number') {
+            const err = new Error('Product Model ID is required and must be a number.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (!Array.isArray(items) || items.length === 0) {
+            const err = new Error('Items list cannot be empty.');
+            err.statusCode = 400;
+            return next(err);
+        }
+
+        const newItems = await prisma.$transaction(async (tx) => {
+            const createdItems = [];
+            for (const item of items) {
+                // Input validation for each item in the array
+                if (item.macAddress && (typeof item.macAddress !== 'string' || !macRegex.test(item.macAddress))) {
+                    throw new Error(`Invalid MAC Address format for one of the items: ${item.macAddress}`);
+                }
+
+                const createdItem = await tx.inventoryItem.create({
+                    data: {
+                        itemType: ItemType.SALE,
+                        ownerType: ItemOwner.COMPANY,
+                        serialNumber: item.serialNumber || null,
+                        macAddress: item.macAddress || null,
+                        productModelId,
+                        addedById: userId,
+                        status: 'IN_STOCK',
+                    },
+                });
+
+                await createEventLog(
+                    tx,
+                    createdItem.id,
+                    userId,
+                    EventType.CREATE,
+                    { details: `Item created in batch with S/N: ${createdItem.serialNumber || 'N/A'}.` }
+                );
+                
+                createdItems.push(createdItem);
+            }
+            return createdItems;
+        });
+
+        res.status(201).json({
+            message: `${newItems.length} items have been added successfully.`,
+            data: newItems,
+        });
+
+    } catch (error) {
+        // หากเกิด Error (เช่น S/N ซ้ำ) transaction จะ rollback และส่ง Error กลับไป
+        next(error);
+    }
+};
+
 inventoryController.getAllInventoryItems = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;

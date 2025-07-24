@@ -22,6 +22,8 @@ import {
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
+import { useState } from "react"; // *** 1. เพิ่ม useState ***
+import BatchAddAssetDialog from "@/components/dialogs/BatchAddAssetDialog"; // *** 2. Import Component ใหม่ ***
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -48,6 +50,9 @@ export default function AssetPage() {
     const token = useAuthStore((state) => state.token);
     const { user: currentUser } = useAuthStore((state) => state);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+
+    // *** 3. เพิ่ม State สำหรับควบคุม Dialog ใหม่ ***
+    const [isBatchAddOpen, setIsBatchAddOpen] = useState(false);
 
     const {
         data: assets,
@@ -107,7 +112,8 @@ export default function AssetPage() {
                     </div>
                     {canManage &&
                         <div className="flex gap-2">
-                            <Button variant="outline" onClick={() => navigate('/assets/new')}>
+                            {/* *** 4. เปลี่ยน onClick ของปุ่ม Add Asset *** */}
+                            <Button variant="outline" onClick={() => setIsBatchAddOpen(true)}>
                                 <PlusCircle className="mr-2 h-4 w-4" /> Add Asset
                             </Button>
                             <Button onClick={() => navigate('/asset-assignments/new')}>
@@ -272,6 +278,16 @@ export default function AssetPage() {
                     <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
                 </div>
             </CardFooter>
+
+            {/* *** 5. เพิ่มการเรียกใช้ Dialog Component ใหม่ *** */}
+            {isBatchAddOpen && (
+                <BatchAddAssetDialog
+                    isOpen={isBatchAddOpen}
+                    setIsOpen={setIsBatchAddOpen}
+                    onSave={refreshData}
+                />
+            )}
+
         </Card>
     );
 }

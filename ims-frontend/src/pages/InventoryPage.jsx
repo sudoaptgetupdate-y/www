@@ -27,6 +27,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 import { useTranslation } from "react-i18next";
+import BatchAddInventoryDialog from "@/components/dialogs/BatchAddInventoryDialog"; // <-- 1. Import Component ใหม่
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -50,7 +51,8 @@ const validateMacAddress = (mac) => {
   return macRegex.test(mac);
 };
 
-const initialFormData = {
+// Form state for EDITING only
+const initialEditFormData = {
     serialNumber: "",
     macAddress: "",
     productModelId: "",
@@ -83,94 +85,84 @@ export default function InventoryPage() {
         brandId: "All"
     });
 
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isEditMode, setIsEditMode] = useState(false);
-    const [formData, setFormData] = useState(initialFormData);
+    // States for different dialogs
+    const [isBatchAddOpen, setIsBatchAddOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    
+    // State for editing data
+    const [editFormData, setEditFormData] = useState(initialEditFormData);
     const [editingItemId, setEditingItemId] = useState(null);
     const [selectedModelInfo, setSelectedModelInfo] = useState(null);
     const [isMacRequired, setIsMacRequired] = useState(true);
     const [isSerialRequired, setIsSerialRequired] = useState(true);
 
+    // States for confirmation dialogs
     const [itemToDelete, setItemToDelete] = useState(null);
     const [itemToDecommission, setItemToDecommission] = useState(null);
 
-    const openDialog = (item = null) => {
-        if (item) {
-            setIsEditMode(true);
-            setEditingItemId(item.id);
-            setFormData({
-                serialNumber: item.serialNumber, macAddress: item.macAddress || '',
-                productModelId: item.productModelId, status: item.status,
-            });
-            setSelectedModelInfo(item.productModel);
-            setIsMacRequired(item.productModel.category.requiresMacAddress);
-            setIsSerialRequired(item.productModel.category.requiresSerialNumber);
-        } else {
-            setIsEditMode(false);
-            setFormData(initialFormData);
-            setSelectedModelInfo(null);
-            setIsMacRequired(true);
-            setIsSerialRequired(true);
-        }
-        setIsDialogOpen(true);
+    const openEditDialog = (item) => {
+        if (!item) return;
+        setEditingItemId(item.id);
+        setEditFormData({
+            serialNumber: item.serialNumber, macAddress: item.macAddress || '',
+            productModelId: item.productModelId, status: item.status,
+        });
+        setSelectedModelInfo(item.productModel);
+        setIsMacRequired(item.productModel.category.requiresMacAddress);
+        setIsSerialRequired(item.productModel.category.requiresSerialNumber);
+        setIsEditDialogOpen(true);
     };
-
-    const handleInputChange = (e) => {
+    
+    const handleEditInputChange = (e) => {
         const { id, value } = e.target;
-        if (id === 'serialNumber') {
-            setFormData({ ...formData, [id]: value.toUpperCase() });
-        } else {
-            setFormData({ ...formData, [id]: value });
-        }
+        const upperValue = (id === 'serialNumber') ? value.toUpperCase() : value;
+        setEditFormData({ ...editFormData, [id]: upperValue });
     };
 
-    const handleMacAddressChange = (e) => {
+    const handleEditMacAddressChange = (e) => {
         const formatted = formatMacAddress(e.target.value);
-        setFormData({ ...formData, macAddress: formatted });
+        setEditFormData({ ...editFormData, macAddress: formatted });
     };
-
-    const handleModelSelect = (model) => {
+    
+    const handleEditModelSelect = (model) => {
         if (model) {
-            setFormData(prev => ({ ...prev, productModelId: model.id }));
+            setEditFormData(prev => ({ ...prev, productModelId: model.id }));
             setSelectedModelInfo(model);
             setIsMacRequired(model.category.requiresMacAddress);
             setIsSerialRequired(model.category.requiresSerialNumber);
-             if (!model.category.requiresMacAddress) setFormData(prev => ({ ...prev, macAddress: '' }));
-             if (!model.category.requiresSerialNumber) setFormData(prev => ({ ...prev, serialNumber: '' }));
+             if (!model.category.requiresMacAddress) setEditFormData(prev => ({ ...prev, macAddress: '' }));
+             if (!model.category.requiresSerialNumber) setEditFormData(prev => ({ ...prev, serialNumber: '' }));
         }
     };
 
-    const handleSubmit = async (e) => {
+    const handleEditSubmit = async (e) => {
         e.preventDefault();
-        if (isMacRequired && formData.macAddress && !validateMacAddress(formData.macAddress)) {
+        if (isMacRequired && editFormData.macAddress && !validateMacAddress(editFormData.macAddress)) {
             toast.error("Invalid MAC Address format. Please use XX:XX:XX:XX:XX:XX format.");
             return;
         }
-
-        if (!formData.productModelId) {
+        if (!editFormData.productModelId) {
             toast.error("Please select a Product Model.");
             return;
         }
 
-        const url = isEditMode ? `/inventory/${editingItemId}` : "/inventory";
-        const method = isEditMode ? 'put' : 'post';
-
         const payload = {
-            serialNumber: formData.serialNumber || null,
-            macAddress: formData.macAddress || null,
-            productModelId: parseInt(formData.productModelId, 10),
-            status: formData.status,
+            serialNumber: editFormData.serialNumber || null,
+            macAddress: editFormData.macAddress || null,
+            productModelId: parseInt(editFormData.productModelId, 10),
+            status: editFormData.status,
         };
 
         try {
-            await axiosInstance[method](url, payload, { headers: { Authorization: `Bearer ${token}` } });
-            toast.success(`Item ${isEditMode ? 'updated' : 'added'} successfully!`);
+            await axiosInstance.put(`/inventory/${editingItemId}`, payload, { headers: { Authorization: `Bearer ${token}` } });
+            toast.success(`Item updated successfully!`);
             refreshData();
-            setIsDialogOpen(false);
+            setIsEditDialogOpen(false);
         } catch (error) {
             toast.error(error.response?.data?.error || `Failed to save item.`);
         }
     };
+
 
     const confirmDelete = async () => {
         if (!itemToDelete) return;
@@ -212,13 +204,11 @@ export default function InventoryPage() {
         }
     };
 
-    const handleReinstateItem = async (itemId) => {
+    const handleReinstateItem = (itemId) => {
         handleStatusChange(itemId, 'reinstate', 'Item has been reinstated to stock.');
     };
 
-    const handleSellItem = (itemToSell) => {
-        navigate('/sales/new', { state: { initialItems: [itemToSell] } });
-    };
+    const handleSellItem = (itemToSell) => navigate('/sales/new', { state: { initialItems: [itemToSell] } });
     const handleBorrowItem = (itemToBorrow) => navigate('/borrowings/new', { state: { initialItems: [itemToBorrow] } });
 
 
@@ -227,7 +217,7 @@ export default function InventoryPage() {
             <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <CardTitle>{t('inventory')} Management</CardTitle>
                  {canManage &&
-                    <Button onClick={() => openDialog()}>
+                    <Button onClick={() => setIsBatchAddOpen(true)}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Inventory Item
                     </Button>
                 }
@@ -362,7 +352,7 @@ export default function InventoryPage() {
                                                         <>
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuItem
-                                                                onClick={() => openDialog(item)}
+                                                                onClick={() => openEditDialog(item)}
                                                                 disabled={!['IN_STOCK', 'RESERVED', 'DEFECTIVE'].includes(item.status)}
                                                             >
                                                                 <Edit className="mr-2 h-4 w-4" /> Edit
@@ -470,14 +460,22 @@ export default function InventoryPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            
+            {isBatchAddOpen && (
+                <BatchAddInventoryDialog
+                    isOpen={isBatchAddOpen}
+                    setIsOpen={setIsBatchAddOpen}
+                    onSave={refreshData}
+                />
+            )}
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent>
-                    <DialogHeader><DialogTitle>{isEditMode ? 'Edit' : 'Add New'} Item</DialogTitle></DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+                    <DialogHeader><DialogTitle>Edit Item</DialogTitle></DialogHeader>
+                    <form onSubmit={handleEditSubmit} className="space-y-4 pt-4">
                         <div className="space-y-2">
                              <Label>Product Model</Label>
-                             <ProductModelCombobox onSelect={handleModelSelect} initialModel={selectedModelInfo} />
+                             <ProductModelCombobox onSelect={handleEditModelSelect} initialModel={selectedModelInfo} />
                         </div>
                         {selectedModelInfo && (
                             <div className="grid grid-cols-2 gap-4">
@@ -487,21 +485,21 @@ export default function InventoryPage() {
                         )}
                         <div className="space-y-2">
                             <Label htmlFor="serialNumber">Serial Number {!isSerialRequired && <span className="text-xs text-slate-500 ml-2">(Not Required)</span>}</Label>
-                            <Input id="serialNumber" value={formData.serialNumber || ''} onChange={handleInputChange} required={isSerialRequired} disabled={!isSerialRequired} />
+                            <Input id="serialNumber" value={editFormData.serialNumber || ''} onChange={handleEditInputChange} required={isSerialRequired} disabled={!isSerialRequired} />
                         </div>
                         <div className="space-y-2">
                              <Label htmlFor="macAddress">MAC Address {!isMacRequired && <span className="text-xs text-slate-500 ml-2">(Not Required)</span>}</Label>
                              <Input
                                 id="macAddress"
-                                value={formData.macAddress || ''}
-                                onChange={handleMacAddressChange}
+                                value={editFormData.macAddress || ''}
+                                onChange={handleEditMacAddressChange}
                                 required={isMacRequired}
                                 disabled={!isMacRequired}
                                 maxLength={17}
                                 placeholder="AA:BB:CC:DD:EE:FF"
                              />
                         </div>
-                        <DialogFooter><Button type="submit">Save</Button></DialogFooter>
+                        <DialogFooter><Button type="submit">Save Changes</Button></DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>

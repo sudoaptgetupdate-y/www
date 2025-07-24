@@ -69,6 +69,67 @@ assetController.createAsset = async (req, res, next) => {
     }
 };
 
+assetController.addBatchAssets = async (req, res, next) => {
+    try {
+        const { productModelId, items } = req.body;
+        const userId = req.user.id;
+
+        if (typeof productModelId !== 'number') {
+            const err = new Error('Product Model ID is required and must be a number.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (!Array.isArray(items) || items.length === 0) {
+            const err = new Error('Items list cannot be empty.');
+            err.statusCode = 400;
+            return next(err);
+        }
+
+        const newAssets = await prisma.$transaction(async (tx) => {
+            const createdAssets = [];
+            for (const item of items) {
+                if (!item.assetCode || typeof item.assetCode !== 'string' || item.assetCode.trim() === '') {
+                    throw new Error('Asset Code is required for all items in the list.');
+                }
+                if (item.macAddress && (typeof item.macAddress !== 'string' || !macRegex.test(item.macAddress))) {
+                    throw new Error(`Invalid MAC Address format for Asset Code ${item.assetCode}.`);
+                }
+
+                const createdAsset = await tx.inventoryItem.create({
+                    data: {
+                        itemType: ItemType.ASSET,
+                        status: 'IN_WAREHOUSE',
+                        assetCode: item.assetCode,
+                        serialNumber: item.serialNumber || null,
+                        macAddress: item.macAddress || null,
+                        productModelId,
+                        addedById: userId,
+                    },
+                });
+
+                await createEventLog(
+                    tx,
+                    createdAsset.id,
+                    userId,
+                    EventType.CREATE,
+                    { details: `Asset created in batch with code: ${createdAsset.assetCode}.` }
+                );
+                
+                createdAssets.push(createdAsset);
+            }
+            return createdAssets;
+        });
+
+        res.status(201).json({
+            message: `${newAssets.length} assets have been added successfully.`,
+            data: newAssets,
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 assetController.updateAsset = async (req, res, next) => {
     const { id } = req.params;
     const actorId = req.user.id;

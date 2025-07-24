@@ -13,6 +13,9 @@ const adminAccess = ['ADMIN', 'SUPER_ADMIN'];
 router.get('/', authCheck, inventoryController.getAllInventoryItems);
 router.get('/:id', authCheck, inventoryController.getInventoryItemById);
 
+// --- START: เพิ่ม Route ใหม่สำหรับ Batch Create ---
+router.post('/batch', authCheck, roleCheck(adminAccess), inventoryController.addBatchInventoryItems);
+// --- END ---
 
 router.post('/', authCheck, roleCheck(adminAccess), inventoryController.addInventoryItem);
 router.put('/:id', authCheck, roleCheck(adminAccess), inventoryController.updateInventoryItem);

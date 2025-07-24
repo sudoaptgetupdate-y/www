@@ -11,6 +11,7 @@ const adminAccess = ['ADMIN', 'SUPER_ADMIN'];
 // Routes for assets
 router.get('/', authCheck, assetController.getAllAssets);
 router.get('/:id', authCheck, assetController.getAssetById);
+router.post('/batch', authCheck, roleCheck(adminAccess), assetController.addBatchAssets);
 
 router.post('/', authCheck, roleCheck(adminAccess), assetController.createAsset);
 router.put('/:id', authCheck, roleCheck(adminAccess), assetController.updateAsset);
