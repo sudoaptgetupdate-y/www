@@ -1,6 +1,6 @@
 // src/components/dialogs/BatchAddInventoryDialog.jsx
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react"; // *** 1. Import useRef และ useEffect ***
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose
 } from "@/components/ui/dialog";
@@ -14,8 +14,15 @@ import { toast } from 'sonner';
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { PlusCircle, XCircle } from "lucide-react";
+import { translateThaiToEnglish } from "@/lib/keyboardUtils";
 
-const MAX_ITEMS_MANUAL = 10; // กำหนดจำนวนสูงสุดของการเพิ่มทีละแถว
+const MAX_ITEMS_MANUAL = 10;
+
+const formatMacAddress = (value) => {
+    const cleaned = (value || '').replace(/[^0-9a-fA-F]/g, '').toUpperCase();
+    if (cleaned.length === 0) return '';
+    return cleaned.match(/.{1,2}/g)?.slice(0, 6).join(':') || cleaned;
+};
 
 export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
     const [selectedModel, setSelectedModel] = useState(null);
@@ -24,20 +31,46 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
     const [isLoading, setIsLoading] = useState(false);
     const token = useAuthStore((state) => state.token);
 
+    // *** 2. สร้าง Refs สำหรับจัดการ Focus ***
+    const inputRefs = useRef([]);
+    const firstInputRef = useRef(null);
+
+    // *** 3. เพิ่ม useEffect สำหรับ Auto-focus เมื่อ Dialog เปิด ***
+    useEffect(() => {
+        if (isOpen && selectedModel) {
+            // ใช้ Timeout เล็กน้อยเพื่อให้แน่ใจว่า Input ถูก Render ใน DOM แล้ว
+            setTimeout(() => {
+                firstInputRef.current?.focus();
+            }, 100);
+        }
+    }, [isOpen, selectedModel]); // ทำงานเมื่อ Dialog เปิดและมีการเลือก Model แล้ว
+
     const handleModelSelect = (model) => {
         setSelectedModel(model);
     };
 
-    // --- Functions for "Add Manually" Tab ---
     const handleManualItemChange = (index, field, value) => {
         const newItems = [...manualItems];
-        newItems[index][field] = value.toUpperCase();
+        let processedValue = translateThaiToEnglish(value);
+
+        if (field === 'macAddress') {
+            processedValue = formatMacAddress(processedValue);
+        } else {
+            processedValue = processedValue.toUpperCase();
+        }
+        
+        newItems[index][field] = processedValue;
         setManualItems(newItems);
     };
 
     const addManualItemRow = () => {
         if (manualItems.length < MAX_ITEMS_MANUAL) {
             setManualItems([...manualItems, { serialNumber: '', macAddress: '' }]);
+            // Focus ที่ช่อง SN ของแถวใหม่ที่เพิ่มเข้ามา
+            setTimeout(() => {
+                const nextIndex = manualItems.length * 2;
+                inputRefs.current[nextIndex]?.focus();
+            }, 100);
         } else {
             toast.info(`You can add a maximum of ${MAX_ITEMS_MANUAL} items at a time.`);
         }
@@ -47,9 +80,31 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
         const newItems = manualItems.filter((_, i) => i !== index);
         setManualItems(newItems);
     };
+    
+    // *** 4. เพิ่มฟังก์ชันสำหรับจัดการการกดปุ่ม Enter ***
+    const handleKeyDown = (e, index, field) => {
+        if (e.key === 'Enter') {
+            e.preventDefault(); // ป้องกันการ Submit Form โดยไม่ได้ตั้งใจ
+            if (field === 'serialNumber') {
+                // ถ้ากด Enter ที่ช่อง SN ให้เลื่อนไปช่อง MAC
+                const macInputIndex = index * 2 + 1;
+                inputRefs.current[macInputIndex]?.focus();
+            } else if (field === 'macAddress') {
+                // ถ้ากด Enter ที่ช่อง MAC
+                if (index === manualItems.length - 1) {
+                    // และเป็นแถวสุดท้าย ให้เพิ่มแถวใหม่
+                    addManualItemRow();
+                } else {
+                    // ถ้าไม่ใช่แถวสุดท้าย ให้เลื่อนไปช่อง SN ของแถวถัดไป
+                    const nextSnInputIndex = (index + 1) * 2;
+                    inputRefs.current[nextSnInputIndex]?.focus();
+                }
+            }
+        }
+    };
 
-    // --- Function to handle submission ---
     const handleSubmit = async (activeTab) => {
+        // ... (Logic การ Submit ไม่มีการเปลี่ยนแปลง) ...
         if (!selectedModel) {
             toast.error("Please select a Product Model first.");
             return;
@@ -60,7 +115,7 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
 
         if (activeTab === 'manual') {
             itemsPayload = manualItems
-                .filter(item => item.serialNumber || item.macAddress) // กรองแถวที่ว่างเปล่าออก
+                .filter(item => item.serialNumber || item.macAddress)
                 .map(item => ({
                     serialNumber: item.serialNumber || null,
                     macAddress: item.macAddress || null,
@@ -69,9 +124,9 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
             itemsPayload = listText
                 .split('\n')
                 .map(line => line.trim())
-                .filter(line => line) // กรองบรรทัดว่าง
+                .filter(line => line)
                 .map(line => {
-                    const parts = line.split(/[,\t]/).map(part => part.trim()); // รองรับทั้ง comma และ tab
+                    const parts = line.split(/[,\t]/).map(part => part.trim());
                     return {
                         serialNumber: parts[0] || null,
                         macAddress: parts[1] || null,
@@ -95,7 +150,7 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
                 headers: { Authorization: `Bearer ${token}` }
             });
             toast.success(response.data.message);
-            onSave(); // Refresh data on the main page
+            onSave();
             handleClose();
         } catch (error) {
             toast.error(error.response?.data?.error || "Failed to add items.");
@@ -134,15 +189,23 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
                                     {manualItems.map((item, index) => (
                                         <div key={index} className="flex items-center gap-2">
                                             <Input
+                                                // *** 5. เพิ่ม Ref และ onKeyDown ***
+                                                ref={el => {
+                                                    inputRefs.current[index * 2] = el;
+                                                    if (index === 0) firstInputRef.current = el;
+                                                }}
                                                 placeholder="Serial Number"
                                                 value={item.serialNumber}
                                                 onChange={(e) => handleManualItemChange(index, 'serialNumber', e.target.value)}
+                                                onKeyDown={(e) => handleKeyDown(e, index, 'serialNumber')}
                                                 disabled={!selectedModel?.category.requiresSerialNumber}
                                             />
                                             <Input
+                                                ref={el => inputRefs.current[index * 2 + 1] = el}
                                                 placeholder="MAC Address"
                                                 value={item.macAddress}
                                                 onChange={(e) => handleManualItemChange(index, 'macAddress', e.target.value)}
+                                                onKeyDown={(e) => handleKeyDown(e, index, 'macAddress')}
                                                 disabled={!selectedModel?.category.requiresMacAddress}
                                             />
                                             <Button variant="ghost" size="icon" onClick={() => removeManualItemRow(index)} disabled={manualItems.length === 1}>
