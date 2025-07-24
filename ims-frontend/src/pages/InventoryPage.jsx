@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -198,209 +198,208 @@ export default function InventoryPage() {
     const handleBorrowItem = (itemToBorrow) => navigate('/borrowings/new', { state: { initialItems: [itemToBorrow] } });
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">{t('inventory')} Management</h1>
-                    <p className="text-muted-foreground">Manage all inventory items for sale.</p>
-                </div>
-                {canManage &&
-                    <Button onClick={() => setIsBatchAddOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Inventory Item
-                    </Button>
-                }
-            </div>
-
-            <Card className="shadow-sm border-subtle">
-                <CardContent className="pt-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <Input
-                            placeholder="Search by Serial, MAC, Model..."
-                            value={searchTerm}
-                            onChange={(e) => handleSearchChange(e.target.value)}
-                            className="sm:col-span-2 lg:col-span-1"
-                        />
-                        <CategoryCombobox
-                            selectedValue={filters.categoryId}
-                            onSelect={(value) => handleFilterChange('categoryId', value)}
-                        />
-                        <BrandCombobox
-                            selectedValue={filters.brandId}
-                            onSelect={(value) => handleFilterChange('brandId', value)}
-                        />
-                        <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Filter by Status..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="All">All Statuses</SelectItem>
-                                <SelectItem value="IN_STOCK">In Stock</SelectItem>
-                                <SelectItem value="SOLD">Sold</SelectItem>
-                                <SelectItem value="BORROWED">Borrowed</SelectItem>
-                                <SelectItem value="RESERVED">Reserved</SelectItem>
-                                <SelectItem value="DEFECTIVE">Defective</SelectItem>
-                                <SelectItem value="DECOMMISSIONED">Archived</SelectItem>
-                                <SelectItem value="RETURNED_TO_CUSTOMER">Serviced (Customer)</SelectItem>
-                            </SelectContent>
-                        </Select>
+        <Card className="shadow-sm border-subtle">
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>{t('inventory')} Management</CardTitle>
+                        <CardDescription>Manage all inventory items for sale.</CardDescription>
                     </div>
-                
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_productModel')}</SortableHeader>
-                                <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_serialNumber')}</SortableHeader>
-                                <SortableHeader sortKey="macAddress" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_macAddress')}</SortableHeader>
-                                <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
-                                <TableHead>{t('tableHeader_addedBy')}</TableHead>
-                                <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading ? (
-                                [...Array(pagination.itemsPerPage)].map((_, i) => (
-                                    <TableRow key={i}>
-                                        <TableCell colSpan={6}><div className="h-8 bg-muted rounded animate-pulse"></div></TableCell>
-                                    </TableRow>
-                                ))
-                            ) : inventoryItems.length > 0 ? (
-                                inventoryItems.map((item) => (
-                                    <TableRow key={item.id}>
-                                        <TableCell className="font-medium">{item.productModel.modelNumber}</TableCell>
-                                        <TableCell>{item.serialNumber || '-'}</TableCell>
-                                        <TableCell>{item.macAddress || '-'}</TableCell>
-                                        <TableCell className="text-center">
-                                            <StatusBadge
-                                                status={item.status}
-                                                className="w-24"
-                                                onClick={() => {
-                                                    if (item.status === 'SOLD' && item.saleId) navigate(`/sales/${item.saleId}`);
-                                                    else if (item.status === 'BORROWED' && item.borrowingId) navigate(`/borrowings/${item.borrowingId}`);
-                                                    else if ((item.status === 'REPAIRING' || item.status === 'RETURNED_TO_CUSTOMER') && item.repairId) navigate(`/repairs/${item.repairId}`);
-                                                }}
-                                                interactive={!!(item.saleId || item.borrowingId || item.repairId)}
-                                            />
-                                        </TableCell>
-                                        <TableCell>{item.addedBy.name}</TableCell>
-                                        <TableCell className="text-center">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                {/* --- START: เติมโค้ดที่ขาดหายไป --- */}
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={() => navigate(`/inventory/${item.id}/history`)}>
-                                                        <History className="mr-2 h-4 w-4" /> View History
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        onClick={() => {
-                                                            if (item.status === 'SOLD') navigate(`/sales/${item.saleId}`);
-                                                            if (item.status === 'BORROWED') navigate(`/borrowings/${item.borrowingId}`);
-                                                        }}
-                                                        disabled={item.status !== 'SOLD' && item.status !== 'BORROWED'}
-                                                    >
-                                                        <View className="mr-2 h-4 w-4" /> View Details
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleSellItem(item)}
-                                                        disabled={item.status !== 'IN_STOCK'}
-                                                    >
-                                                        <ShoppingCart className="mr-2 h-4 w-4" /> Sell This Item
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleBorrowItem(item)}
-                                                        disabled={item.status !== 'IN_STOCK'}
-                                                    >
-                                                        <ArrowRightLeft className="mr-2 h-4 w-4" /> Borrow This Item
-                                                    </DropdownMenuItem>
-                                                    {canManage && (
-                                                        <>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem
-                                                                onClick={() => openEditDialog(item)}
-                                                                disabled={!['IN_STOCK', 'RESERVED', 'DEFECTIVE'].includes(item.status)}
-                                                            >
-                                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                    {canManage &&
+                        <Button onClick={() => setIsBatchAddOpen(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Inventory Item
+                        </Button>
+                    }
+                </div>
+            </CardHeader>
+
+            <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <Input
+                        placeholder="Search by Serial, MAC, Model..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="sm:col-span-2 lg:col-span-1"
+                    />
+                    <CategoryCombobox
+                        selectedValue={filters.categoryId}
+                        onSelect={(value) => handleFilterChange('categoryId', value)}
+                    />
+                    <BrandCombobox
+                        selectedValue={filters.brandId}
+                        onSelect={(value) => handleFilterChange('brandId', value)}
+                    />
+                    <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Filter by Status..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="All">All Statuses</SelectItem>
+                            <SelectItem value="IN_STOCK">In Stock</SelectItem>
+                            <SelectItem value="SOLD">Sold</SelectItem>
+                            <SelectItem value="BORROWED">Borrowed</SelectItem>
+                            <SelectItem value="RESERVED">Reserved</SelectItem>
+                            <SelectItem value="DEFECTIVE">Defective</SelectItem>
+                            <SelectItem value="DECOMMISSIONED">Archived</SelectItem>
+                            <SelectItem value="RETURNED_TO_CUSTOMER">Serviced (Customer)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_productModel')}</SortableHeader>
+                            <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_serialNumber')}</SortableHeader>
+                            <SortableHeader sortKey="macAddress" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_macAddress')}</SortableHeader>
+                            <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
+                            <TableHead>{t('tableHeader_addedBy')}</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            [...Array(pagination.itemsPerPage)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell colSpan={6}><div className="h-8 bg-muted rounded animate-pulse"></div></TableCell>
+                                </TableRow>
+                            ))
+                        ) : inventoryItems.length > 0 ? (
+                            inventoryItems.map((item) => (
+                                <TableRow key={item.id}>
+                                    <TableCell className="font-medium">{item.productModel.modelNumber}</TableCell>
+                                    <TableCell>{item.serialNumber || '-'}</TableCell>
+                                    <TableCell>{item.macAddress || '-'}</TableCell>
+                                    <TableCell className="text-center">
+                                        <StatusBadge
+                                            status={item.status}
+                                            className="w-24"
+                                            onClick={() => {
+                                                if (item.status === 'SOLD' && item.saleId) navigate(`/sales/${item.saleId}`);
+                                                else if (item.status === 'BORROWED' && item.borrowingId) navigate(`/borrowings/${item.borrowingId}`);
+                                                else if ((item.status === 'REPAIRING' || item.status === 'RETURNED_TO_CUSTOMER') && item.repairId) navigate(`/repairs/${item.repairId}`);
+                                            }}
+                                            interactive={!!(item.saleId || item.borrowingId || item.repairId)}
+                                        />
+                                    </TableCell>
+                                    <TableCell>{item.addedBy.name}</TableCell>
+                                    <TableCell className="text-center">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="primary-outline" size="icon" className="h-8 w-14 p-0">
+                                                    <span className="sr-only">Open menu</span>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuItem onClick={() => navigate(`/inventory/${item.id}/history`)}>
+                                                    <History className="mr-2 h-4 w-4" /> View History
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => {
+                                                        if (item.status === 'SOLD') navigate(`/sales/${item.saleId}`);
+                                                        if (item.status === 'BORROWED') navigate(`/borrowings/${item.borrowingId}`);
+                                                    }}
+                                                    disabled={item.status !== 'SOLD' && item.status !== 'BORROWED'}
+                                                >
+                                                    <View className="mr-2 h-4 w-4" /> View Details
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    onClick={() => handleSellItem(item)}
+                                                    disabled={item.status !== 'IN_STOCK'}
+                                                >
+                                                    <ShoppingCart className="mr-2 h-4 w-4" /> Sell This Item
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => handleBorrowItem(item)}
+                                                    disabled={item.status !== 'IN_STOCK'}
+                                                >
+                                                    <ArrowRightLeft className="mr-2 h-4 w-4" /> Borrow This Item
+                                                </DropdownMenuItem>
+                                                {canManage && (
+                                                    <>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            onClick={() => openEditDialog(item)}
+                                                            disabled={!['IN_STOCK', 'RESERVED', 'DEFECTIVE'].includes(item.status)}
+                                                        >
+                                                            <Edit className="mr-2 h-4 w-4" /> Edit
+                                                        </DropdownMenuItem>
+                                                        {item.status === 'IN_STOCK' && (
+                                                            <>
+                                                                <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'reserve', 'Item marked as RESERVED.')}>
+                                                                    <ArchiveRestore className="mr-2 h-4 w-4" /> Mark as Reserved
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="text-orange-600 focus:text-orange-500" onClick={() => handleStatusChange(item.id, 'defect', 'Item marked as DEFECTIVE.')}>
+                                                                    <ShieldAlert className="mr-2 h-4 w-4" /> Mark as Defective
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
+                                                        {item.status === 'RESERVED' && (
+                                                            <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'unreserve', 'Item is now IN STOCK.')}>
+                                                                <ArrowRightLeft className="mr-2 h-4 w-4" /> Unreserve
                                                             </DropdownMenuItem>
-                                                            {item.status === 'IN_STOCK' && (
-                                                                <>
-                                                                    <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'reserve', 'Item marked as RESERVED.')}>
-                                                                        <ArchiveRestore className="mr-2 h-4 w-4" /> Mark as Reserved
-                                                                    </DropdownMenuItem>
-                                                                    <DropdownMenuItem className="text-orange-600 focus:text-orange-500" onClick={() => handleStatusChange(item.id, 'defect', 'Item marked as DEFECTIVE.')}>
-                                                                        <ShieldAlert className="mr-2 h-4 w-4" /> Mark as Defective
-                                                                    </DropdownMenuItem>
-                                                                </>
-                                                            )}
-                                                            {item.status === 'RESERVED' && (
-                                                                <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'unreserve', 'Item is now IN STOCK.')}>
-                                                                    <ArrowRightLeft className="mr-2 h-4 w-4" /> Unreserve
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                             {item.status === 'DEFECTIVE' && (
-                                                                <DropdownMenuItem className="text-green-600 focus:text-green-500" onClick={() => handleStatusChange(item.id, 'in-stock', 'Item marked as IN STOCK.')}>
-                                                                    <ShieldCheck className="mr-2 h-4 w-4" /> Mark as In Stock
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                            {item.status === 'DECOMMISSIONED' ? (
-                                                                <DropdownMenuItem onClick={() => handleReinstateItem(item.id)}>
-                                                                    <ArrowRightLeft className="mr-2 h-4 w-4" /> Reinstate
-                                                                </DropdownMenuItem>
-                                                            ) : (
-                                                                <DropdownMenuItem
-                                                                    className="text-red-600 focus:text-red-500"
-                                                                    onSelect={(e) => e.preventDefault()}
-                                                                    disabled={!['IN_STOCK', 'DEFECTIVE'].includes(item.status)}
-                                                                    onClick={() => setItemToDecommission(item)}
-                                                                >
-                                                                    <Archive className="mr-2 h-4 w-4" /> Decommission
-                                                                </DropdownMenuItem>
-                                                            )}
+                                                        )}
+                                                         {item.status === 'DEFECTIVE' && (
+                                                            <DropdownMenuItem className="text-green-600 focus:text-green-500" onClick={() => handleStatusChange(item.id, 'in-stock', 'Item marked as IN STOCK.')}>
+                                                                <ShieldCheck className="mr-2 h-4 w-4" /> Mark as In Stock
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                        {item.status === 'DECOMMISSIONED' ? (
+                                                            <DropdownMenuItem onClick={() => handleReinstateItem(item.id)}>
+                                                                <ArrowRightLeft className="mr-2 h-4 w-4" /> Reinstate
+                                                            </DropdownMenuItem>
+                                                        ) : (
                                                             <DropdownMenuItem
                                                                 className="text-red-600 focus:text-red-500"
                                                                 onSelect={(e) => e.preventDefault()}
-                                                                disabled={!['IN_STOCK', 'RESERVED', 'DECOMMISSIONED'].includes(item.status)}
-                                                                onClick={() => setItemToDelete(item)}
+                                                                disabled={!['IN_STOCK', 'DEFECTIVE'].includes(item.status)}
+                                                                onClick={() => setItemToDecommission(item)}
                                                             >
-                                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                                <Archive className="mr-2 h-4 w-4" /> Decommission
                                                             </DropdownMenuItem>
-                                                        </>
-                                                    )}
-                                                </DropdownMenuContent>
-                                                {/* --- END --- */}
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow><TableCell colSpan="6" className="text-center h-24">No items found.</TableCell></TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-                <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Label htmlFor="rows-per-page">Rows per page:</Label>
-                        <Select value={pagination ? String(pagination.itemsPerPage) : "10"} onValueChange={handleItemsPerPageChange}>
-                            <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                        Page {pagination?.currentPage || 1} of {pagination?.totalPages || 1} ({pagination?.totalItems || 0} items)
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
-                        <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
-                    </div>
-                </CardFooter>
-            </Card>
+                                                        )}
+                                                        <DropdownMenuItem
+                                                            className="text-red-600 focus:text-red-500"
+                                                            onSelect={(e) => e.preventDefault()}
+                                                            disabled={!['IN_STOCK', 'RESERVED', 'DECOMMISSIONED'].includes(item.status)}
+                                                            onClick={() => setItemToDelete(item)}
+                                                        >
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow><TableCell colSpan="6" className="text-center h-24">No items found.</TableCell></TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </CardContent>
+            <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Select value={pagination ? String(pagination.itemsPerPage) : "10"} onValueChange={handleItemsPerPageChange}>
+                        <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                    Page {pagination?.currentPage || 1} of {pagination?.totalPages || 1} ({pagination?.totalItems || 0} items)
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                </div>
+            </CardFooter>
 
             <AlertDialog open={!!itemToDelete} onOpenChange={(isOpen) => !isOpen && setItemToDelete(null)}>
                 <AlertDialogContent>
@@ -463,6 +462,6 @@ export default function InventoryPage() {
                     </form>
                 </DialogContent>
             </Dialog>
-        </div>
+        </Card>
     );
 }

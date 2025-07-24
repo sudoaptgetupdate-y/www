@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { History, Edit, Trash2 } from "lucide-react";
+import { History, Edit, Trash2, UserPlus } from "lucide-react"; // --- เพิ่ม UserPlus ---
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -18,14 +18,18 @@ import { toast } from 'sonner';
 import CustomerFormDialog from "@/components/dialogs/CustomerFormDialog";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "@/components/ui/table"; // --- Import Table Components ---
 
 const SkeletonRow = () => (
-    <tr className="border-b">
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2 text-center"><div className="h-8 w-44 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
-    </tr>
+    // --- แก้ไข SkeletonRow ---
+    <TableRow>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell className="text-center"><div className="h-8 w-44 bg-gray-200 rounded-md animate-pulse mx-auto"></div></TableCell>
+    </TableRow>
 );
 
 export default function CustomerPage() {
@@ -73,9 +77,18 @@ export default function CustomerPage() {
 
     return (
         <Card>
-            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>{t('customers')}</CardTitle>
-                {canManage && <Button onClick={handleAddNew}>Add New Customer</Button>}
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>{t('customers')}</CardTitle>
+                        <CardDescription>Manage all customer information and history.</CardDescription>
+                    </div>
+                    {canManage && 
+                        <Button onClick={handleAddNew}>
+                            <UserPlus className="mr-2 h-4 w-4" /> Add New Customer
+                        </Button>
+                    }
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -86,41 +99,39 @@ export default function CustomerPage() {
                         className="flex-grow"
                     />
                 </div>
-                 <div className="border rounded-lg overflow-x-auto">
-                    <table className="w-full text-sm whitespace-nowrap">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="p-2 text-left">{t('tableHeader_code')}</th>
-                                <th className="p-2 text-left">{t('tableHeader_name')}</th>
-                                <th className="p-2 text-left">{t('tableHeader_phone')}</th>
-                                {canManage && <th className="p-2 text-center">{t('tableHeader_actions')}</th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {isLoading ? (
-                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                            ) : customers.map((customer) => (
-                                <tr key={customer.id} className="border-b">
-                                    <td className="p-2 font-semibold">{customer.customerCode}</td>
-                                    <td className="p-2">{customer.name}</td>
-                                    <td className="p-2">{customer.phone}</td>
-                                    {canManage && (
-                                        <td className="p-2">
-                                            <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
-                                                <Button variant="outline" size="sm" onClick={() => navigate(`/customers/${customer.id}/history`)}>
-                                                    <History className="mr-2 h-4 w-4" /> History
-                                                </Button>
-                                                <Button variant="outline" size="sm" onClick={() => handleEdit(customer)}>
-                                                    <Edit className="mr-2 h-4 w-4" /> Edit
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    )}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>{t('tableHeader_code')}</TableHead>
+                            <TableHead>{t('tableHeader_name')}</TableHead>
+                            <TableHead>{t('tableHeader_phone')}</TableHead>
+                            {canManage && <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                        ) : customers.map((customer) => (
+                            <TableRow key={customer.id}>
+                                <TableCell>{customer.customerCode}</TableCell>
+                                <TableCell>{customer.name}</TableCell>
+                                <TableCell>{customer.phone}</TableCell>
+                                {canManage && (
+                                    <TableCell className="text-center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Button variant="outline" size="sm" onClick={() => navigate(`/customers/${customer.id}/history`)}>
+                                                <History className="mr-2 h-4 w-4" /> History
+                                            </Button>
+                                            <Button variant="outline" size="sm" onClick={() => handleEdit(customer)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                )}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">

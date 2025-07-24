@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, PlusCircle } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -15,15 +15,20 @@ import axiosInstance from '@/api/axiosInstance';
 import { toast } from 'sonner';
 import AddressFormDialog from "@/components/dialogs/AddressFormDialog";
 import { useTranslation } from "react-i18next";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "@/components/ui/table";
+import { Label } from "@/components/ui/label"; // --- เพิ่มบรรทัดนี้ ---
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // --- เพิ่มบรรทัดนี้ ---
 
 const SkeletonRow = () => (
-    <tr className="border-b">
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse w-1/4"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse w-1/4"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse w-1/4"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse w-full"></div></td>
-        <td className="p-2 text-center"><div className="h-8 w-28 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
-    </tr>
+    <TableRow>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse w-3/4"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse w-3/4"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse w-1/2"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse w-full"></div></TableCell>
+        <TableCell className="text-center"><div className="h-8 w-44 bg-gray-200 rounded-md animate-pulse mx-auto"></div></TableCell>
+    </TableRow>
 );
 
 export default function AddressPage() {
@@ -33,8 +38,8 @@ export default function AddressPage() {
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
     const {
-        data: addresses, isLoading, searchTerm, handleSearchChange, refreshData
-    } = usePaginatedFetch("/addresses", 100); 
+        data: addresses, isLoading, searchTerm, handleSearchChange, refreshData, pagination, handlePageChange, handleItemsPerPageChange
+    } = usePaginatedFetch("/addresses", 10);
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingAddress, setEditingAddress] = useState(null);
@@ -69,9 +74,18 @@ export default function AddressPage() {
 
     return (
         <Card>
-            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>{t('addressBook')} / Repair Centers</CardTitle>
-                {canManage && <Button onClick={handleAddNew}>Add New Address</Button>}
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>{t('addressBook')} / Repair Centers</CardTitle>
+                        <CardDescription>Manage addresses for sending and receiving repair items.</CardDescription>
+                    </div>
+                     {canManage && 
+                        <Button onClick={handleAddNew}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add New Address
+                        </Button>
+                    }
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -82,44 +96,61 @@ export default function AddressPage() {
                         className="flex-grow"
                     />
                 </div>
-                <div className="border rounded-lg overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="p-2 text-left">{t('tableHeader_name')}</th>
-                                <th className="p-2 text-left">{t('tableHeader_contactPerson')}</th>
-                                <th className="p-2 text-left">{t('tableHeader_phone')}</th>
-                                <th className="p-2 text-left">{t('tableHeader_address')}</th>
-                                {canManage && <th className="p-2 text-center">{t('tableHeader_actions')}</th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {isLoading ? (
-                                [...Array(5)].map((_, i) => <SkeletonRow key={i} />)
-                            ) : addresses.map((address) => (
-                                <tr key={address.id} className="border-b">
-                                    <td className="p-2 font-semibold">{address.name}</td>
-                                    <td className="p-2">{address.contactPerson || '-'}</td>
-                                    <td className="p-2">{address.phone || '-'}</td>
-                                    <td className="p-2">{address.address || '-'}</td>
-                                    {canManage && (
-                                        <td className="p-2">
-                                            <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
-                                                <Button variant="outline" size="sm" className="w-20" onClick={() => handleEdit(address)}>
-                                                    <Edit className="mr-2 h-4 w-4" /> Edit
-                                                </Button>
-                                                <Button variant="destructive" size="sm" className="w-20" onClick={() => handleDelete(address)}>
-                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    )}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>{t('tableHeader_name')}</TableHead>
+                            <TableHead>{t('tableHeader_contactPerson')}</TableHead>
+                            <TableHead>{t('tableHeader_phone')}</TableHead>
+                            <TableHead>{t('tableHeader_address')}</TableHead>
+                            {canManage && <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                        ) : addresses.map((address) => (
+                            <TableRow key={address.id}>
+                                <TableCell>{address.name}</TableCell>
+                                <TableCell>{address.contactPerson || '-'}</TableCell>
+                                <TableCell>{address.phone || '-'}</TableCell>
+                                <TableCell>{address.address || '-'}</TableCell>
+                                {canManage && (
+                                    <TableCell className="text-center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Button variant="outline" size="sm" className="w-20" onClick={() => handleEdit(address)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                            </Button>
+                                            <Button variant="destructive" size="sm" className="w-20" onClick={() => handleDelete(address)}>
+                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                )}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </CardContent>
+
+            <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                        <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                    Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                </div>
+            </CardFooter>
 
             {isDialogOpen && (
                 <AddressFormDialog

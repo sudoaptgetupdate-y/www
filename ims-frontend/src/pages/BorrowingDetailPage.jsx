@@ -17,7 +17,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger, // <-- Missing import added here
+    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -86,66 +86,72 @@ export default function BorrowingDetailPage() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
-     <div>
-        <h1 className="text-2xl font-bold">Borrowing Details</h1>
-        <p className="text-muted-foreground">Viewing details for Borrowing ID #{formattedBorrowingId}</p>
-    </div>
-    <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => navigate(-1)}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to List
-        </Button>
-         <Button variant="outline" onClick={() => window.print()}>
-            <Printer className="mr-2 h-4 w-4" />
-            Print / PDF
-        </Button>
-        {itemsToReturn.length > 0 && (
-            <Button onClick={() => setIsReturnDialogOpen(true)}>
-                <CornerDownLeft className="mr-2"/> Receive Returned Items
-            </Button>
-        )}
-    </div>
-</div>
+                 <div>
+                    <h1 className="text-2xl font-bold">Borrowing Details</h1>
+                    <p className="text-muted-foreground">Viewing details for Borrowing ID #{formattedBorrowingId}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={() => navigate(-1)}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to List
+                    </Button>
+                     <Button variant="outline" onClick={() => window.print()}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print / PDF
+                    </Button>
+                    {itemsToReturn.length > 0 && (
+                        <Button onClick={() => setIsReturnDialogOpen(true)}>
+                            <CornerDownLeft className="mr-2"/> Receive Returned Items
+                        </Button>
+                    )}
+                </div>
+            </div>
 
-            <Card className="printable-area p-4 sm:p-6 md:p-8">
+            <Card className="printable-area p-4 sm:p-6 md:p-8 font-sarabun">
                 <div className="print-header hidden">
                     <h1 className="text-xl font-bold">ใบยืม-คืนสินค้า / Borrowing Note</h1>
                 </div>
 
-                <CardHeader className="p-0">
-                    <div className="flex justify-between items-start">
-                        <div className="grid gap-1">
-                            <CardTitle className="text-lg">Customer (Borrower)</CardTitle>
-                            <CardDescription>{borrowing.borrower?.name || 'N/A'}</CardDescription>
+                <CardHeader className="p-0 mb-6">
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">ผู้ยืม (Borrower)</p>
+                            <p className="font-semibold">{borrowing.borrower?.name || 'N/A'}</p>
                             <p className="text-sm text-muted-foreground">{borrowing.borrower?.address || "No address provided"}</p>
-                            <p className="text-sm text-muted-foreground">Phone: {borrowing.borrower?.phone || 'N/A'}</p>
+                            <p className="text-sm text-muted-foreground">โทร. {borrowing.borrower?.phone || 'N/A'}</p>
                         </div>
-                        <div className="text-right">
-                             <StatusBadge status={borrowing.status} className="w-24 text-base" />
-                             <p className="text-sm mt-2"><strong>Borrowing ID:</strong> #{formattedBorrowingId}</p>
-                             <p className="text-sm"><strong>Borrow Date:</strong> {new Date(borrowing.borrowDate).toLocaleString()}</p>
-                             <p className="text-sm"><strong>Due Date:</strong> {borrowing.dueDate ? new Date(borrowing.dueDate).toLocaleDateString() : 'N/A'}</p>
-                             <p className="text-sm"><strong>Approved By:</strong> {borrowing.approvedBy?.name || 'N/A'}</p>
+                        <div className="space-y-1 text-right">
+                             <p className="text-sm text-muted-foreground">เลขที่ (Record ID)</p>
+                             <p className="font-semibold">#{formattedBorrowingId}</p>
+                             <p className="text-sm text-muted-foreground">วันที่ยืม (Borrow Date)</p>
+                             <p className="font-semibold">{new Date(borrowing.borrowDate).toLocaleString('th-TH')}</p>
+                             <p className="text-sm text-muted-foreground">กำหนดคืน (Due Date)</p>
+                             <p className="font-semibold">{borrowing.dueDate ? new Date(borrowing.dueDate).toLocaleDateString('th-TH') : 'N/A'}</p>
+                             <p className="text-sm text-muted-foreground">ผู้อนุมัติ (Approved By)</p>
+                             <p className="font-semibold">{borrowing.approvedBy?.name || 'N/A'}</p>
                         </div>
                     </div>
+                     <div className="mt-4 flex justify-end no-print">
+                        <StatusBadge status={borrowing.status} className="w-28 text-base" />
+                    </div>
                      {borrowing.notes && (
-                        <div className="mt-4">
-                            <p className="font-semibold">Notes:</p>
-                            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{borrowing.notes}</p>
+                        <div className="mt-6">
+                            <p className="font-semibold">หมายเหตุ (Notes):</p>
+                            <p className="whitespace-pre-wrap text-sm text-muted-foreground border p-3 rounded-md bg-muted/30">{borrowing.notes}</p>
                         </div>
                     )}
                 </CardHeader>
                 
                 <CardContent className="p-0 mt-6">
-                     <p className="font-semibold mb-2 text-base">Borrowed Items ({borrowing.items.length})</p>
+                     <p className="font-semibold mb-2 text-base">รายการที่ยืม ({borrowing.items.length})</p>
                     <div className="border rounded-lg overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b bg-muted/40">
-                                    <th className="p-2 text-left">Product Model</th>
+                                    <th className="p-2 text-left">รุ่นสินค้า (Product Model)</th>
                                     <th className="p-2 text-left">Serial Number</th>
                                     <th className="p-2 text-left">MAC Address</th>
-                                    <th className="p-2 text-left">Status</th>
+                                    <th className="p-2 text-left">สถานะ (Status)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -158,7 +164,7 @@ export default function BorrowingDetailPage() {
                                             <StatusBadge status={boi.returnedAt ? 'RETURNED' : 'BORROWED'} />
                                             {boi.returnedAt && (
                                                 <span className="text-xs text-muted-foreground ml-2">
-                                                    on {new Date(boi.returnedAt).toLocaleDateString()}
+                                                    (เมื่อ {new Date(boi.returnedAt).toLocaleDateString('th-TH')})
                                                 </span>
                                             )}
                                         </td>
@@ -171,12 +177,12 @@ export default function BorrowingDetailPage() {
                 
                 <div className="signature-section hidden">
                     <div className="signature-box">
-                        <p className="signature-line"></p>
+                        <div className="signature-line"></div>
                         <p>( {borrowing.approvedBy?.name || '.....................................................'} )</p>
                         <p>เจ้าหน้าที่</p>
                     </div>
                     <div className="signature-box">
-                        <p className="signature-line"></p>
+                        <div className="signature-line"></div>
                         <p>( {borrowing.borrower?.name || '.....................................................'} )</p>
                         <p>ผู้ยืมสินค้า</p>
                     </div>

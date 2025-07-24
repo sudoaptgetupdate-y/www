@@ -11,7 +11,6 @@ import { ArrowLeft, Printer, CheckSquare, Square, Wrench } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
     AlertDialog,
@@ -113,61 +112,65 @@ export default function RepairDetailPage() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
-    <div>
-        <h1 className="text-2xl font-bold">Repair Order Details</h1>
-        <p className="text-muted-foreground">Viewing details for Repair ID #{formattedRepairId}</p>
-    </div>
-    <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => navigate(-1)}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
-        </Button>
-        <Button variant="outline" onClick={() => window.print()}>
-            <Printer className="mr-2 h-4 w-4" /> Print / PDF
-        </Button>
-        {itemsStillAtRepair.length > 0 && (
-            <Button onClick={() => setIsReturnDialogOpen(true)}>
-                <Wrench className="mr-2"/> Receive Items from Repair
-            </Button>
-        )}
-    </div>
-</div>
+                <div>
+                    <h1 className="text-2xl font-bold">Repair Order Details</h1>
+                    <p className="text-muted-foreground">Viewing details for Repair ID #{formattedRepairId}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={() => navigate(-1)}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
+                    </Button>
+                    <Button variant="outline" onClick={() => window.print()}>
+                        <Printer className="mr-2 h-4 w-4" /> Print / PDF
+                    </Button>
+                    {itemsStillAtRepair.length > 0 && (
+                        <Button onClick={() => setIsReturnDialogOpen(true)}>
+                            <Wrench className="mr-2"/> Receive Items from Repair
+                        </Button>
+                    )}
+                </div>
+            </div>
             
-            <Card className="printable-area p-4 sm:p-6 md:p-8">
+            <Card className="printable-area p-4 sm:p-6 md:p-8 font-sarabun">
                 <div className="print-header hidden">
                     <h1 className="text-xl font-bold">ใบส่งซ่อมสินค้า / Repair Order</h1>
                 </div>
 
-                <CardHeader className="p-0">
-                    <div className="flex justify-between items-start mb-6">
+                <CardHeader className="p-0 mb-6">
+                     <div className="flex justify-between items-start mb-6">
                         <div>
-                             <StatusBadge status={repairOrder.status} className="w-32 text-base" />
-                             <p className="text-sm mt-2"><strong>Repair ID:</strong> #{formattedRepairId}</p>
-                             <p className="text-sm"><strong>Date Sent:</strong> {new Date(repairOrder.repairDate).toLocaleString()}</p>
-                             <p className="text-sm"><strong>Created By:</strong> {repairOrder.createdBy?.name || 'N/A'}</p>
+                            <p className="text-lg font-semibold">Repair Order</p>
+                            <p className="text-sm"><strong>ID:</strong> #{formattedRepairId}</p>
+                            <p className="text-sm"><strong>Date Sent:</strong> {new Date(repairOrder.repairDate).toLocaleString('th-TH')}</p>
+                            <p className="text-sm"><strong>Created By:</strong> {repairOrder.createdBy?.name || 'N/A'}</p>
+                        </div>
+                        <div className="text-right no-print">
+                            <StatusBadge status={repairOrder.status} className="w-32 text-base" />
                         </div>
                     </div>
                     
-                     <div className="grid md:grid-cols-2 gap-6 text-sm">
-                        <div className="space-y-1 border p-4 rounded-lg">
+                     <div className="grid md:grid-cols-2 gap-6 text-sm border-t border-b py-4">
+                        <div className="space-y-1">
                             <p className="text-muted-foreground font-semibold">FROM (SENDER):</p>
-                            <p className="font-bold text-xl">{repairOrder.sender?.name || 'N/A'}</p>
-                            <p><strong>Contact:</strong> {repairOrder.sender?.contactPerson || '-'}</p>
-                            <p><strong>Phone:</strong> {repairOrder.sender?.phone || '-'}</p>
-                            <p><strong>Address:</strong> {repairOrder.sender?.address || '-'}</p>
+                            <p className="font-bold text-base">{repairOrder.sender?.name || 'N/A'}</p>
+                            <p>{repairOrder.sender?.contactPerson || '-'}</p>
+                            <p>โทร. {repairOrder.sender?.phone || '-'}</p>
+                            <p>{repairOrder.sender?.address || '-'}</p>
                         </div>
-                        <div className="space-y-1 border p-4 rounded-lg">
-                            <p className="text-muted-foreground font-semibold">TO (RECEIVER):</p>
-                            <p className="font-bold text-xl">{repairOrder.receiver?.name || 'N/A'}</p>
-                            <p><strong>Contact:</strong> {repairOrder.receiver?.contactPerson || '-'}</p>
-                            <p><strong>Phone:</strong> {repairOrder.receiver?.phone || '-'}</p>
-                            <p><strong>Address:</strong> {repairOrder.receiver?.address || '-'}</p>
+                        <div className="space-y-1">
+                            <p className="text-muted-foreground font-semibold">TO (RECEIVER/REPAIR CENTER):</p>
+                            <p className="font-bold text-base">{repairOrder.receiver?.name || 'N/A'}</p>
+                             <p>{repairOrder.receiver?.contactPerson || '-'}</p>
+                            <p>โทร. {repairOrder.receiver?.phone || '-'}</p>
+                            <p>{repairOrder.receiver?.address || '-'}</p>
                         </div>
                     </div>
 
                     {repairOrder.notes && (
                         <div className="mt-6">
-                            <p className="font-semibold">Notes / Problem Description:</p>
-                            <p className="whitespace-pre-wrap text-sm text-muted-foreground border p-3 rounded-md bg-muted/30">{repairOrder.notes}</p>
+                            <p className="font-semibold">หมายเหตุ / อาการเสีย (Notes / Problem Description):</p>
+                            <p className="whitespace-pre-wrap text-sm text-muted-foreground border p-3 rounded-md bg-muted/30 no-print">{repairOrder.notes}</p>
+                            <p className="whitespace-pre-wrap text-sm print-block hidden">{repairOrder.notes}</p> {/* For printing */}
                         </div>
                     )}
                 </CardHeader>
@@ -215,7 +218,7 @@ export default function RepairDetailPage() {
                  <div className="signature-section hidden">
                     <div className="signature-box">
                         <div className="signature-line"></div>
-                        <p>( ..................................................... )</p>
+                        <p>( {repairOrder.createdBy?.name || '.....................................................'} )</p>
                         <p>ผู้ส่งมอบสินค้า</p>
                     </div>
                     <div className="signature-box">

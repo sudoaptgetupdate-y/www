@@ -1,48 +1,38 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&family=Noto+Sans:wght@400;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&family=Noto+Sans:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+
 @layer base {
   :root {
-    --background: 0 0% 100%; /* White */
+    --background: 0 0% 100%;
     --foreground: 224 71.4% 4.1%;
-
     --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-
-    --primary: 217 91.2% 59.8%; /* Vibrant Blue */
+    --primary: 217 91.2% 59.8%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 220 14.3% 95.9%;
     --secondary-foreground: 220.9 39.3% 11%;
-
     --muted: 220 14.3% 95.9%;
     --muted-foreground: 220 8.9% 46.1%;
-
     --accent: 220 14.3% 95.9%;
     --accent-foreground: 220.9 39.3% 11%;
-
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 220 13% 91%;
     --input: 220 13% 91%;
     --ring: 217 91.2% 59.8%;
-    
-    --radius: 0.75rem; /* Slightly more rounded corners */
+    --radius: 0.75rem;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
@@ -50,7 +40,74 @@
   }
 }
 
-/* Print Styles - No changes here */
+/* --- START: Final Print Styles --- */
 @media print {
-  /* ... existing print styles ... */
+  /* ซ่อนทุกอย่างใน body ก่อน */
+  body * {
+    visibility: hidden;
+  }
+
+  /* จากนั้นแสดงเฉพาะส่วนที่ต้องการพิมพ์และ element ลูกทั้งหมด */
+  .printable-area, .printable-area * {
+    visibility: visible;
+  }
+
+  /* จัดตำแหน่งของส่วนที่พิมพ์ให้อยู่บนสุดซ้ายสุดของหน้ากระดาษ */
+  .printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0.75in 0.5in; /* ตั้งค่าขอบกระดาษ */
+    font-size: 10pt;
+    font-family: 'Sarabun', sans-serif !important;
+  }
+
+  /* ทำให้ส่วนหัวเอกสารแสดงผล */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .print-header h1 {
+    font-size: 16pt !important;
+    font-weight: 700 !important;
+  }
+  .print-header p {
+    font-size: 10pt !important;
+    margin: 0;
+  }
+  
+  /* จัดการส่วนท้ายและที่เซ็นชื่อ */
+  .signature-section {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin-top: 5rem !important;
+    page-break-inside: avoid !important;
+  }
+  
+  .signature-box {
+    text-align: center;
+    width: 280px;
+    font-size: 10pt !important;
+  }
+  
+  .signature-line {
+    border-bottom: 1px dotted black !important;
+    margin-bottom: 0.5rem;
+    height: 3rem;
+  }
+
+  .print-footer {
+    display: block !important;
+    text-align: center;
+    font-size: 9pt !important;
+    margin-top: 2rem;
+  }
+  
+  /* ทำให้เส้นตารางยังแสดงผล */
+  table, thead, tbody, tfoot, tr, th, td {
+    border-color: #666 !important;
+  }
 }
+/* --- END: Final Print Styles --- */

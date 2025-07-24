@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card"; // --- 1. เพิ่ม CardFooter, CardDescription ---
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, PlusCircle } from "lucide-react"; // --- 2. เพิ่ม PlusCircle ---
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -15,14 +15,20 @@ import axiosInstance from '@/api/axiosInstance';
 import { toast } from 'sonner';
 import CategoryFormDialog from "@/components/dialogs/CategoryFormDialog";
 import { useTranslation } from "react-i18next";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "@/components/ui/table"; // --- 3. Import Table Components ---
+import { Label } from "@/components/ui/label"; // --- 4. Import เพิ่มเติม ---
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+// --- 5. แก้ไข SkeletonRow ---
 const SkeletonRow = () => (
-    <tr className="border-b">
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2 text-center"><div className="h-5 w-24 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
-        <td className="p-2 text-center"><div className="h-5 w-24 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
-        <td className="p-2 text-center"><div className="h-8 w-28 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
-    </tr>
+    <TableRow>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell className="text-center"><div className="h-5 w-24 bg-gray-200 rounded animate-pulse mx-auto"></div></TableCell>
+        <TableCell className="text-center"><div className="h-5 w-24 bg-gray-200 rounded animate-pulse mx-auto"></div></TableCell>
+        <TableCell className="text-center"><div className="h-8 w-44 bg-gray-200 rounded-md animate-pulse mx-auto"></div></TableCell>
+    </TableRow>
 );
 
 export default function CategoryPage() {
@@ -31,9 +37,10 @@ export default function CategoryPage() {
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
+    // --- 6. แก้ไขการเรียกใช้ usePaginatedFetch ---
     const {
-        data: categories, isLoading, searchTerm, handleSearchChange, refreshData
-    } = usePaginatedFetch("/categories", 100); 
+        data: categories, pagination, isLoading, searchTerm, handleSearchChange, refreshData, handlePageChange, handleItemsPerPageChange
+    } = usePaginatedFetch("/categories", 10); 
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
@@ -68,13 +75,19 @@ export default function CategoryPage() {
 
     return (
         <Card>
-            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>{t('categories')}</CardTitle>
-                {canManage &&
-                    <Button onClick={handleAddNew}>
-                        Add New Category
-                    </Button>
-                }
+            {/* --- 7. แก้ไข CardHeader --- */}
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>{t('categories')}</CardTitle>
+                        <CardDescription>Manage product categories and their properties.</CardDescription>
+                    </div>
+                     {canManage &&
+                        <Button onClick={handleAddNew}>
+                           <PlusCircle className="mr-2 h-4 w-4" /> Add New Category
+                        </Button>
+                    }
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -85,42 +98,61 @@ export default function CategoryPage() {
                         className="flex-grow"
                     />
                 </div>
-                <div className="border rounded-lg overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="p-2 text-left">{t('tableHeader_name')}</th>
-                                <th className="p-2 text-center">{t('tableHeader_requiresSn')}</th>
-                                <th className="p-2 text-center">{t('tableHeader_requiresMac')}</th>
-                                {canManage && <th className="p-2 text-center">{t('tableHeader_actions')}</th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {isLoading ? (
-                                [...Array(10)].map((_, i) => <SkeletonRow key={i} />)
-                            ) : categories.map((category) => (
-                                <tr key={category.id} className="border-b">
-                                    <td className="p-2 font-semibold">{category.name}</td>
-                                    <td className="p-2 text-center">{category.requiresSerialNumber ? 'Yes' : 'No'}</td>
-                                    <td className="p-2 text-center">{category.requiresMacAddress ? 'Yes' : 'No'}</td>
-                                    {canManage && (
-                                        <td className="p-2">
-                                            <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
-                                                <Button variant="outline" size="sm" className="w-20" onClick={() => handleEdit(category)}>
-                                                    <Edit className="mr-2 h-4 w-4" /> Edit
-                                                </Button>
-                                                <Button variant="destructive" size="sm" className="w-20" onClick={() => handleDelete(category)}>
-                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    )}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                {/* --- 8. แก้ไขโครงสร้างตาราง --- */}
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>{t('tableHeader_name')}</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_requiresSn')}</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_requiresMac')}</TableHead>
+                            {canManage && <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                        ) : categories.map((category) => (
+                            <TableRow key={category.id}>
+                                <TableCell>{category.name}</TableCell>
+                                <TableCell className="text-center">{category.requiresSerialNumber ? 'Yes' : 'No'}</TableCell>
+                                <TableCell className="text-center">{category.requiresMacAddress ? 'Yes' : 'No'}</TableCell>
+                                {canManage && (
+                                    <TableCell className="text-center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Button variant="outline" size="sm" className="w-20" onClick={() => handleEdit(category)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                            </Button>
+                                            <Button variant="destructive" size="sm" className="w-20" onClick={() => handleDelete(category)}>
+                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                )}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </CardContent>
+            
+            {/* --- 9. เพิ่ม CardFooter และ Pagination --- */}
+            <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                        <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                    Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                </div>
+            </CardFooter>
 
             {isDialogOpen && (
                 <CategoryFormDialog

@@ -85,68 +85,77 @@ export default function AssetAssignmentDetailPage() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
-    <div>
-        <h1 className="text-2xl font-bold">Assignment Details</h1>
-        <p className="text-muted-foreground">Viewing details for Assignment ID #{formattedAssignmentId}</p>
-    </div>
-     <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => navigate(-1)}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to List
-        </Button>
-         <Button variant="outline" onClick={() => window.print()}>
-            <Printer className="mr-2 h-4 w-4" />
-            Print / PDF
-        </Button>
-        {itemsToReturn.length > 0 && (
-            <Button onClick={() => setIsReturnDialogOpen(true)}>
-                <CornerDownLeft className="mr-2"/> Receive Returned Assets
-            </Button>
-        )}
-    </div>
-</div>
+                <div>
+                    <h1 className="text-2xl font-bold">Assignment Details</h1>
+                    <p className="text-muted-foreground">Viewing details for Assignment ID #{formattedAssignmentId}</p>
+                </div>
+                 <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={() => navigate(-1)}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to List
+                    </Button>
+                     <Button variant="outline" onClick={() => window.print()}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print / PDF
+                    </Button>
+                    {itemsToReturn.length > 0 && (
+                        <Button onClick={() => setIsReturnDialogOpen(true)}>
+                            <CornerDownLeft className="mr-2"/> Receive Returned Assets
+                        </Button>
+                    )}
+                </div>
+            </div>
 
-            <Card className="printable-area p-4 sm:p-6 md:p-8">
+            <Card className="printable-area p-4 sm:p-6 md:p-8 font-sarabun">
                  <div className="print-header hidden">
                     <h1 className="text-xl font-bold">ใบเบิกจ่ายทรัพย์สิน / Asset Assignment Note</h1>
                 </div>
 
-                <CardHeader className="p-0">
-                    <div className="flex justify-between items-start">
-                        <div className="grid gap-1">
-                            <CardTitle className="text-lg">Assignee (Employee)</CardTitle>
-                            <CardDescription>{assignment.assignee?.name || 'N/A'}</CardDescription>
-                            <p className="text-sm text-muted-foreground">Username: {assignment.assignee?.username || 'N/A'}</p>
-                            <p className="text-sm text-muted-foreground">Email: {assignment.assignee?.email || 'N/A'}</p>
+                <CardHeader className="p-0 mb-6">
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">ผู้เบิก (Assignee)</p>
+                            <p className="font-semibold">{assignment.assignee?.name || 'N/A'}</p>
+                            <p className="text-sm text-muted-foreground">{assignment.assignee?.username || 'N/A'}</p>
+                            <p className="text-sm text-muted-foreground">อีเมล: {assignment.assignee?.email || 'N/A'}</p>
                         </div>
-                        <div className="text-right">
-                             <StatusBadge status={assignment.status} className="w-32 text-base" />
-                             <p className="text-sm mt-2"><strong>Assignment ID:</strong> #{formattedAssignmentId}</p>
-                             <p className="text-sm"><strong>Assigned Date:</strong> {new Date(assignment.assignedDate).toLocaleString()}</p>
-                             <p className="text-sm"><strong>Approved By:</strong> {assignment.approvedBy?.name || 'N/A'}</p>
+                        <div className="space-y-1 text-right">
+                             <p className="text-sm text-muted-foreground">เลขที่ (Assignment ID)</p>
+                             <p className="font-semibold">#{formattedAssignmentId}</p>
+                             <p className="text-sm text-muted-foreground">วันที่เบิก (Assigned Date)</p>
+                             <p className="font-semibold">{new Date(assignment.assignedDate).toLocaleString('th-TH')}</p>
+                             <p className="text-sm text-muted-foreground">ผู้อนุมัติ (Approved By)</p>
+                             <p className="font-semibold">{assignment.approvedBy?.name || 'N/A'}</p>
                              {assignment.returnDate && (
-                                <p className="text-sm"><strong>Completion Date:</strong> {new Date(assignment.returnDate).toLocaleString()}</p>
+                                <>
+                                <p className="text-sm text-muted-foreground">วันที่คืนครบ (Completion Date)</p>
+                                <p className="font-semibold">{new Date(assignment.returnDate).toLocaleString('th-TH')}</p>
+                                </>
                             )}
                         </div>
                     </div>
+                    <div className="mt-4 flex justify-end no-print">
+                        <StatusBadge status={assignment.status} className="w-32 text-base" />
+                    </div>
                     {assignment.notes && (
-                        <div className="mt-4">
-                            <p className="font-semibold">Notes:</p>
-                            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{assignment.notes}</p>
+                        <div className="mt-6">
+                            <p className="font-semibold">หมายเหตุ (Notes):</p>
+                            <p className="whitespace-pre-wrap text-sm text-muted-foreground border p-3 rounded-md bg-muted/30 no-print">{assignment.notes}</p>
+                            <p className="whitespace-pre-wrap text-sm print-block hidden">{assignment.notes}</p>
                         </div>
                     )}
                 </CardHeader>
 
                  <CardContent className="p-0 mt-6">
-                     <p className="font-semibold mb-2 text-base">Assigned Assets ({assignment.items.length})</p>
+                     <p className="font-semibold mb-2 text-base">รายการทรัพย์สินที่เบิก ({assignment.items.length})</p>
                     <div className="border rounded-lg overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b bg-muted/40">
-                                    <th className="p-2 text-left">Asset Code</th>
-                                    <th className="p-2 text-left">Product Model</th>
+                                    <th className="p-2 text-left">รหัสทรัพย์สิน (Asset Code)</th>
+                                    <th className="p-2 text-left">รุ่น (Product Model)</th>
                                     <th className="p-2 text-left">Serial Number</th>
-                                    <th className="p-2 text-left">Status</th>
+                                    <th className="p-2 text-left">สถานะ (Status)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -159,7 +168,7 @@ export default function AssetAssignmentDetailPage() {
                                             <StatusBadge status={item.returnedAt ? 'RETURNED' : 'ASSIGNED'} />
                                             {item.returnedAt && (
                                                 <span className="text-xs text-muted-foreground ml-2">
-                                                    on {new Date(item.returnedAt).toLocaleDateString()}
+                                                    (เมื่อ {new Date(item.returnedAt).toLocaleDateString('th-TH')})
                                                 </span>
                                             )}
                                         </td>

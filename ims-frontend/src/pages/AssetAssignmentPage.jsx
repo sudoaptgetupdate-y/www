@@ -2,7 +2,7 @@
 
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card"; // --- 1. เพิ่ม CardDescription ---
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,17 +11,22 @@ import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge"; 
 import { useTranslation } from "react-i18next";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "@/components/ui/table"; // --- 2. Import Table Components ---
 
+// --- 3. แก้ไข SkeletonRow ---
 const SkeletonRow = () => (
-    <tr className="border-b">
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2 text-center"><div className="h-6 w-32 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
-        <td className="p-2 text-center"><div className="h-5 w-24 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2 text-center"><div className="h-8 w-[76px] bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
-    </tr>
+    <TableRow>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell className="text-center"><div className="h-6 w-32 bg-gray-200 rounded-md animate-pulse mx-auto"></div></TableCell>
+        <TableCell className="text-center"><div className="h-5 w-24 bg-gray-200 rounded animate-pulse mx-auto"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell className="text-center"><div className="h-8 w-[76px] bg-gray-200 rounded-md animate-pulse mx-auto"></div></TableCell>
+    </TableRow>
 );
 
 export default function AssetAssignmentPage() {
@@ -44,13 +49,19 @@ export default function AssetAssignmentPage() {
 
     return (
         <Card>
-            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>Asset {t('assignments')}</CardTitle>
-                {canManage && (
-                    <Button onClick={() => navigate('/asset-assignments/new')}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Create New Assignment
-                    </Button>
-                )}
+            {/* --- 4. แก้ไข CardHeader --- */}
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>Asset {t('assignments')}</CardTitle>
+                        <CardDescription>Track and manage all company asset assignments to employees.</CardDescription>
+                    </div>
+                    {canManage && (
+                        <Button onClick={() => navigate('/asset-assignments/new')}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Create New Assignment
+                        </Button>
+                    )}
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -72,49 +83,48 @@ export default function AssetAssignmentPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="border rounded-lg overflow-x-auto">
-                    <table className="w-full text-sm whitespace-nowrap">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="p-2 text-left">{t('tableHeader_assignmentId')}</th>
-                                <th className="p-2 text-left">{t('tableHeader_assignedTo')}</th>
-                                <th className="p-2 text-left">{t('tableHeader_assignedDate')}</th>
-                                <th className="p-2 text-left">{t('tableHeader_returnDate')}</th>
-                                <th className="p-2 text-center">{t('tableHeader_status')}</th>
-                                <th className="p-2 text-center">{t('tableHeader_itemStatus')}</th>
-                                <th className="p-2 text-left">{t('tableHeader_approvedBy')}</th>
-                                <th className="p-2 text-center">{t('tableHeader_actions')}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {isLoading ? (
-                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                            ) : assignments.map((a) => (
-                                <tr key={a.id} className="border-b">
-                                    <td className="p-2 font-semibold">#{a.id}</td>
-                                    <td className="p-2">{a.assignee.name}</td>
-                                    <td className="p-2">{new Date(a.assignedDate).toLocaleDateString()}</td>
-                                    <td className="p-2">{a.returnDate ? new Date(a.returnDate).toLocaleDateString() : 'N/A'}</td>
-                                    <td className="p-2 text-center">
-                                        <StatusBadge 
-                                            status={a.status} 
-                                            className="w-32"
-                                            onClick={() => navigate(`/asset-assignments/${a.id}`)}
-                                            interactive
-                                        />
-                                    </td>
-                                    <td className="p-2 text-center">{a.returnedItemCount}/{a.totalItemCount} Returned</td>
-                                    <td className="p-2">{a.approvedBy.name}</td>
-                                    <td className="p-2 text-center">
-                                        <Button variant="outline" size="sm" onClick={() => navigate(`/asset-assignments/${a.id}`)}>
-                                            Details
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                {/* --- 5. แก้ไขโครงสร้างตาราง --- */}
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>{t('tableHeader_assignmentId')}</TableHead>
+                            <TableHead>{t('tableHeader_assignedTo')}</TableHead>
+                            <TableHead>{t('tableHeader_assignedDate')}</TableHead>
+                            <TableHead>{t('tableHeader_returnDate')}</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_itemStatus')}</TableHead>
+                            <TableHead>{t('tableHeader_approvedBy')}</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                        ) : assignments.map((a) => (
+                            <TableRow key={a.id}>
+                                <TableCell>#{a.id}</TableCell>
+                                <TableCell>{a.assignee.name}</TableCell>
+                                <TableCell>{new Date(a.assignedDate).toLocaleDateString()}</TableCell>
+                                <TableCell>{a.returnDate ? new Date(a.returnDate).toLocaleDateString() : 'N/A'}</TableCell>
+                                <TableCell className="text-center">
+                                    <StatusBadge 
+                                        status={a.status} 
+                                        className="w-32"
+                                        onClick={() => navigate(`/asset-assignments/${a.id}`)}
+                                        interactive
+                                    />
+                                </TableCell>
+                                <TableCell className="text-center">{a.returnedItemCount}/{a.totalItemCount} Returned</TableCell>
+                                <TableCell>{a.approvedBy.name}</TableCell>
+                                <TableCell className="text-center">
+                                    <Button variant="outline" size="sm" onClick={() => navigate(`/asset-assignments/${a.id}`)}>
+                                        Details
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">

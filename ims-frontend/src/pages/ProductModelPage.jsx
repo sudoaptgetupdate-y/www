@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card"; // --- 1. เพิ่ม CardDescription ---
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle, Edit, Trash2, ArrowUpDown } from "lucide-react";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -20,24 +20,31 @@ import { toast } from 'sonner';
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { useTranslation } from "react-i18next";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "@/components/ui/table"; // --- 2. Import Table Components ---
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+
+// --- 3. แก้ไข SkeletonRow ---
 const SkeletonRow = () => (
-    <tr className="border-b">
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2 text-center"><div className="h-8 w-28 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
-    </tr>
+    <TableRow>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell className="text-center"><div className="h-8 w-44 bg-gray-200 rounded-md animate-pulse mx-auto"></div></TableCell>
+    </TableRow>
 );
 
+// --- 4. แก้ไข SortableHeader ---
 const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort, className = "" }) => (
-    <th className={`p-2 cursor-pointer hover:bg-slate-50 ${className}`} onClick={() => onSort(sortKey)}>
+    <TableHead className={`cursor-pointer hover:bg-muted/50 ${className}`} onClick={() => onSort(sortKey)}>
         <div className="flex items-center gap-2">
             {children}
             {currentSortBy === sortKey && <ArrowUpDown className={`h-4 w-4 ${sortOrder === 'desc' ? 'text-slate-400' : ''}`} />}
         </div>
-    </th>
+    </TableHead>
 );
 
 const initialFormData = {
@@ -135,13 +142,19 @@ export default function ProductModelPage() {
 
     return (
         <Card>
-            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>Product {t('models')}</CardTitle>
-                {canManage &&
-                    <Button onClick={() => openDialog()}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Product Model
-                    </Button>
-                }
+            {/* --- 5. แก้ไข CardHeader --- */}
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>Product {t('models')}</CardTitle>
+                        <CardDescription>Manage all product models, including their brands, categories, and prices.</CardDescription>
+                    </div>
+                    {canManage &&
+                        <Button onClick={() => openDialog()}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Product Model
+                        </Button>
+                    }
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
@@ -160,53 +173,61 @@ export default function ProductModelPage() {
                         onSelect={(value) => handleFilterChange('brandId', value)}
                     />
                 </div>
-                <div className="border rounded-lg overflow-x-auto">
-                    <table className="w-full text-sm whitespace-nowrap">
-                        <thead>
-                            <tr className="border-b">
-                                <SortableHeader sortKey="modelNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    {t('tableHeader_productModel')}
-                                </SortableHeader>
-                                <SortableHeader sortKey="category" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    {t('tableHeader_category')}
-                                </SortableHeader>
-                                <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    {t('tableHeader_brand')}
-                                </SortableHeader>
-                                <SortableHeader sortKey="sellingPrice" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange} className="text-left">
-                                    {t('tableHeader_price')}
-                                </SortableHeader>
-                                {canManage && <th className="p-2 text-center">{t('tableHeader_actions')}</th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {isLoading ? (
-                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                            ) : productModels.map((model) => (
-                                <tr key={model.id} className="border-b">
-                                    <td className="p-2 font-semibold">{model.modelNumber}</td>
-                                    <td className="p-2">{model.category.name}</td>
-                                    <td className="p-2">{model.brand.name}</td>
-                                    <td className="p-2">{model.sellingPrice.toFixed(2)}</td>
-                                    {canManage && (
-                                        <td className="p-2">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <Button variant="outline" size="sm" className="w-20" onClick={() => openDialog(model)}>
-                                                    <Edit className="mr-2 h-4 w-4" /> Edit
-                                                </Button>
-                                                <Button variant="destructive" size="sm" className="w-20" onClick={() => setModelToDelete(model)}>
-                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    )}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                {/* --- 6. แก้ไขโครงสร้างตาราง --- */}
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <SortableHeader sortKey="modelNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                {t('tableHeader_productModel')}
+                            </SortableHeader>
+                            <SortableHeader sortKey="category" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                {t('tableHeader_category')}
+                            </SortableHeader>
+                            <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                {t('tableHeader_brand')}
+                            </SortableHeader>
+                            <SortableHeader sortKey="sellingPrice" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange} className="text-right">
+                                {t('tableHeader_price')}
+                            </SortableHeader>
+                            {canManage && <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                        ) : productModels.map((model) => (
+                            <TableRow key={model.id}>
+                                <TableCell>{model.modelNumber}</TableCell>
+                                <TableCell>{model.category.name}</TableCell>
+                                <TableCell>{model.brand.name}</TableCell>
+                                <TableCell className="text-right">{model.sellingPrice.toFixed(2)}</TableCell>
+                                {canManage && (
+                                    <TableCell className="text-center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Button variant="outline" size="sm" className="w-20" onClick={() => openDialog(model)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                            </Button>
+                                            <Button variant="destructive" size="sm" className="w-20" onClick={() => setModelToDelete(model)}>
+                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                )}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                        <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
+                        </SelectContent>
+                    </Select>
+                </div>
                 <div className="text-sm text-muted-foreground">
                     Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
                 </div>

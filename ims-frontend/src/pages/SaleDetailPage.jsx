@@ -13,8 +13,6 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Separator } from "@/components/ui/separator";
-
 
 export default function SaleDetailPage() {
     const { saleId } = useParams();
@@ -99,34 +97,38 @@ export default function SaleDetailPage() {
                 </div>
             </div>
 
-            <Card className="printable-area p-4 sm:p-6 md:p-8">
-                {/* Print Header */}
+            <Card className="printable-area p-4 sm:p-6 md:p-8 font-sarabun">
                 <div className="print-header hidden">
                     <h1 className="text-xl font-bold">ใบกำกับภาษีอย่างย่อ / ใบเสร็จรับเงิน</h1>
                     <p className="text-sm">ศูนย์การขายและวิศวกรรมบริการ</p>
-                    <p className="text-xs">2 ซอยพิพิธภัณฑ์ ตำบลในเมือง อำเภอเมือง นครศรีธรรมราช 80000 โทรศัพท์ 075345456</p>
+                    <p className="text-sm">บริษัทโทรคมนาคมแห่งชาติ จำกัด(มหาชน)</p>
+                    <p className="text-xs">เลขที่2 ซอยพิพิธภัณฑ์ ตำบลในเมือง อำเภอเมือง นครศรีธรรมราช 80000 โทรศัพท์ 075-345456</p>
                 </div>
-
-
-                <CardHeader className="p-0">
-                    <div className="flex justify-between items-start">
-                         <div className="grid gap-1">
-                            <CardTitle className="text-lg">Customer Information</CardTitle>
-                            <CardDescription>{sale.customer.name}</CardDescription>
-                            <p className="text-sm text-muted-foreground">{sale.customer.address || "No address provided"}</p>
-                            <p className="text-sm text-muted-foreground">Phone: {sale.customer.phone || "N/A"}</p>
+                
+                <CardHeader className="p-0 mb-6">
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">ลูกค้า (Customer)</p>
+                            <p className="font-semibold">{sale.customer.name}</p>
+                            <p className="text-sm text-muted-foreground">{sale.customer.address || ""}</p>
+                            <p className="text-sm text-muted-foreground">โทร. {sale.customer.phone || "-"}</p>
                         </div>
-                        <div className="text-right">
-                            <StatusBadge status={sale.status} className="w-24 text-base" />
-                            <p className="text-sm mt-2"><strong>Sale ID:</strong> #{formattedSaleId}</p>
-                            <p className="text-sm"><strong>Date:</strong> {new Date(sale.saleDate).toLocaleString()}</p>
-                            <p className="text-sm"><strong>Sold By:</strong> {sale.soldBy.name}</p>
+                        <div className="space-y-1 text-right">
+                            <p className="text-sm text-muted-foreground">เลขที่ (Sale ID)</p>
+                            <p className="font-semibold">#{formattedSaleId}</p>
+                            <p className="text-sm text-muted-foreground">วันที่ (Date)</p>
+                            <p className="font-semibold">{new Date(sale.saleDate).toLocaleString('th-TH')}</p>
+                            <p className="text-sm text-muted-foreground">พนักงานขาย (Sold By)</p>
+                            <p className="font-semibold">{sale.soldBy.name}</p>
                         </div>
                     </div>
+                     <div className="mt-4 flex justify-end no-print">
+                        <StatusBadge status={sale.status} className="w-28 text-base" />
+                    </div>
                 </CardHeader>
-                
+
                 {sale.status === 'VOIDED' && (
-                    <Card className="border-red-500 my-4 bg-red-50/50">
+                    <Card className="border-red-500 my-4 bg-red-50/50 no-print">
                         <CardHeader>
                             <CardTitle className="text-red-600 text-base">Void Information</CardTitle>
                         </CardHeader>
@@ -138,18 +140,15 @@ export default function SaleDetailPage() {
                 )}
 
                 <CardContent className="p-0 mt-6">
-                    <p className="font-semibold mb-2 text-base">
-                        {sale.status === 'VOIDED' ? `Items Voided (${sale.itemsSold.length})` : `Items Sold (${sale.itemsSold.length})`}
-                    </p>
                     <div className="border rounded-lg overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b bg-muted/40">
-                                    <th className="p-2 text-left">Product Model</th>
-                                    <th className="p-2 text-left">Category</th>
-                                    <th className="p-2 text-left">Brand</th>
+                                    <th className="p-2 text-left">รายการ (Product)</th>
+                                    <th className="p-2 text-left">หมวดหมู่ (Category)</th>
+                                    <th className="p-2 text-left">ยี่ห้อ (Brand)</th>
                                     <th className="p-2 text-left">Serial Number</th>
-                                    <th className="p-2 text-right">Price</th>
+                                    <th className="p-2 text-right">ราคา (Price)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -165,21 +164,34 @@ export default function SaleDetailPage() {
                             </tbody>
                             <tfoot>
                                 <tr className="border-t font-semibold">
-                                    <td colSpan="4" className="p-2 text-right">Subtotal</td>
+                                    <td colSpan="4" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
                                     <td className="p-2 text-right">{sale.subtotal.toFixed(2)}</td>
                                 </tr>
                                 <tr className="border-t">
-                                    <td colSpan="4" className="p-2 text-right">VAT (7%)</td>
+                                    <td colSpan="4" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
                                     <td className="p-2 text-right">{sale.vatAmount.toFixed(2)}</td>
                                 </tr>
                                 <tr className="border-t text-base font-bold bg-muted/40">
-                                    <td colSpan="4" className="p-2 text-right">Total</td>
+                                    <td colSpan="4" className="p-2 text-right">ยอดสุทธิ (Total)</td>
                                     <td className="p-2 text-right">{sale.total.toFixed(2)} THB</td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
                 </CardContent>
+                
+                <div className="signature-section hidden">
+                    <div className="signature-box">
+                        <div className="signature-line"></div>
+                        <p>( {sale.soldBy.name} )</p>
+                        <p>ผู้ขาย</p>
+                    </div>
+                    <div className="signature-box">
+                        <div className="signature-line"></div>
+                        <p>( {sale.customer.name} )</p>
+                        <p>ผู้ซื้อ</p>
+                    </div>
+                </div>
 
                 <div className="print-footer hidden text-center text-xs text-muted-foreground mt-8">
                      <p>ขอบคุณที่ใช้บริการ</p>

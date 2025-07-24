@@ -1,8 +1,8 @@
 // src/pages/RepairListPage.jsx
 
-import { useNavigate, useLocation } from "react-router-dom"; // *** 1. Import useLocation ***
+import { useNavigate, useLocation } from "react-router-dom";
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card"; // --- 1. เพิ่ม CardDescription ---
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -11,16 +11,20 @@ import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useTranslation } from "react-i18next";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "@/components/ui/table"; // --- 2. Import Table Components ---
 
+// --- 3. แก้ไข SkeletonRow ---
 const SkeletonRow = () => (
-    <tr className="border-b">
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2 text-center"><div className="h-6 w-32 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
-        <td className="p-2 text-center"><div className="h-5 w-24 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
-        <td className="p-2 text-center"><div className="h-8 w-[76px] bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
-    </tr>
+    <TableRow>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell className="text-center"><div className="h-6 w-32 bg-gray-200 rounded-md animate-pulse mx-auto"></div></TableCell>
+        <TableCell className="text-center"><div className="h-5 w-24 bg-gray-200 rounded animate-pulse mx-auto"></div></TableCell>
+        <TableCell className="text-center"><div className="h-8 w-[76px] bg-gray-200 rounded-md animate-pulse mx-auto"></div></TableCell>
+    </TableRow>
 );
 
 export default function RepairListPage() {
@@ -29,7 +33,6 @@ export default function RepairListPage() {
     const { user: currentUser } = useAuthStore((state) => state);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
-    // *** 2. รับค่า state จากการ navigate ***
     const location = useLocation();
     const initialStatus = location.state?.status || "All";
 
@@ -43,18 +46,23 @@ export default function RepairListPage() {
         handlePageChange,
         handleItemsPerPageChange,
         handleFilterChange
-    // *** 3. ส่งค่า initialStatus ให้กับ usePaginatedFetch ***
     } = usePaginatedFetch("/repairs", 10, { status: initialStatus });
 
     return (
         <Card>
-            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>{t('repairOrders')}</CardTitle>
-                {canManage && (
-                    <Button onClick={() => navigate('/repairs/new')}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Create New Repair Order
-                    </Button>
-                )}
+            {/* --- 4. แก้ไข CardHeader --- */}
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>{t('repairOrders')}</CardTitle>
+                        <CardDescription>Manage all items sent for repair.</CardDescription>
+                    </div>
+                     {canManage && (
+                        <Button onClick={() => navigate('/repairs/new')}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Create New Repair Order
+                        </Button>
+                    )}
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -76,46 +84,44 @@ export default function RepairListPage() {
                         </SelectContent>
                     </Select>
                 </div>
-
-                <div className="border rounded-lg overflow-x-auto">
-                    <table className="w-full text-sm whitespace-nowrap">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="p-2 text-left">{t('tableHeader_repairId')}</th>
-                                <th className="p-2 text-left">{t('tableHeader_sentTo')}</th>
-                                <th className="p-2 text-left">{t('tableHeader_repairDate')}</th>
-                                <th className="p-2 text-center">{t('tableHeader_status')}</th>
-                                <th className="p-2 text-center">{t('tableHeader_itemStatus')}</th>
-                                <th className="p-2 text-center">{t('tableHeader_actions')}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {isLoading ? (
-                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                            ) : repairs.map((r) => (
-                                <tr key={r.id} className="border-b">
-                                    <td className="p-2 font-semibold">#{r.id}</td>
-                                    <td className="p-2">{r.receiver?.name || 'N/A'}</td>
-                                    <td className="p-2">{new Date(r.repairDate).toLocaleDateString()}</td>
-                                    <td className="p-2 text-center">
-                                        <StatusBadge
-                                            status={r.status}
-                                            className="w-32"
-                                            onClick={() => navigate(`/repairs/${r.id}`)}
-                                            interactive
-                                        />
-                                    </td>
-                                    <td className="p-2 text-center">{r.returnedItemCount}/{r.totalItemCount} Returned</td>
-                                    <td className="p-2 text-center">
-                                        <Button variant="outline" size="sm" onClick={() => navigate(`/repairs/${r.id}`)}>
-                                            Details
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                {/* --- 5. แก้ไขโครงสร้างตาราง --- */}
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>{t('tableHeader_repairId')}</TableHead>
+                            <TableHead>{t('tableHeader_sentTo')}</TableHead>
+                            <TableHead>{t('tableHeader_repairDate')}</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_itemStatus')}</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                        ) : repairs.map((r) => (
+                            <TableRow key={r.id}>
+                                <TableCell>#{r.id}</TableCell>
+                                <TableCell>{r.receiver?.name || 'N/A'}</TableCell>
+                                <TableCell>{new Date(r.repairDate).toLocaleDateString()}</TableCell>
+                                <TableCell className="text-center">
+                                    <StatusBadge
+                                        status={r.status}
+                                        className="w-32"
+                                        onClick={() => navigate(`/repairs/${r.id}`)}
+                                        interactive
+                                    />
+                                </TableCell>
+                                <TableCell className="text-center">{r.returnedItemCount}/{r.totalItemCount} Returned</TableCell>
+                                <TableCell className="text-center">
+                                    <Button variant="outline" size="sm" onClick={() => navigate(`/repairs/${r.id}`)}>
+                                        Details
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">

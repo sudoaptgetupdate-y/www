@@ -1,40 +1,38 @@
 // src/pages/SalePage.jsx
 
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle, ArrowUpDown } from "lucide-react"; // <-- เพิ่ม ArrowUpDown
+import { PlusCircle, ArrowUpDown } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge"; 
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "@/components/ui/table";
 
 const SkeletonRow = () => (
-    <tr className="border-b">
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2 text-center"><div className="h-6 w-24 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
-        <td className="p-2 text-center"><div className="h-5 w-8 bg-gray-200 rounded animate-pulse mx-auto"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2">
-            <div className="flex items-center justify-center">
-                <div className="h-8 w-[76px] bg-gray-200 rounded-md animate-pulse"></div>
-            </div>
-        </td>
-    </tr>
+    <TableRow>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell className="text-center"><div className="h-6 w-24 bg-gray-200 rounded-md animate-pulse mx-auto"></div></TableCell>
+        <TableCell className="text-center"><div className="h-5 w-8 bg-gray-200 rounded animate-pulse mx-auto"></div></TableCell>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell className="text-center"><div className="h-8 w-[76px] bg-gray-200 rounded-md animate-pulse"></div></TableCell>
+    </TableRow>
 );
 
 const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort }) => (
-    <th className="p-2 text-left cursor-pointer hover:bg-slate-50" onClick={() => onSort(sortKey)}>
+    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => onSort(sortKey)}>
         <div className="flex items-center gap-2">
             {children}
             {currentSortBy === sortKey && <ArrowUpDown className={`h-4 w-4 ${sortOrder === 'desc' ? 'text-slate-400' : ''}`} />}
         </div>
-    </th>
+    </TableHead>
 );
 
 export default function SalePage() {
@@ -59,13 +57,18 @@ export default function SalePage() {
 
     return (
         <Card>
-            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>Sale Records</CardTitle>
-                {canManage && (
-                    <Button onClick={() => navigate('/sales/new')}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Create New Sale
-                    </Button>
-                )}
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>Sale Records</CardTitle>
+                        <CardDescription>View and manage all sale transactions.</CardDescription>
+                    </div>
+                    {canManage && (
+                        <Button onClick={() => navigate('/sales/new')}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Create New Sale
+                        </Button>
+                    )}
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -86,64 +89,53 @@ export default function SalePage() {
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="border rounded-lg overflow-x-auto">
-                    <table className="w-full text-sm whitespace-nowrap">
-                        <colgroup>
-                            <col className="w-[10%]" />
-                            <col className="w-[25%]" />
-                            <col className="w-[20%]" />
-                            <col className="w-[120px]" />
-                            <col className="w-[80px]" />
-                            <col className="w-[15%]" />
-                            <col className="w-[100px]" />
-                        </colgroup>
-                        <thead>
-                            <tr className="border-b">
-                                <SortableHeader sortKey="id" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    Sale ID
-                                </SortableHeader>
-                                <SortableHeader sortKey="customer" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    Customer
-                                </SortableHeader>
-                                <SortableHeader sortKey="saleDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    Sale Date
-                                </SortableHeader>
-                                <th className="p-2 text-center">Status</th>
-                                <th className="p-2 text-center">Items</th>
-                                <SortableHeader sortKey="total" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    Total (inc. VAT)
-                                </SortableHeader>
-                                <th className="p-2 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {isLoading ? (
-                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                            ) : sales.map((sale) => (
-                                <tr key={sale.id} className="border-b">
-                                    <td className="p-2 font-semibold">#{sale.id}</td>
-                                    <td className="p-2 text-left">{sale.customer?.name || 'N/A'}</td>
-                                    <td className="p-2 text-left">{new Date(sale.saleDate).toLocaleString()}</td>
-                                    <td className="p-2 text-center">
-                                        <StatusBadge 
-                                            status={sale.status} 
-                                            className="w-24" 
-                                            onClick={() => navigate(`/sales/${sale.id}`)}
-                                            interactive
-                                        />
-                                    </td>
-                                    <td className="p-2 text-center">{sale.itemsSold.length}</td>
-                                    <td className="p-2 text-right">{sale.total.toLocaleString('en-US')} THB</td>
-                                    <td className="p-2 text-center">
-                                        <Button variant="outline" size="sm" onClick={() => navigate(`/sales/${sale.id}`)}>
-                                            Details
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <SortableHeader sortKey="id" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                Sale ID
+                            </SortableHeader>
+                            <SortableHeader sortKey="customer" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                Customer
+                            </SortableHeader>
+                            <SortableHeader sortKey="saleDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                Sale Date
+                            </SortableHeader>
+                            <TableHead className="text-center">Status</TableHead>
+                            <TableHead className="text-center">Items</TableHead>
+                            <SortableHeader sortKey="total" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                Total (inc. VAT)
+                            </SortableHeader>
+                            <TableHead className="text-center">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                        ) : sales.map((sale) => (
+                            <TableRow key={sale.id}>
+                                <TableCell>#{sale.id}</TableCell>
+                                <TableCell>{sale.customer?.name || 'N/A'}</TableCell>
+                                <TableCell>{new Date(sale.saleDate).toLocaleString()}</TableCell>
+                                <TableCell className="text-center">
+                                    <StatusBadge 
+                                        status={sale.status} 
+                                        className="w-24" 
+                                        onClick={() => navigate(`/sales/${sale.id}`)}
+                                        interactive
+                                    />
+                                </TableCell>
+                                <TableCell className="text-center">{sale.itemsSold.length}</TableCell>
+                                <TableCell className="text-right">{sale.total.toLocaleString('en-US')} THB</TableCell>
+                                <TableCell className="text-center">
+                                    <Button variant="outline" size="sm" onClick={() => navigate(`/sales/${sale.id}`)}>
+                                        Details
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </CardContent>
              <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
