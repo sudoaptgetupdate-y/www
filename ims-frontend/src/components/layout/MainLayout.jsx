@@ -158,8 +158,11 @@ const MainLayout = () => {
                 className={cn(
                     "bg-white border-r",
                     "fixed inset-y-0 left-0 z-30 transform transition-transform duration-300 ease-in-out",
-                    isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full",
                     "md:relative md:translate-x-0",
+                    // --- START: เพิ่ม transition-all เพื่อความนุ่มนวล ---
+                    "transition-all duration-300 ease-in-out", 
+                    // --- END ---
+                    isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full",
                     isSidebarCollapsed ? "md:w-20" : "md:w-64"
                 )}
             >

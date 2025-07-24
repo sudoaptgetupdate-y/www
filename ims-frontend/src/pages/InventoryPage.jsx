@@ -1,7 +1,7 @@
 // src/pages/InventoryPage.jsx
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -23,27 +23,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 import { useTranslation } from "react-i18next";
-import BatchAddInventoryDialog from "@/components/dialogs/BatchAddInventoryDialog"; // <-- 1. Import Component ใหม่
-
-const SkeletonRow = () => (
-    <tr className="border-b">
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2 text-center"><div className="h-6 w-24 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2 text-center"><div className="h-8 w-14 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
-    </tr>
-);
+import BatchAddInventoryDialog from "@/components/dialogs/BatchAddInventoryDialog";
 
 const formatMacAddress = (value) => {
   const cleaned = (value || '').replace(/[^0-9a-fA-F]/g, '').toUpperCase();
   if (cleaned.length === 0) return '';
-  return cleaned.match(/.{1,2}/g).slice(0, 6).join(':');
+  return cleaned.match(/.{1,2}/g)?.slice(0, 6).join(':') || cleaned;
 };
 
 const validateMacAddress = (mac) => {
@@ -51,7 +43,6 @@ const validateMacAddress = (mac) => {
   return macRegex.test(mac);
 };
 
-// Form state for EDITING only
 const initialEditFormData = {
     serialNumber: "",
     macAddress: "",
@@ -59,13 +50,13 @@ const initialEditFormData = {
     status: "IN_STOCK",
 };
 
-const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort }) => (
-    <th className="p-2 text-left cursor-pointer hover:bg-slate-50" onClick={() => onSort(sortKey)}>
+const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort, className }) => (
+    <TableHead className={`cursor-pointer hover:bg-muted/50 ${className}`} onClick={() => onSort(sortKey)}>
         <div className="flex items-center gap-2">
             {children}
             {currentSortBy === sortKey && <ArrowUpDown className={`h-4 w-4 ${sortOrder === 'desc' ? 'text-slate-400' : ''}`} />}
         </div>
-    </th>
+    </TableHead>
 );
 
 export default function InventoryPage() {
@@ -75,30 +66,28 @@ export default function InventoryPage() {
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
-    const {
-        data: inventoryItems, pagination, isLoading, searchTerm, filters,
-        sortBy, sortOrder, handleSortChange,
-        handleSearchChange, handlePageChange, handleItemsPerPageChange, handleFilterChange, refreshData
-    } = usePaginatedFetch("/inventory", 10, { 
-        status: "All",
-        categoryId: "All",
-        brandId: "All"
-    });
+    const location = useLocation();
+    const initialStatus = location.state?.status || "All";
 
-    // States for different dialogs
     const [isBatchAddOpen, setIsBatchAddOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    
-    // State for editing data
     const [editFormData, setEditFormData] = useState(initialEditFormData);
     const [editingItemId, setEditingItemId] = useState(null);
     const [selectedModelInfo, setSelectedModelInfo] = useState(null);
     const [isMacRequired, setIsMacRequired] = useState(true);
     const [isSerialRequired, setIsSerialRequired] = useState(true);
-
-    // States for confirmation dialogs
     const [itemToDelete, setItemToDelete] = useState(null);
     const [itemToDecommission, setItemToDecommission] = useState(null);
+
+    const {
+        data: inventoryItems, pagination, isLoading, searchTerm, filters,
+        sortBy, sortOrder, handleSortChange,
+        handleSearchChange, handlePageChange, handleItemsPerPageChange, handleFilterChange, refreshData
+    } = usePaginatedFetch("/inventory", 10, { 
+        status: initialStatus,
+        categoryId: "All",
+        brandId: "All"
+    });
 
     const openEditDialog = (item) => {
         if (!item) return;
@@ -112,7 +101,7 @@ export default function InventoryPage() {
         setIsSerialRequired(item.productModel.category.requiresSerialNumber);
         setIsEditDialogOpen(true);
     };
-    
+
     const handleEditInputChange = (e) => {
         const { id, value } = e.target;
         const upperValue = (id === 'serialNumber') ? value.toUpperCase() : value;
@@ -123,15 +112,15 @@ export default function InventoryPage() {
         const formatted = formatMacAddress(e.target.value);
         setEditFormData({ ...editFormData, macAddress: formatted });
     };
-    
+
     const handleEditModelSelect = (model) => {
         if (model) {
             setEditFormData(prev => ({ ...prev, productModelId: model.id }));
             setSelectedModelInfo(model);
             setIsMacRequired(model.category.requiresMacAddress);
             setIsSerialRequired(model.category.requiresSerialNumber);
-             if (!model.category.requiresMacAddress) setEditFormData(prev => ({ ...prev, macAddress: '' }));
-             if (!model.category.requiresSerialNumber) setEditFormData(prev => ({ ...prev, serialNumber: '' }));
+            if (!model.category.requiresMacAddress) setEditFormData(prev => ({ ...prev, macAddress: '' }));
+            if (!model.category.requiresSerialNumber) setEditFormData(prev => ({ ...prev, serialNumber: '' }));
         }
     };
 
@@ -145,14 +134,12 @@ export default function InventoryPage() {
             toast.error("Please select a Product Model.");
             return;
         }
-
         const payload = {
             serialNumber: editFormData.serialNumber || null,
             macAddress: editFormData.macAddress || null,
             productModelId: parseInt(editFormData.productModelId, 10),
             status: editFormData.status,
         };
-
         try {
             await axiosInstance.put(`/inventory/${editingItemId}`, payload, { headers: { Authorization: `Bearer ${token}` } });
             toast.success(`Item updated successfully!`);
@@ -162,7 +149,6 @@ export default function InventoryPage() {
             toast.error(error.response?.data?.error || `Failed to save item.`);
         }
     };
-
 
     const confirmDelete = async () => {
         if (!itemToDelete) return;
@@ -211,115 +197,99 @@ export default function InventoryPage() {
     const handleSellItem = (itemToSell) => navigate('/sales/new', { state: { initialItems: [itemToSell] } });
     const handleBorrowItem = (itemToBorrow) => navigate('/borrowings/new', { state: { initialItems: [itemToBorrow] } });
 
-
     return (
-        <Card>
-            <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>{t('inventory')} Management</CardTitle>
-                 {canManage &&
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">{t('inventory')} Management</h1>
+                    <p className="text-muted-foreground">Manage all inventory items for sale.</p>
+                </div>
+                {canManage &&
                     <Button onClick={() => setIsBatchAddOpen(true)}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Inventory Item
                     </Button>
                 }
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <Input
-                        placeholder="Search by Serial, MAC, Model..."
-                        value={searchTerm}
-                        onChange={(e) => handleSearchChange(e.target.value)}
-                        className="sm:col-span-2 lg:col-span-1"
-                    />
-                    <CategoryCombobox
-                        selectedValue={filters.categoryId}
-                        onSelect={(value) => handleFilterChange('categoryId', value)}
-                    />
-                    <BrandCombobox
-                        selectedValue={filters.brandId}
-                        onSelect={(value) => handleFilterChange('brandId', value)}
-                    />
-                    <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Filter by Status..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="All">All Statuses</SelectItem>
-                            <SelectItem value="IN_STOCK">In Stock</SelectItem>
-                            <SelectItem value="SOLD">Sold</SelectItem>
-                            <SelectItem value="BORROWED">Borrowed</SelectItem>
-                            <SelectItem value="RESERVED">Reserved</SelectItem>
-                            <SelectItem value="DEFECTIVE">Defective</SelectItem>
-                            <SelectItem value="DECOMMISSIONED">Archived</SelectItem>
-                            <SelectItem value="RETURNED_TO_CUSTOMER">Serviced (Customer)</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+            </div>
+
+            <Card className="shadow-sm border-subtle">
+                <CardContent className="pt-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <Input
+                            placeholder="Search by Serial, MAC, Model..."
+                            value={searchTerm}
+                            onChange={(e) => handleSearchChange(e.target.value)}
+                            className="sm:col-span-2 lg:col-span-1"
+                        />
+                        <CategoryCombobox
+                            selectedValue={filters.categoryId}
+                            onSelect={(value) => handleFilterChange('categoryId', value)}
+                        />
+                        <BrandCombobox
+                            selectedValue={filters.brandId}
+                            onSelect={(value) => handleFilterChange('brandId', value)}
+                        />
+                        <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Filter by Status..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All">All Statuses</SelectItem>
+                                <SelectItem value="IN_STOCK">In Stock</SelectItem>
+                                <SelectItem value="SOLD">Sold</SelectItem>
+                                <SelectItem value="BORROWED">Borrowed</SelectItem>
+                                <SelectItem value="RESERVED">Reserved</SelectItem>
+                                <SelectItem value="DEFECTIVE">Defective</SelectItem>
+                                <SelectItem value="DECOMMISSIONED">Archived</SelectItem>
+                                <SelectItem value="RETURNED_TO_CUSTOMER">Serviced (Customer)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 
-                <div className="border rounded-lg overflow-x-auto">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
-                        <colgroup>
-                            <col className="w-[20%]" />
-                            <col className="w-[25%]" />
-                            <col className="w-[20%]" />
-                            <col className="w-[120px]" />
-                            <col className="w-[15%]" />
-                            <col className="w-[80px]" />
-                        </colgroup>
-                        <thead>
-                            <tr className="border-b">
-                                <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    {t('tableHeader_productModel')}
-                                </SortableHeader>
-                                <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    {t('tableHeader_serialNumber')}
-                                </SortableHeader>
-                                <SortableHeader sortKey="macAddress" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    {t('tableHeader_macAddress')}
-                                </SortableHeader>
-                                <th className="p-2 text-center">{t('tableHeader_status')}</th>
-                                <th className="p-2 text-left">{t('tableHeader_addedBy')}</th>
-                                <th className="p-2 text-center">{t('tableHeader_actions')}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_productModel')}</SortableHeader>
+                                <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_serialNumber')}</SortableHeader>
+                                <SortableHeader sortKey="macAddress" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_macAddress')}</SortableHeader>
+                                <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
+                                <TableHead>{t('tableHeader_addedBy')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
                             {isLoading ? (
-                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                                [...Array(pagination.itemsPerPage)].map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell colSpan={6}><div className="h-8 bg-muted rounded animate-pulse"></div></TableCell>
+                                    </TableRow>
+                                ))
                             ) : inventoryItems.length > 0 ? (
                                 inventoryItems.map((item) => (
-                                    <tr key={item.id} className="border-b">
-                                        <td className="p-2">{item.productModel.modelNumber}</td>
-                                        <td className="p-2 truncate">{item.serialNumber || '-'}</td>
-                                        <td className="p-2 truncate">{item.macAddress || '-'}</td>
-                                        <td className="p-2 text-center">
+                                    <TableRow key={item.id}>
+                                        <TableCell className="font-medium">{item.productModel.modelNumber}</TableCell>
+                                        <TableCell>{item.serialNumber || '-'}</TableCell>
+                                        <TableCell>{item.macAddress || '-'}</TableCell>
+                                        <TableCell className="text-center">
                                             <StatusBadge
                                                 status={item.status}
                                                 className="w-24"
                                                 onClick={() => {
-                                                    if (item.status === 'SOLD' && item.saleId) {
-                                                        navigate(`/sales/${item.saleId}`);
-                                                    } else if (item.status === 'BORROWED' && item.borrowingId) {
-                                                        navigate(`/borrowings/${item.borrowingId}`);
-                                                    } 
-                                                    else if ((item.status === 'REPAIRING' || item.status === 'RETURNED_TO_CUSTOMER') && item.repairId) {
-                                                        navigate(`/repairs/${item.repairId}`);
-                                                    }
+                                                    if (item.status === 'SOLD' && item.saleId) navigate(`/sales/${item.saleId}`);
+                                                    else if (item.status === 'BORROWED' && item.borrowingId) navigate(`/borrowings/${item.borrowingId}`);
+                                                    else if ((item.status === 'REPAIRING' || item.status === 'RETURNED_TO_CUSTOMER') && item.repairId) navigate(`/repairs/${item.repairId}`);
                                                 }}
-                                                interactive={
-                                                    item.status === 'SOLD' || 
-                                                    item.status === 'BORROWED' || 
-                                                    ((item.status === 'REPAIRING' || item.status === 'RETURNED_TO_CUSTOMER') && item.repairId)
-                                                }
+                                                interactive={!!(item.saleId || item.borrowingId || item.repairId)}
                                             />
-                                        </td>
-                                        <td className="p-2">{item.addedBy.name}</td>
-                                        <td className="p-2 text-center">
+                                        </TableCell>
+                                        <TableCell>{item.addedBy.name}</TableCell>
+                                        <TableCell className="text-center">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="primary-outline" size="icon" className="h-8 w-14 p-0">
-                                                        <span className="sr-only">Open menu</span>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
                                                         <MoreHorizontal className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
+                                                {/* --- START: เติมโค้ดที่ขาดหายไป --- */}
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                     <DropdownMenuItem onClick={() => navigate(`/inventory/${item.id}/history`)}>
@@ -347,7 +317,6 @@ export default function InventoryPage() {
                                                     >
                                                         <ArrowRightLeft className="mr-2 h-4 w-4" /> Borrow This Item
                                                     </DropdownMenuItem>
-
                                                     {canManage && (
                                                         <>
                                                             <DropdownMenuSeparator />
@@ -357,7 +326,6 @@ export default function InventoryPage() {
                                                             >
                                                                 <Edit className="mr-2 h-4 w-4" /> Edit
                                                             </DropdownMenuItem>
-                                                            
                                                             {item.status === 'IN_STOCK' && (
                                                                 <>
                                                                     <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'reserve', 'Item marked as RESERVED.')}>
@@ -378,7 +346,6 @@ export default function InventoryPage() {
                                                                     <ShieldCheck className="mr-2 h-4 w-4" /> Mark as In Stock
                                                                 </DropdownMenuItem>
                                                             )}
-
                                                             {item.status === 'DECOMMISSIONED' ? (
                                                                 <DropdownMenuItem onClick={() => handleReinstateItem(item.id)}>
                                                                     <ArrowRightLeft className="mr-2 h-4 w-4" /> Reinstate
@@ -393,7 +360,6 @@ export default function InventoryPage() {
                                                                     <Archive className="mr-2 h-4 w-4" /> Decommission
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            
                                                             <DropdownMenuItem
                                                                 className="text-red-600 focus:text-red-500"
                                                                 onSelect={(e) => e.preventDefault()}
@@ -405,35 +371,36 @@ export default function InventoryPage() {
                                                         </>
                                                     )}
                                                 </DropdownMenuContent>
+                                                {/* --- END --- */}
                                             </DropdownMenu>
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 ))
                             ) : (
-                                <tr><td colSpan="6" className="text-center p-4">No items found.</td></tr>
+                                <TableRow><TableCell colSpan="6" className="text-center h-24">No items found.</TableCell></TableRow>
                             )}
-                        </tbody>
-                    </table>
-                </div>
-            </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Label htmlFor="rows-per-page">Rows per page:</Label>
-                    <Select value={pagination ? String(pagination.itemsPerPage) : "10"} onValueChange={handleItemsPerPageChange}>
-                        <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                            {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                    Page {pagination?.currentPage || 1} of {pagination?.totalPages || 1} ({pagination?.totalItems || 0} items)
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
-                </div>
-            </CardFooter>
+                        </TableBody>
+                    </Table>
+                </CardContent>
+                <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Label htmlFor="rows-per-page">Rows per page:</Label>
+                        <Select value={pagination ? String(pagination.itemsPerPage) : "10"} onValueChange={handleItemsPerPageChange}>
+                            <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                        Page {pagination?.currentPage || 1} of {pagination?.totalPages || 1} ({pagination?.totalItems || 0} items)
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
+                        <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                    </div>
+                </CardFooter>
+            </Card>
 
             <AlertDialog open={!!itemToDelete} onOpenChange={(isOpen) => !isOpen && setItemToDelete(null)}>
                 <AlertDialogContent>
@@ -447,9 +414,8 @@ export default function InventoryPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-
             <AlertDialog open={!!itemToDecommission} onOpenChange={(isOpen) => !isOpen && setItemToDecommission(null)}>
-                <AlertDialogContent>
+                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>This will decommission the item: <strong>{itemToDecommission?.serialNumber || itemToDecommission?.macAddress}</strong>.</AlertDialogDescription>
@@ -460,15 +426,9 @@ export default function InventoryPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            
             {isBatchAddOpen && (
-                <BatchAddInventoryDialog
-                    isOpen={isBatchAddOpen}
-                    setIsOpen={setIsBatchAddOpen}
-                    onSave={refreshData}
-                />
+                <BatchAddInventoryDialog isOpen={isBatchAddOpen} setIsOpen={setIsBatchAddOpen} onSave={refreshData} />
             )}
-
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent>
                     <DialogHeader><DialogTitle>Edit Item</DialogTitle></DialogHeader>
@@ -503,6 +463,6 @@ export default function InventoryPage() {
                     </form>
                 </DialogContent>
             </Dialog>
-        </Card>
+        </div>
     );
 }

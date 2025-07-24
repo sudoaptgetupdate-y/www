@@ -1,5 +1,3 @@
-// src/pages/DashboardPage.jsx
-
 import { useEffect, useState } from 'react';
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from '@/store/authStore';
@@ -9,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { useNavigate } from 'react-router-dom';
-import { DollarSign, Package, Layers, Truck, ArrowUp, ArrowDown, ArrowRight, ArrowRightLeft, Wrench } from 'lucide-react';
+import { DollarSign, Package, ArrowRightLeft, Wrench, ArrowUp, ArrowDown, ArrowRight } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
 
@@ -75,7 +73,7 @@ const RecentActivityTable = ({ title, description, data, columns, viewAllLink })
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {data.map((row) => (
+                        {data && data.map((row) => (
                             <TableRow 
                                 key={row.id} 
                                 className="cursor-pointer" 
@@ -108,21 +106,13 @@ export default function DashboardPage() {
     const currentUser = useAuthStore((state) => state.user);
     const navigate = useNavigate();
     
-    // Mockup data
+    // Mockup trend data for StatCards
     const mockTrendData = {
         revenue: [{value: 3}, {value: 4}, {value: 2}, {value: 5}, {value: 8}, {value: 10}],
         stock: [{value: 10}, {value: 8}, {value: 9}, {value: 7}, {value: 6}, {value: 5}],
         borrowing: [{value: 2}, {value: 3}, {value: 3}, {value: 4}, {value: 5}, {value: 5}],
         repairs: [{value: 1}, {value: 2}, {value: 1}, {value: 3}, {value: 2}, {value: 4}],
     };
-    const mockRecentBorrowings = [
-        { id: 5, borrower: { name: 'Alice Johnson' }, status: 'BORROWED', borrowDate: new Date() },
-        { id: 4, borrower: { name: 'Bob Williams' }, status: 'RETURNED', borrowDate: new Date(new Date().setDate(new Date().getDate() - 1)) },
-    ];
-    const mockRecentRepairs = [
-        { id: 16, receiver: { name: 'Main Repair Center' }, status: 'REPAIRING', repairDate: new Date() },
-        { id: 15, receiver: { name: 'Secondary Hub' }, status: 'COMPLETED', repairDate: new Date(new Date().setDate(new Date().getDate() - 2)) },
-    ];
     
     useEffect(() => {
         const fetchStats = async () => {
@@ -131,9 +121,6 @@ export default function DashboardPage() {
                 const response = await axiosInstance.get('/dashboard/stats', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                // Mockup extra data for new cards
-                response.data.activeBorrowings = 12; 
-                response.data.activeRepairs = 4;
                 setStats(response.data);
             } catch (error) {
                 toast.error("Failed to load dashboard data.");
@@ -145,7 +132,6 @@ export default function DashboardPage() {
     }, [token]);
 
     const navigateWithFilter = (path, status) => {
-        // This function will navigate and pass filter state to the target page's usePaginatedFetch hook
         navigate(path, { state: { status: status } });
     };
 
@@ -236,7 +222,7 @@ export default function DashboardPage() {
                      <RecentActivityTable
                         title="Latest Borrowings"
                         description="Recent item borrowing records."
-                        data={mockRecentBorrowings}
+                        data={stats.recentBorrowings}
                         columns={borrowingColumns}
                         viewAllLink="/borrowings"
                     />
@@ -245,7 +231,7 @@ export default function DashboardPage() {
                      <RecentActivityTable
                         title="Latest Repair Orders"
                         description="Recent items sent for repair."
-                        data={mockRecentRepairs}
+                        data={stats.recentRepairs}
                         columns={repairColumns}
                         viewAllLink="/repairs"
                     />

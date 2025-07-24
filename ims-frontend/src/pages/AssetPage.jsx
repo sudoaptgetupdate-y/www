@@ -1,9 +1,10 @@
 // src/pages/AssetPage.jsx
 
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,30 +20,21 @@ import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
     DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
-import { useState } from "react";
 import BatchAddAssetDialog from "@/components/dialogs/BatchAddAssetDialog";
 
-const SkeletonRow = () => (
-    <tr className="border-b">
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2 text-center"><div className="h-6 w-28 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
-        <td className="p-2"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></td>
-        <td className="p-2 text-center"><div className="h-8 w-14 bg-gray-200 rounded-md animate-pulse mx-auto"></div></td>
-    </tr>
-);
-
-const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort }) => (
-    <th className="p-2 text-left cursor-pointer hover:bg-slate-50" onClick={() => onSort(sortKey)}>
+const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort, className }) => (
+    <TableHead className={`cursor-pointer hover:bg-muted/50 ${className}`} onClick={() => onSort(sortKey)}>
         <div className="flex items-center gap-2">
             {children}
             {currentSortBy === sortKey && <ArrowUpDown className={`h-4 w-4 ${sortOrder === 'desc' ? 'text-slate-400' : ''}`} />}
         </div>
-    </th>
+    </TableHead>
 );
 
 export default function AssetPage() {
@@ -102,112 +94,95 @@ export default function AssetPage() {
     };
 
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <CardTitle>All Company Assets (Master List)</CardTitle>
-                        <CardDescription>A complete list of all company-owned assets.</CardDescription>
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Company Assets</h1>
+                    <p className="text-muted-foreground">Manage all company-owned assets.</p>
+                </div>
+                {canManage &&
+                    <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" onClick={() => setIsBatchAddOpen(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Asset
+                        </Button>
+                        <Button onClick={() => navigate('/asset-assignments/new')}>
+                           <ArrowRightLeft className="mr-2 h-4 w-4" /> Assign Assets
+                        </Button>
                     </div>
-                    {canManage &&
-                        <div className="flex flex-wrap gap-2">
-                            <Button variant="outline" onClick={() => setIsBatchAddOpen(true)}>
-                                <PlusCircle className="mr-2 h-4 w-4" /> Add Asset
-                            </Button>
-                            <Button onClick={() => navigate('/asset-assignments/new')}>
-                               <ArrowRightLeft className="mr-2 h-4 w-4" /> Assign
-                            </Button>
-                        </div>
-                    }
-                </div>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <Input
-                        placeholder="Search by Asset Code, S/N, Model..."
-                        value={searchTerm}
-                        onChange={(e) => handleSearchChange(e.target.value)}
-                        className="sm:col-span-2 lg:col-span-1"
-                    />
-                     <CategoryCombobox
-                        selectedValue={filters.categoryId}
-                        onSelect={(value) => handleFilterChange('categoryId', value)}
-                    />
-                    <BrandCombobox
-                        selectedValue={filters.brandId}
-                        onSelect={(value) => handleFilterChange('brandId', value)}
-                    />
-                    <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Filter by Status..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="All">All Statuses</SelectItem>
-                            <SelectItem value="IN_WAREHOUSE">In Warehouse</SelectItem>
-                            <SelectItem value="ASSIGNED">Assigned</SelectItem>
-                            <SelectItem value="DECOMMISSIONED">Archived</SelectItem>
-                            <SelectItem value="DEFECTIVE">Defective</SelectItem>
-                            <SelectItem value="REPAIRING">Repairing</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="border rounded-lg overflow-x-auto">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
-                        <colgroup>
-                            <col className="w-[15%]" />
-                            <col className="w-[25%]" />
-                            <col className="w-[20%]" />
-                            <col className="w-[140px]" />
-                            <col className="w-[20%]" />
-                            <col className="w-[80px]" />
-                        </colgroup>
-                        <thead>
-                            <tr className="border-b">
-                                <SortableHeader sortKey="assetCode" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    Asset Code
-                                </SortableHeader>
-                                <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    Product Model
-                                </SortableHeader>
-                                <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    Serial Number
-                                </SortableHeader>
-                                <th className="p-2 text-center">Status</th>
-                                <th className="p-2">Assigned To</th>
-                                <th className="p-2 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                }
+            </div>
+
+            <Card className="shadow-sm border-subtle">
+                <CardContent className="pt-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <Input
+                            placeholder="Search by Asset Code, S/N, Model..."
+                            value={searchTerm}
+                            onChange={(e) => handleSearchChange(e.target.value)}
+                            className="sm:col-span-2 lg:col-span-1"
+                        />
+                         <CategoryCombobox
+                            selectedValue={filters.categoryId}
+                            onSelect={(value) => handleFilterChange('categoryId', value)}
+                        />
+                        <BrandCombobox
+                            selectedValue={filters.brandId}
+                            onSelect={(value) => handleFilterChange('brandId', value)}
+                        />
+                        <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Filter by Status..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All">All Statuses</SelectItem>
+                                <SelectItem value="IN_WAREHOUSE">In Warehouse</SelectItem>
+                                <SelectItem value="ASSIGNED">Assigned</SelectItem>
+                                <SelectItem value="DECOMMISSIONED">Archived</SelectItem>
+                                <SelectItem value="DEFECTIVE">Defective</SelectItem>
+                                <SelectItem value="REPAIRING">Repairing</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <SortableHeader sortKey="assetCode" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>Asset Code</SortableHeader>
+                                <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>Product Model</SortableHeader>
+                                <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>Serial Number</SortableHeader>
+                                <TableHead className="text-center">Status</TableHead>
+                                <TableHead>Assigned To</TableHead>
+                                <TableHead className="text-center">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
                             {isLoading ? (
-                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                                [...Array(pagination.itemsPerPage)].map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell colSpan={6}><div className="h-8 bg-muted rounded animate-pulse"></div></TableCell>
+                                    </TableRow>
+                                ))
                             ) : assets.map((asset) => (
-                                <tr key={asset.id} className="border-b">
-                                    <td className="p-2 font-semibold">{asset.assetCode}</td>
-                                    <td className="p-2">{asset.productModel?.modelNumber || 'N/A'}</td>
-                                    <td className="p-2">{asset.serialNumber || 'N/A'}</td>
-                                    <td className="p-2 text-center">
+                                <TableRow key={asset.id}>
+                                    <TableCell className="font-semibold">{asset.assetCode}</TableCell>
+                                    <TableCell>{asset.productModel?.modelNumber || 'N/A'}</TableCell>
+                                    <TableCell>{asset.serialNumber || 'N/A'}</TableCell>
+                                    <TableCell className="text-center">
                                         <StatusBadge 
                                             status={asset.status} 
                                             className="w-28"
                                             onClick={() => {
-                                                if (asset.status === 'ASSIGNED' && asset.assignmentId) {
-                                                    navigate(`/asset-assignments/${asset.assignmentId}`);
-                                                } else if (asset.status === 'REPAIRING' && asset.repairId) {
-                                                    navigate(`/repairs/${asset.repairId}`);
-                                                }
+                                                if (asset.status === 'ASSIGNED' && asset.assignmentId) navigate(`/asset-assignments/${asset.assignmentId}`);
+                                                else if (asset.status === 'REPAIRING' && asset.repairId) navigate(`/repairs/${asset.repairId}`);
                                             }}
-                                            interactive={
-                                                (asset.status === 'ASSIGNED' && asset.assignmentId) ||
-                                                (asset.status === 'REPAIRING' && asset.repairId)
-                                            }
+                                            interactive={!!(asset.assignmentId || asset.repairId)}
                                         />
-                                    </td>
-                                    <td className="p-2">{asset.assignedTo?.name || '-'}</td>
-                                    <td className="p-2 text-center">
+                                    </TableCell>
+                                    <TableCell>{asset.assignedTo?.name || '-'}</TableCell>
+                                    <TableCell className="text-center">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="primary-outline" size="icon" className="h-8 w-14 p-0">
-                                                    <span className="sr-only">Open menu</span>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8">
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
@@ -251,31 +226,31 @@ export default function AssetPage() {
                                                 )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             ))}
-                        </tbody>
-                    </table>
-                </div>
-            </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Label htmlFor="rows-per-page">Rows per page:</Label>
-                    <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
-                        <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                            {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                    Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
-                </div>
-            </CardFooter>
+                        </TableBody>
+                    </Table>
+                </CardContent>
+                <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Label htmlFor="rows-per-page">Rows per page:</Label>
+                        <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                            <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                        Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
+                        <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                    </div>
+                </CardFooter>
+            </Card>
 
             {isBatchAddOpen && (
                 <BatchAddAssetDialog
@@ -284,7 +259,6 @@ export default function AssetPage() {
                     onSave={refreshData}
                 />
             )}
-            
-        </Card>
+        </div>
     );
 }

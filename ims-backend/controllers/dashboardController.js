@@ -15,16 +15,16 @@ exports.getDashboardStats = async (req, res, next) => {
             dailySales,
             recentSales,
             stockStatus,
+            // --- START: เพิ่มการดึงข้อมูลใหม่ ---
+            recentBorrowings,
+            recentRepairs,
+            activeBorrowings,
+            activeRepairs
+            // --- END ---
         ] = await Promise.all([
             prisma.inventoryItem.findMany({
                 where: { status: 'SOLD', itemType: ItemType.SALE },
-                include: {
-                    productModel: {
-                        select: {
-                            sellingPrice: true,
-                        },
-                    },
-                },
+                include: { productModel: { select: { sellingPrice: true } } },
             }),
             prisma.inventoryItem.count({
                 where: { status: 'IN_STOCK', itemType: ItemType.SALE },
@@ -53,7 +53,25 @@ exports.getDashboardStats = async (req, res, next) => {
                 where: { itemType: ItemType.SALE },
                 by: ['status'],
                 _count: { id: true },
+            }),
+            // --- START: เพิ่ม Query สำหรับดึงข้อมูลใหม่ ---
+            prisma.borrowing.findMany({
+                take: 5,
+                orderBy: { borrowDate: 'desc' },
+                include: { borrower: { select: { name: true } } }
+            }),
+            prisma.repair.findMany({
+                take: 5,
+                orderBy: { repairDate: 'desc' },
+                include: { receiver: { select: { name: true } } }
+            }),
+            prisma.borrowing.count({
+                where: { status: 'BORROWED' }
+            }),
+            prisma.repair.count({
+                where: { status: 'REPAIRING' }
             })
+            // --- END ---
         ]);
         
         const totalRevenue = soldItems.reduce((sum, item) => {
@@ -73,6 +91,12 @@ exports.getDashboardStats = async (req, res, next) => {
             salesChartData,
             recentSales,
             stockStatus,
+            // --- START: เพิ่มข้อมูลใหม่ใน Response ---
+            recentBorrowings,
+            recentRepairs,
+            activeBorrowings,
+            activeRepairs
+            // --- END ---
         });
 
     } catch (error) {
