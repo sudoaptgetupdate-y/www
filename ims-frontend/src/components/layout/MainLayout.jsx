@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { 
     LogOut, Menu, X, UserCircle, User, ArrowRightLeft, Building2, 
     ShoppingCart, Settings, Package, Boxes, Tag, Users as UsersIcon, 
-    HardDrive, Layers, Wrench, BookUser, ChevronsLeft, ChevronsRight 
+    HardDrive, Layers, Wrench, BookUser
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { useTranslation } from 'react-i18next';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const NavItem = ({ to, icon, text, isCollapsed, handleclick }) => (
     <NavLink
@@ -33,7 +34,19 @@ const NavItem = ({ to, icon, text, isCollapsed, handleclick }) => (
             isActive && "bg-blue-100 text-blue-700"
         )}
     >
-        {icon}
+        <TooltipProvider delayDuration={100}>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    {icon}
+                </TooltipTrigger>
+                {isCollapsed && (
+                    <TooltipContent side="right">
+                        <p>{text}</p>
+                    </TooltipContent>
+                )}
+            </Tooltip>
+        </TooltipProvider>
+
         <span className={cn(
             "whitespace-nowrap transition-opacity duration-200",
             isCollapsed ? "opacity-0 hidden" : "opacity-100"
@@ -66,15 +79,6 @@ const MainLayout = () => {
 
     const SidebarContent = () => (
         <div className="flex flex-col h-full relative">
-             <Button
-                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                variant="outline"
-                size="icon"
-                className="absolute top-[75px] -right-4 z-10 h-8 w-8 rounded-full bg-white hidden md:flex"
-            >
-                {isSidebarCollapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
-            </Button>
-
             <div className="p-4 border-b flex items-center gap-3 h-[65px]">
                 <div className="bg-primary p-2 rounded-lg">
                     <Layers className="text-primary-foreground" size={24}/>
@@ -159,9 +163,7 @@ const MainLayout = () => {
                     "bg-white border-r",
                     "fixed inset-y-0 left-0 z-30 transform transition-transform duration-300 ease-in-out",
                     "md:relative md:translate-x-0",
-                    // --- START: เพิ่ม transition-all เพื่อความนุ่มนวล ---
                     "transition-all duration-300 ease-in-out", 
-                    // --- END ---
                     isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full",
                     isSidebarCollapsed ? "md:w-20" : "md:w-64"
                 )}
@@ -171,12 +173,19 @@ const MainLayout = () => {
             
             <div className="flex-1 flex flex-col max-h-screen font-sarabun">
                 <header className="bg-white/80 backdrop-blur-sm sticky top-0 z-10 border-b flex justify-between items-center px-4 h-[65px]">
-                    <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(true)}>
-                        <Menu className="h-6 w-6" />
-                    </Button>
-                    <div className="hidden md:block flex-1">
-                        {/* Can be used for breadcrumbs or page title later */}
+                    {/* --- START: แก้ไขส่วนของปุ่มเมนู --- */}
+                    <div className="flex items-center gap-2">
+                        {/* Mobile Menu Button */}
+                        <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(true)}>
+                            <Menu className="h-6 w-6" />
+                        </Button>
+                        {/* Desktop Collapse Button */}
+                        <Button variant="ghost" size="icon" className="hidden md:flex" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}>
+                            <Menu className="h-6 w-6" />
+                        </Button>
                     </div>
+                    {/* --- END --- */}
+                    
                     <div className="flex items-center gap-2">
                         <LanguageToggle />
                         <DropdownMenu>

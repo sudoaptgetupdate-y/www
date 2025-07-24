@@ -47,8 +47,8 @@ const TableHead = React.forwardRef(({ className, ...props }, ref) => (
   <th
     ref={ref}
     className={cn(
-      // --- START: ปรับความสูงของ Header ---
-      "h-10 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+      // --- START: ปรับความหนาของตัวอักษร ---
+      "h-10 px-4 text-left align-middle font-semibold text-muted-foreground [&:has([role=checkbox])]:pr-0",
       // --- END ---
       className
     )}
@@ -59,9 +59,7 @@ TableHead.displayName = "TableHead"
 const TableCell = React.forwardRef(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    // --- START: ปรับ Padding ของ Cell ---
     className={cn("p-2 align-middle [&:has([role=checkbox])]:pr-0", className)}
-    // --- END ---
     {...props} />
 ))
 TableCell.displayName = "TableCell"
