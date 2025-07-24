@@ -1,7 +1,7 @@
 // src/lib/statusUtils.js
 
 /**
- * @typedef {'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'} BadgeVariant
+ * @typedef {'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'warning-alt' | 'info'} BadgeVariant
  */
 
 /**
@@ -20,7 +20,7 @@ const STATUS_CONFIG = {
   DISABLED: { label: "Disabled", variant: "destructive" },
 
   // Owner Types
-  COMPANY: { label: "Company", variant: "warning" }, // <-- แก้ไขบรรทัดนี้
+  COMPANY: { label: "Company", variant: "warning-alt" },
   CUSTOMER: { label: "Customer", variant: "info" },
 
   // Inventory & Asset Statuses
@@ -46,17 +46,17 @@ const STATUS_CONFIG = {
   OVERDUE: { label: "Overdue", variant: "destructive" },
   
   // Assignment & Repair Statuses
-  PARTIALLY_RETURNED: { label: "Partial Return", variant: "info" },
+  PARTIALLY_RETURNED: { label: "Partially Returned", variant: "info" },
   REPAIRING: { label: "Repairing", variant: "warning" },
 
-  REPAIR_SUCCESS: { label: "Repair Success", variant: "success" },
+  REPAIR_SUCCESS: { label: "Repair Successful", variant: "success" },
   REPAIR_FAILED: { label: "Repair Failed", variant: "destructive" },
 
   // Repair Outcomes & Status
-  REPAIRED_SUCCESSFULLY: { label: "Success", variant: "success" },
-  UNREPAIRABLE: { label: "Failed", variant: "destructive" },
+  REPAIRED_SUCCESSFULLY: { label: "Repair Success", variant: "success" },
+  UNREPAIRABLE: { label: "Unrepairable", variant: "destructive" },
   
-  RETURNED_TO_CUSTOMER: { label: "Serviced", variant: "info" },
+  RETURNED_TO_CUSTOMER: { label: "Returned to Customer", variant: "info" },
 
   // Asset Statuses & History Events
   ASSIGNED: { label: "Assigned", variant: "warning" },
@@ -67,10 +67,12 @@ const STATUS_CONFIG = {
   UPDATE: { label: "Updated", variant: "info" },
   ASSIGN: { label: "Assigned", variant: "warning" },
   RETURN: { label: "Returned", variant: "success" },
+  RETURN_FROM_BORROW: { label: "Return from Borrow", variant: "success" },
+  RETURN_FROM_ASSIGN: { label: "Return from Assign", variant: "success" },
   DECOMMISSION: { label: "Decommissioned", variant: "destructive" },
   REINSTATE: { label: "Reinstated", variant: "success" },
-  REPAIR_SENT: { label: "Repair Sent", variant: "info" },
-  REPAIR_RETURNED: { label: "Repair Return", variant: "success" },
+  REPAIR_SENT: { label: "Sent to Repair", variant: "info" },
+  REPAIR_RETURNED: { label: "Returned from Repair", variant: "success" },
 
   // Default for unknown statuses
   DEFAULT: { label: "Unknown", variant: "outline" },

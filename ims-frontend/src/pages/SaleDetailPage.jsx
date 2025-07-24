@@ -72,7 +72,7 @@ export default function SaleDetailPage() {
 
     return (
         <div className="space-y-6">
-             <div className="flex flex-wrap items-center justify-between gap-4 no-print">
+             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <FileText className="h-6 w-6" /> Sale Details

@@ -108,7 +108,7 @@ export default function CreateAssetAssignmentPage() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             toast.success("Assignment created successfully!");
-            navigate(`/asset-assignments/${response.data.id}`);
+            navigate(`/asset-assignments/${response.data.id}`, { replace: true });
         } catch (error) {
             toast.error(error.response?.data?.error || "Failed to create assignment.");
         }

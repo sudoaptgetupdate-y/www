@@ -22,8 +22,8 @@ import {
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
-import { useState } from "react"; // *** 1. เพิ่ม useState ***
-import BatchAddAssetDialog from "@/components/dialogs/BatchAddAssetDialog"; // *** 2. Import Component ใหม่ ***
+import { useState } from "react";
+import BatchAddAssetDialog from "@/components/dialogs/BatchAddAssetDialog";
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -50,8 +50,7 @@ export default function AssetPage() {
     const token = useAuthStore((state) => state.token);
     const { user: currentUser } = useAuthStore((state) => state);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
-
-    // *** 3. เพิ่ม State สำหรับควบคุม Dialog ใหม่ ***
+    
     const [isBatchAddOpen, setIsBatchAddOpen] = useState(false);
 
     const {
@@ -105,14 +104,13 @@ export default function AssetPage() {
     return (
         <Card>
             <CardHeader>
-                <div className="flex flex-row items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <CardTitle>All Company Assets (Master List)</CardTitle>
                         <CardDescription>A complete list of all company-owned assets.</CardDescription>
                     </div>
                     {canManage &&
-                        <div className="flex gap-2">
-                            {/* *** 4. เปลี่ยน onClick ของปุ่ม Add Asset *** */}
+                        <div className="flex flex-wrap gap-2">
                             <Button variant="outline" onClick={() => setIsBatchAddOpen(true)}>
                                 <PlusCircle className="mr-2 h-4 w-4" /> Add Asset
                             </Button>
@@ -279,7 +277,6 @@ export default function AssetPage() {
                 </div>
             </CardFooter>
 
-            {/* *** 5. เพิ่มการเรียกใช้ Dialog Component ใหม่ *** */}
             {isBatchAddOpen && (
                 <BatchAddAssetDialog
                     isOpen={isBatchAddOpen}
@@ -287,7 +284,7 @@ export default function AssetPage() {
                     onSave={refreshData}
                 />
             )}
-
+            
         </Card>
     );
 }

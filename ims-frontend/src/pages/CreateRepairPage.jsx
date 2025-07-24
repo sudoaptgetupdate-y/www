@@ -194,7 +194,7 @@ export default function CreateRepairPage() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             toast.success("Repair order created successfully!");
-            navigate(`/repairs/${response.data.id}`);
+            navigate(`/repairs/${response.data.id}`, { replace: true });
         } catch (error) {
             toast.error(error.response?.data?.error || "Failed to create repair order.");
         }

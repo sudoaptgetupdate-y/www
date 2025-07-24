@@ -102,7 +102,9 @@ export default function CreateBorrowingPage() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             toast.success("Borrowing record created successfully!");
-            navigate(`/borrowings/${response.data.id}`);
+            // --- START: แก้ไขบรรทัดนี้ ---
+            navigate(`/borrowings/${response.data.id}`, { replace: true });
+            // --- END ---
         } catch (error) {
             toast.error(error.response?.data?.error || "Failed to create borrowing record.");
         }
