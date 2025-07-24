@@ -38,10 +38,8 @@ export default function BorrowingPage() {
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
-    // *** START: รับค่า state จากการ navigate ***
     const location = useLocation();
     const initialStatus = location.state?.status || "All";
-    // *** END ***
 
     const { 
         data: borrowings, 
@@ -56,9 +54,7 @@ export default function BorrowingPage() {
         handlePageChange, 
         handleItemsPerPageChange,
         handleFilterChange
-    // *** START: ส่งค่า initialStatus ให้กับ usePaginatedFetch ***
     } = usePaginatedFetch("/borrowings", 10, { status: initialStatus });
-    // *** END ***
 
     return (
         <Card>

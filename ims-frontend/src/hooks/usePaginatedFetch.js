@@ -24,10 +24,8 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, defaultFilt
     const location = useLocation();
     const navigate = useNavigate();
 
-    // ฟังก์ชันนี้จะคำนวณค่า filter เริ่มต้นที่ถูกต้องเสมอ
     const getInitialFilters = useCallback(() => {
         const locationState = location.state || {};
-        // ถ้ามี state จาก location ให้ใช้ค่านั้นเป็นหลัก ถ้าไม่มีให้ใช้ค่า default
         return locationState.status ? { ...defaultFilters, status: locationState.status } : defaultFilters;
     }, [location.state, JSON.stringify(defaultFilters)]);
 
@@ -46,8 +44,6 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, defaultFilt
     const [sortBy, setSortBy] = useState('updatedAt');
     const [sortOrder, setSortOrder] = useState('desc');
 
-    // useEffect นี้จะคอย "Sync" state ภายใน (filters)
-    // ให้ตรงกับ props หรือ location state ที่อาจมีการเปลี่ยนแปลง
     useEffect(() => {
         setFilters(getInitialFilters());
         setPagination(p => ({ ...p, currentPage: 1 }));
@@ -82,7 +78,7 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, defaultFilt
 
     useEffect(() => {
         fetchData();
-    }, [fetchData]); // Dependency array ที่ถูกต้องคือ fetchData
+    }, [fetchData]);
 
     const handleSortChange = (newSortBy) => {
         setSortBy(newSortBy);

@@ -57,19 +57,38 @@ exports.getAllProductModels = async (req, res, next) => {
         const skip = (page - 1) * limit;
         const sortBy = req.query.sortBy || 'createdAt';
         const sortOrder = req.query.sortOrder || 'desc';
+        
+        // --- START: เพิ่มการรับค่า Filter ---
+        const categoryIdFilter = req.query.categoryId || 'All';
+        const brandIdFilter = req.query.brandId || 'All';
 
-        const where = searchTerm
-            ? {
+        let where = {};
+        const whereConditions = [];
+
+        if (searchTerm) {
+            whereConditions.push({
                 OR: [
                     { modelNumber: { contains: searchTerm } },
                     { description: { contains: searchTerm } },
                     { brand: { name: { contains: searchTerm } } },
                     { category: { name: { contains: searchTerm } } }
                 ]
-            }
-            : {};
+            });
+        }
+
+        if (categoryIdFilter && categoryIdFilter !== 'All') {
+            whereConditions.push({ categoryId: parseInt(categoryIdFilter) });
+        }
+
+        if (brandIdFilter && brandIdFilter !== 'All') {
+            whereConditions.push({ brandId: parseInt(brandIdFilter) });
+        }
+
+        if (whereConditions.length > 0) {
+            where.AND = whereConditions;
+        }
+        // --- END ---
         
-        // --- START: สร้าง Logic สำหรับ orderBy ---
         let orderBy = {};
         if (sortBy === 'category') {
             orderBy = { category: { name: sortOrder } };
@@ -78,14 +97,13 @@ exports.getAllProductModels = async (req, res, next) => {
         } else {
             orderBy = { [sortBy]: sortOrder };
         }
-        // --- END ---
         
         const [productModels, totalItems] = await Promise.all([
             prisma.productModel.findMany({
                 where,
                 skip,
                 take: limit,
-                orderBy, // <-- ใช้ orderBy ที่สร้างขึ้น
+                orderBy,
                 include: includeRelations
             }),
             prisma.productModel.count({ where })

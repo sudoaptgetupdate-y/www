@@ -196,6 +196,32 @@ borrowingController.getAllBorrowings = async (req, res, next) => {
         const skip = (page - 1) * limit;
         const sortBy = req.query.sortBy || 'borrowDate';
         const sortOrder = req.query.sortOrder || 'desc';
+        
+        // --- START: เพิ่มการรับค่า Filter และ Search ---
+        const searchTerm = req.query.search || '';
+        const statusFilter = req.query.status || 'All';
+
+        let where = {};
+        const whereConditions = [];
+
+        if (statusFilter && statusFilter !== 'All') {
+            whereConditions.push({ status: statusFilter });
+        }
+
+        if (searchTerm) {
+            whereConditions.push({
+                OR: [
+                    { borrower: { name: { contains: searchTerm } } },
+                    { approvedBy: { name: { contains: searchTerm } } },
+                    { items: { some: { inventoryItem: { serialNumber: { contains: searchTerm } } } } }
+                ]
+            });
+        }
+        
+        if(whereConditions.length > 0) {
+            where.AND = whereConditions;
+        }
+        // --- END ---
 
         let orderBy = {};
         if (sortBy === 'customer') {
@@ -206,6 +232,7 @@ borrowingController.getAllBorrowings = async (req, res, next) => {
 
         const [borrowings, totalItems] = await Promise.all([
             prisma.borrowing.findMany({
+                where, // <-- เพิ่ม where clause
                 skip,
                 take: limit,
                 orderBy,
@@ -219,7 +246,7 @@ borrowingController.getAllBorrowings = async (req, res, next) => {
                     }
                 }
             }),
-            prisma.borrowing.count()
+            prisma.borrowing.count({ where }) // <-- เพิ่ม where clause
         ]);
         
         const formattedBorrowings = borrowings.map(b => {
@@ -283,10 +310,7 @@ borrowingController.getBorrowingById = async (req, res, next) => {
             throw err;
         }
         
-        // --- START: แก้ไขส่วนนี้ ---
-        // ไม่ต้องแปลงข้อมูลแล้ว ส่งกลับไปตรงๆ
         res.status(200).json(borrowing);
-        // --- END ---
 
     } catch (error) {
         next(error);
