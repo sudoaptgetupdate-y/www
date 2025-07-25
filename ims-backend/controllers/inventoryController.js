@@ -1,8 +1,8 @@
 // ims-backend/controllers/inventoryController.js
-const prisma = require('../prisma/client');
-const { ItemType, EventType, ItemOwner } = require('@prisma/client'); // <-- Keep this line
-const inventoryController = {};
 
+const prisma = require('../prisma/client');
+const { ItemType, EventType, ItemOwner } = require('@prisma/client');
+const inventoryController = {};
 
 const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
 
@@ -137,6 +137,7 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         const sortBy = req.query.sortBy || 'updatedAt';
         const sortOrder = req.query.sortOrder || 'desc';
         
+        // --- START: แก้ไข Logic การสร้าง Where Clause ---
         let where = { 
             itemType: ItemType.SALE
         };
@@ -145,31 +146,39 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
             where.status = statusFilter;
         }
 
-        if (searchTerm) {
-            where.OR = [
-                { serialNumber: { contains: searchTerm } },
-                { macAddress: { equals: searchTerm } },
-                { productModel: { modelNumber: { contains: searchTerm } } },
-            ];
-        }
-        
+        const searchConditions = searchTerm 
+            ? {
+                OR: [
+                    { serialNumber: { contains: searchTerm } },
+                    { macAddress: { equals: searchTerm } },
+                    { productModel: { modelNumber: { contains: searchTerm } } },
+                ],
+            }
+            : {};
+            
+        const filterConditions = {};
         if (categoryIdFilter && categoryIdFilter !== 'All') {
-            where.productModel = { ...where.productModel, categoryId: parseInt(categoryIdFilter) };
+            filterConditions.categoryId = parseInt(categoryIdFilter);
         }
         if (brandIdFilter && brandIdFilter !== 'All') {
-            where.productModel = { ...where.productModel, brandId: parseInt(brandIdFilter) };
+            filterConditions.brandId = parseInt(brandIdFilter);
+        }
+        
+        if (Object.keys(filterConditions).length > 0) {
+            where.productModel = filterConditions;
         }
 
-        // --- START: แก้ไขส่วนนี้ ---
+        where = { ...where, ...searchConditions };
+        // --- END ---
+
         let orderBy = {};
         if (sortBy === 'productModel') {
             orderBy = { productModel: { modelNumber: sortOrder } };
-        } else if (sortBy === 'brand') { // เพิ่มเงื่อนไขสำหรับ Brand
+        } else if (sortBy === 'brand') {
             orderBy = { productModel: { brand: { name: sortOrder } } };
         } else {
             orderBy = { [sortBy]: sortOrder };
         }
-        // --- END ---
 
         const include = {
             productModel: { include: { category: true, brand: true } },

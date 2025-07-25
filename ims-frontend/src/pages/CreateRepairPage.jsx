@@ -19,6 +19,7 @@ import { CustomerCombobox } from "@/components/ui/CustomerCombobox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import CustomerFormDialog from "@/components/dialogs/CustomerFormDialog";
 import { useTranslation } from "react-i18next";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -119,15 +120,26 @@ export default function CreateRepairPage() {
         const fetchItems = async () => {
             const params = { search: debouncedItemSearch, limit: 100 };
             try {
-                const [invRes, assetRes] = await Promise.all([
+                // --- START: แก้ไข Logic การดึงข้อมูลทั้งหมด ---
+                const [invInStockRes, invDefectiveRes, assetWarehouseRes, assetDefectiveRes] = await Promise.all([
                     axiosInstance.get('/inventory', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'IN_STOCK' } }),
-                    axiosInstance.get('/assets', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'IN_WAREHOUSE' } })
+                    axiosInstance.get('/inventory', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'DEFECTIVE' } }),
+                    axiosInstance.get('/assets', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'IN_WAREHOUSE' } }),
+                    axiosInstance.get('/assets', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'DEFECTIVE' } })
                 ]);
-                const combined = [...invRes.data.data, ...assetRes.data.data];
+                const combined = [
+                    ...(invInStockRes.data?.data || []),
+                    ...(invDefectiveRes.data?.data || []),
+                    ...(assetWarehouseRes.data?.data || []),
+                    ...(assetDefectiveRes.data?.data || [])
+                ];
+                // --- END ---
                 const selectedIds = new Set(selectedItems.map(i => i.id));
                 setInternalItems(combined.filter(item => !selectedIds.has(item.id)));
             } catch (error) {
+                console.error("Fetch items error:", error);
                 toast.error("Failed to search for items.");
+                setInternalItems([]);
             }
         };
         fetchItems();
@@ -224,11 +236,25 @@ export default function CreateRepairPage() {
                              <div className="mt-4 h-96 overflow-y-auto border rounded-md">
                                 <table className="w-full text-sm">
                                     <thead className="sticky top-0 bg-slate-100">
-                                        <tr className="border-b"><th className="p-2 text-left">{t('tableHeader_identifier')}</th><th className="p-2 text-left">{t('tableHeader_productModel')}</th><th className="p-2 text-left">{t('tableHeader_type')}</th><th className="p-2 text-center">{t('tableHeader_actions')}</th></tr>
+                                        <tr className="border-b">
+                                            <th className="p-2 text-left">{t('tableHeader_brand')}</th>
+                                            <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
+                                            <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
+                                            <th className="p-2 text-left">{t('tableHeader_assetCode')}</th>
+                                            <th className="p-2 text-left">{t('tableHeader_status')}</th>
+                                            <th className="p-2 text-center">{t('tableHeader_actions')}</th>
+                                        </tr>
                                     </thead>
                                     <tbody>
                                         {internalItems.map(item => (
-                                            <tr key={item.id} className="border-b"><td className="p-2 font-semibold">{item.assetCode || item.serialNumber}</td><td className="p-2">{item.productModel.modelNumber}</td><td className="p-2">{item.itemType}</td><td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>{t('add')}</Button></td></tr>
+                                            <tr key={item.id} className="border-b">
+                                                <td className="p-2">{item.productModel.brand.name}</td>
+                                                <td className="p-2">{item.productModel.modelNumber}</td>
+                                                <td className="p-2 font-semibold">{item.serialNumber || '-'}</td>
+                                                <td className="p-2 font-semibold">{item.assetCode || '-'}</td>
+                                                <td className="p-2"><StatusBadge status={item.itemType} /></td>
+                                                <td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>{t('add')}</Button></td>
+                                            </tr>
                                         ))}
                                     </tbody>
                                 </table>
