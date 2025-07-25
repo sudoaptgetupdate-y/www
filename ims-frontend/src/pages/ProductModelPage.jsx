@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card"; // --- 1. เพิ่ม CardDescription ---
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,11 +22,10 @@ import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { useTranslation } from "react-i18next";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
-} from "@/components/ui/table"; // --- 2. Import Table Components ---
+} from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
-// --- 3. แก้ไข SkeletonRow ---
 const SkeletonRow = () => (
     <TableRow>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
@@ -37,7 +36,6 @@ const SkeletonRow = () => (
     </TableRow>
 );
 
-// --- 4. แก้ไข SortableHeader ---
 const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort, className = "" }) => (
     <TableHead className={`cursor-pointer hover:bg-muted/50 ${className}`} onClick={() => onSort(sortKey)}>
         <div className="flex items-center gap-2">
@@ -142,16 +140,15 @@ export default function ProductModelPage() {
 
     return (
         <Card>
-            {/* --- 5. แก้ไข CardHeader --- */}
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>Product {t('models')}</CardTitle>
-                        <CardDescription>Manage all product models, including their brands, categories, and prices.</CardDescription>
+                        <CardTitle>{t('models')}</CardTitle>
+                        <CardDescription>{t('product_models_description')}</CardDescription>
                     </div>
                     {canManage &&
                         <Button onClick={() => openDialog()}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Product Model
+                            <PlusCircle className="mr-2 h-4 w-4" /> {t('product_models_add_new')}
                         </Button>
                     }
                 </div>
@@ -159,7 +156,7 @@ export default function ProductModelPage() {
             <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                     <Input
-                        placeholder="Search by Model Number..."
+                        placeholder={t('product_model_search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="lg:col-span-1"
@@ -173,7 +170,6 @@ export default function ProductModelPage() {
                         onSelect={(value) => handleFilterChange('brandId', value)}
                     />
                 </div>
-                {/* --- 6. แก้ไขโครงสร้างตาราง --- */}
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -205,10 +201,10 @@ export default function ProductModelPage() {
                                     <TableCell className="text-center">
                                         <div className="flex items-center justify-center gap-2">
                                             <Button variant="outline" size="sm" className="w-20" onClick={() => openDialog(model)}>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                                <Edit className="mr-2 h-4 w-4" /> {t('edit')}
                                             </Button>
                                             <Button variant="destructive" size="sm" className="w-20" onClick={() => setModelToDelete(model)}>
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
                                             </Button>
                                         </div>
                                     </TableCell>
@@ -220,7 +216,7 @@ export default function ProductModelPage() {
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
                     <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
                         <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -229,49 +225,49 @@ export default function ProductModelPage() {
                     </Select>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                    Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
+                    {t('pagination_info', { currentPage: pagination.currentPage, totalPages: pagination.totalPages, totalItems: pagination.totalItems })}
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>{t('previous')}</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
                 </div>
             </CardFooter>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{isEditMode ? 'Edit' : 'Add New'} Product Model</DialogTitle>
+                        <DialogTitle>{isEditMode ? t('product_model_form_edit_title') : t('product_model_form_add_title')}</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                         <div className="space-y-2">
-                            <Label htmlFor="modelNumber">Model Number</Label>
+                            <Label htmlFor="modelNumber">{t('product_model_form_model_number')}</Label>
                             <Input id="modelNumber" value={formData.modelNumber} onChange={handleInputChange} required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="description">Description</Label>
+                            <Label htmlFor="description">{t('product_model_form_description')}</Label>
                             <Input id="description" value={formData.description} onChange={handleInputChange} />
                         </div>
                          <div className="space-y-2">
-                            <Label htmlFor="sellingPrice">Selling Price</Label>
+                            <Label htmlFor="sellingPrice">{t('product_model_form_selling_price')}</Label>
                             <Input id="sellingPrice" type="number" step="0.01" value={formData.sellingPrice} onChange={handleInputChange} required />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Category</Label>
+                                <Label>{t('tableHeader_category')}</Label>
                                 <CategoryCombobox
                                     selectedValue={formData.categoryId}
                                     onSelect={(value) => handleComboboxSelect('categoryId', value)}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>Brand</Label>
+                                <Label>{t('tableHeader_brand')}</Label>
                                 <BrandCombobox
                                     selectedValue={formData.brandId}
                                     onSelect={(value) => handleComboboxSelect('brandId', value)}
                                 />
                             </div>
                         </div>
-                        <DialogFooter><Button type="submit">Save</Button></DialogFooter>
+                        <DialogFooter><Button type="submit">{t('save')}</Button></DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
@@ -285,8 +281,8 @@ export default function ProductModelPage() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDelete}>Continue</AlertDialogAction>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete}>{t('confirm')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

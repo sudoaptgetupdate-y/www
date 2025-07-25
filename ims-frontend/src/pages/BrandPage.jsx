@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card"; // --- 1. เพิ่ม CardFooter, CardDescription ---
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { Edit, Trash2, PlusCircle } from "lucide-react"; // --- 2. เพิ่ม PlusCircle ---
+import { Edit, Trash2, PlusCircle } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from "@/components/ui/dialog";
@@ -20,10 +20,9 @@ import { toast } from 'sonner';
 import { useTranslation } from "react-i18next";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
-} from "@/components/ui/table"; // --- 3. Import Table Components ---
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // --- 4. Import Select Components ---
+} from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// --- 5. แก้ไข SkeletonRow ---
 const SkeletonRow = () => (
     <TableRow>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
@@ -37,7 +36,6 @@ export default function BrandPage() {
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
-    // --- 6. แก้ไขการเรียกใช้ usePaginatedFetch ให้รับ pagination functions ---
     const {
         data: brands, pagination, isLoading, searchTerm, handleSearchChange, refreshData, handlePageChange, handleItemsPerPageChange
     } = usePaginatedFetch("/brands", 10); 
@@ -95,16 +93,15 @@ export default function BrandPage() {
 
     return (
         <Card>
-            {/* --- 7. แก้ไข CardHeader --- */}
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <CardTitle>{t('brands')}</CardTitle>
-                        <CardDescription>Manage all product brands.</CardDescription>
+                        <CardDescription>{t('brands_description')}</CardDescription>
                     </div>
                     {canManage && 
                         <Button onClick={handleAddNew}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add New Brand
+                            <PlusCircle className="mr-2 h-4 w-4" /> {t('brands_add_new')}
                         </Button>
                     }
                 </div>
@@ -112,13 +109,12 @@ export default function BrandPage() {
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
-                        placeholder="Search by brand name..."
+                        placeholder={t('brand_search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="flex-grow"
                     />
                 </div>
-                 {/* --- 8. แก้ไขโครงสร้างตาราง --- */}
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -136,10 +132,10 @@ export default function BrandPage() {
                                     <TableCell className="text-center">
                                         <div className="flex items-center justify-center gap-2">
                                             <Button variant="outline" size="sm" className="w-20" onClick={() => handleEdit(brand)}>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                                <Edit className="mr-2 h-4 w-4" /> {t('edit')}
                                             </Button>
                                             <Button variant="destructive" size="sm" className="w-20" onClick={() => handleDelete(brand)}>
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
                                             </Button>
                                         </div>
                                     </TableCell>
@@ -150,10 +146,9 @@ export default function BrandPage() {
                 </Table>
             </CardContent>
 
-             {/* --- 9. เพิ่ม CardFooter และ Pagination --- */}
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
                     <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
                         <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -162,23 +157,23 @@ export default function BrandPage() {
                     </Select>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                    Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
+                    {t('pagination_info', { currentPage: pagination.currentPage, totalPages: pagination.totalPages, totalItems: pagination.totalItems })}
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>{t('previous')}</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
                 </div>
             </CardFooter>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>
-                    <DialogHeader><DialogTitle>{isEditMode ? 'Edit' : 'Add New'} Brand</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle>{isEditMode ? t('brand_form_edit_title') : t('brand_form_add_title')}</DialogTitle></DialogHeader>
                     <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                         <div className="space-y-2">
-                            <Label htmlFor="name">Brand Name</Label>
+                            <Label htmlFor="name">{t('brand_form_name')}</Label>
                             <Input id="name" value={formData.name} onChange={(e) => setFormData({ name: e.target.value })} required />
                         </div>
-                        <DialogFooter><Button type="submit">Save</Button></DialogFooter>
+                        <DialogFooter><Button type="submit">{t('save')}</Button></DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
@@ -186,14 +181,14 @@ export default function BrandPage() {
             <AlertDialog open={!!brandToDelete} onOpenChange={(isOpen) => !isOpen && setBrandToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
                             This will permanently delete the brand: <strong>{brandToDelete?.name}</strong>.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDelete}>Continue</AlertDialogAction>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete}>{t('confirm')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

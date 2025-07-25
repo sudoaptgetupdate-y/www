@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { History, Edit, Trash2, UserPlus } from "lucide-react"; // --- เพิ่ม UserPlus ---
+import { History, Edit, UserPlus } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -20,10 +20,9 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
-} from "@/components/ui/table"; // --- Import Table Components ---
+} from "@/components/ui/table";
 
 const SkeletonRow = () => (
-    // --- แก้ไข SkeletonRow ---
     <TableRow>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
@@ -80,12 +79,12 @@ export default function CustomerPage() {
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>{t('customers')}</CardTitle>
-                        <CardDescription>Manage all customer information and history.</CardDescription>
+                        <CardTitle>{t('customers_title')}</CardTitle>
+                        <CardDescription>{t('customers_description')}</CardDescription>
                     </div>
                     {canManage && 
                         <Button onClick={handleAddNew}>
-                            <UserPlus className="mr-2 h-4 w-4" /> Add New Customer
+                            <UserPlus className="mr-2 h-4 w-4" /> {t('customers_add_new')}
                         </Button>
                     }
                 </div>
@@ -93,7 +92,7 @@ export default function CustomerPage() {
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
-                        placeholder="Search by name or code..."
+                        placeholder={t('customers_search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="flex-grow"
@@ -120,10 +119,10 @@ export default function CustomerPage() {
                                     <TableCell className="text-center">
                                         <div className="flex items-center justify-center gap-2">
                                             <Button variant="outline" size="sm" onClick={() => navigate(`/customers/${customer.id}/history`)}>
-                                                <History className="mr-2 h-4 w-4" /> History
+                                                <History className="mr-2 h-4 w-4" /> {t('history')}
                                             </Button>
                                             <Button variant="outline" size="sm" onClick={() => handleEdit(customer)}>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                                <Edit className="mr-2 h-4 w-4" /> {t('edit')}
                                             </Button>
                                         </div>
                                     </TableCell>
@@ -135,7 +134,7 @@ export default function CustomerPage() {
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
                     <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
                         <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -144,11 +143,11 @@ export default function CustomerPage() {
                     </Select>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                    Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
+                    {t('pagination_info', { currentPage: pagination.currentPage, totalPages: pagination.totalPages, totalItems: pagination.totalItems })}
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>{t('previous')}</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
                 </div>
             </CardFooter>
 
@@ -170,8 +169,8 @@ export default function CustomerPage() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDelete}>Continue</AlertDialogAction>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete}>{t('confirm')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

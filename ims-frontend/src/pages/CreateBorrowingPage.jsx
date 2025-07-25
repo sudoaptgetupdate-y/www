@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,9 @@ import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { CustomerCombobox } from "@/components/ui/CustomerCombobox";
+import { Trash2 } from "lucide-react";
+import axiosInstance from "@/api/axiosInstance";
+import { useTranslation } from "react-i18next";
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -23,13 +25,14 @@ function useDebounce(value, delay) {
 }
 
 export default function CreateBorrowingPage() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
     const token = useAuthStore((state) => state.token);
 
     const [fetchedItems, setFetchedItems] = useState([]);
     const [availableItems, setAvailableItems] = useState([]);
-    const [selectedCustomerId, setSelectedCustomerId] = useState("");
+    const [selectedBorrowerId, setSelectedBorrowerId] = useState("");
     const [selectedItems, setSelectedItems] = useState([]);
     const [itemSearch, setItemSearch] = useState("");
     const [dueDate, setDueDate] = useState("");
@@ -45,32 +48,28 @@ export default function CreateBorrowingPage() {
     }, [location.state]);
 
     useEffect(() => {
-        const fetchInventory = async () => {
+        const fetchAvailableItems = async () => {
             if (!token) return;
             setIsLoading(true);
             try {
-                const inventoryRes = await axiosInstance.get("/inventory", {
+                const response = await axiosInstance.get("/inventory", {
                     headers: { Authorization: `Bearer ${token}` },
-                    params: {
-                        status: 'IN_STOCK',
-                        search: debouncedItemSearch
-                    }
+                    params: { status: 'IN_STOCK', search: debouncedItemSearch, limit: 100 }
                 });
-                setFetchedItems(inventoryRes.data.data);
+                setFetchedItems(response.data.data);
             } catch (error) {
-                toast.error("Failed to fetch inventory items.");
+                toast.error("Failed to fetch available items.");
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchInventory();
+        fetchAvailableItems();
     }, [token, debouncedItemSearch]);
 
     useEffect(() => {
         const selectedIds = new Set(selectedItems.map(i => i.id));
         setAvailableItems(fetchedItems.filter(item => !selectedIds.has(item.id)));
     }, [selectedItems, fetchedItems]);
-
 
     const handleAddItem = (itemToAdd) => {
         setSelectedItems(prev => [...prev, itemToAdd]);
@@ -81,20 +80,20 @@ export default function CreateBorrowingPage() {
     };
 
     const handleSubmit = async () => {
-        if (!selectedCustomerId) {
-            toast.error("Please select a customer.");
+        if (!selectedBorrowerId) {
+            toast.error("Please select a borrower.");
             return;
         }
-         if (selectedItems.length === 0) {
+        if (selectedItems.length === 0) {
             toast.error("Please add at least one item.");
             return;
         }
 
         const payload = {
-            customerId: parseInt(selectedCustomerId),
+            borrowerId: parseInt(selectedBorrowerId),
             inventoryItemIds: selectedItems.map(item => item.id),
             dueDate: dueDate || null,
-            notes: notes,
+            notes: notes || null,
         };
 
         try {
@@ -102,9 +101,7 @@ export default function CreateBorrowingPage() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             toast.success("Borrowing record created successfully!");
-            // --- START: แก้ไขบรรทัดนี้ ---
-            navigate(`/borrowings/${response.data.id}`, { replace: true });
-            // --- END ---
+            navigate(`/borrowings/${response.data.id}`);
         } catch (error) {
             toast.error(error.response?.data?.error || "Failed to create borrowing record.");
         }
@@ -114,35 +111,33 @@ export default function CreateBorrowingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2">
                 <CardHeader>
-                    <CardTitle>Select Items to Borrow</CardTitle>
-                    <CardDescription>Search for available items and add them to the list.</CardDescription>
+                    <CardTitle>{t('createBorrowing_title')}</CardTitle>
+                    <CardDescription>{t('createBorrowing_description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Input
-                        placeholder="Search by Serial No, MAC, or Product Model..."
+                        placeholder={t('createSale_search_placeholder')}
                         value={itemSearch}
                         onChange={(e) => setItemSearch(e.target.value)}
                         className="mb-4"
                     />
-                    <div className="h-96 overflow-y-auto border rounded-md">
+                    <div className="h-[500px] overflow-y-auto border rounded-md">
                         <table className="w-full text-sm">
                             <thead className="sticky top-0 bg-slate-100">
                                 <tr className="border-b">
-                                    <th className="p-2 text-left">Product</th>
-                                    <th className="p-2 text-left">Serial No.</th>
-                                    <th className="p-2 text-left">MAC Address</th>
-                                    <th className="p-2 text-center">Action</th>
+                                    <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
+                                    <th className="p-2 text-center">{t('tableHeader_actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {availableItems.map(item => (
+                                {isLoading ? (
+                                    <tr><td colSpan="3" className="text-center p-4">Searching...</td></tr>
+                                ) : availableItems.map(item => (
                                     <tr key={item.id} className="border-b">
                                         <td className="p-2">{item.productModel.modelNumber}</td>
                                         <td className="p-2">{item.serialNumber || '-'}</td>
-                                        <td className="p-2">{item.macAddress || '-'}</td>
-                                        <td className="p-2 text-center">
-                                            <Button size="sm" onClick={() => handleAddItem(item)}>Add</Button>
-                                        </td>
+                                        <td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>{t('add')}</Button></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -151,59 +146,41 @@ export default function CreateBorrowingPage() {
                 </CardContent>
             </Card>
             <Card>
-                <CardHeader><CardTitle>Borrowing Summary</CardTitle></CardHeader>
+                <CardHeader><CardTitle>{t('createBorrowing_summary_title')}</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label>Customer (Borrower)</Label>
-                        <CustomerCombobox
-                            selectedValue={selectedCustomerId}
-                            onSelect={setSelectedCustomerId}
-                        />
+                        <Label>{t('createBorrowing_borrower_label')}</Label>
+                        <CustomerCombobox selectedValue={selectedBorrowerId} onSelect={setSelectedBorrowerId} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="dueDate">Due Date (Optional)</Label>
-                        <Input
-                            id="dueDate"
-                            type="date"
-                            value={dueDate}
-                            onChange={(e) => setDueDate(e.target.value)}
-                        />
+                        <Label>{t('createBorrowing_dueDate_label')}</Label>
+                        <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                     </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="notes">Notes (Optional)</Label>
-                        <Textarea
-                            id="notes"
-                            placeholder="Add any relevant notes here..."
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                        />
+                    <div className="space-y-2">
+                        <Label>{t('createBorrowing_notes_label')}</Label>
+                        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
                     </div>
                     <Separator />
                     <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Selected Items ({selectedItems.length})</h4>
+                        <h4 className="text-sm font-medium">{t('createSale_selected_items', { count: selectedItems.length })}</h4>
                         {selectedItems.length > 0 ? (
                             <div className="h-48 overflow-y-auto space-y-2 pr-2">
                                 {selectedItems.map(item => (
                                     <div key={item.id} className="flex justify-between items-center bg-slate-50 p-2 rounded-md">
                                         <div>
                                             <p className="font-semibold">{item.productModel.modelNumber}</p>
-                                            <p className="text-xs text-slate-500">{item.serialNumber || 'No S/N'}</p>
+                                            <p className="text-xs text-slate-500">{item.serialNumber}</p>
                                         </div>
-                                        <Button variant="destructive" size="sm" onClick={() => handleRemoveItem(item)}>Remove</Button>
+                                        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleRemoveItem(item)}><Trash2 className="h-4 w-4" /></Button>
                                     </div>
                                 ))}
                             </div>
-                        ) : (<p className="text-sm text-slate-500 text-center py-8">No items selected.</p>)}
+                        ) : (<p className="text-sm text-slate-500 text-center py-8">{t('createSale_no_items')}</p>)}
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button
-                        className="w-full"
-                        size="lg"
-                        onClick={handleSubmit}
-                        disabled={!selectedCustomerId || selectedItems.length === 0}
-                    >
-                        Confirm Borrowing
+                    <Button className="w-full" size="lg" onClick={handleSubmit} disabled={!selectedBorrowerId || selectedItems.length === 0}>
+                        {t('createBorrowing_confirm_button')}
                     </Button>
                 </CardFooter>
             </Card>

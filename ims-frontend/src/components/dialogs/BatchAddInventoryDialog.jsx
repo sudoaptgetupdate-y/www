@@ -1,6 +1,6 @@
 // src/components/dialogs/BatchAddInventoryDialog.jsx
 
-import { useState, useRef, useEffect } from "react"; // *** 1. Import useRef และ useEffect ***
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose
 } from "@/components/ui/dialog";
@@ -15,6 +15,7 @@ import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { PlusCircle, XCircle } from "lucide-react";
 import { translateThaiToEnglish } from "@/lib/keyboardUtils";
+import { useTranslation } from "react-i18next";
 
 const MAX_ITEMS_MANUAL = 10;
 
@@ -25,25 +26,23 @@ const formatMacAddress = (value) => {
 };
 
 export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
+    const { t } = useTranslation();
     const [selectedModel, setSelectedModel] = useState(null);
     const [manualItems, setManualItems] = useState([{ serialNumber: '', macAddress: '' }]);
     const [listText, setListText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const token = useAuthStore((state) => state.token);
 
-    // *** 2. สร้าง Refs สำหรับจัดการ Focus ***
     const inputRefs = useRef([]);
     const firstInputRef = useRef(null);
 
-    // *** 3. เพิ่ม useEffect สำหรับ Auto-focus เมื่อ Dialog เปิด ***
     useEffect(() => {
         if (isOpen && selectedModel) {
-            // ใช้ Timeout เล็กน้อยเพื่อให้แน่ใจว่า Input ถูก Render ใน DOM แล้ว
             setTimeout(() => {
                 firstInputRef.current?.focus();
             }, 100);
         }
-    }, [isOpen, selectedModel]); // ทำงานเมื่อ Dialog เปิดและมีการเลือก Model แล้ว
+    }, [isOpen, selectedModel]);
 
     const handleModelSelect = (model) => {
         setSelectedModel(model);
@@ -66,7 +65,6 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
     const addManualItemRow = () => {
         if (manualItems.length < MAX_ITEMS_MANUAL) {
             setManualItems([...manualItems, { serialNumber: '', macAddress: '' }]);
-            // Focus ที่ช่อง SN ของแถวใหม่ที่เพิ่มเข้ามา
             setTimeout(() => {
                 const nextIndex = manualItems.length * 2;
                 inputRefs.current[nextIndex]?.focus();
@@ -81,21 +79,16 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
         setManualItems(newItems);
     };
     
-    // *** 4. เพิ่มฟังก์ชันสำหรับจัดการการกดปุ่ม Enter ***
     const handleKeyDown = (e, index, field) => {
         if (e.key === 'Enter') {
-            e.preventDefault(); // ป้องกันการ Submit Form โดยไม่ได้ตั้งใจ
+            e.preventDefault();
             if (field === 'serialNumber') {
-                // ถ้ากด Enter ที่ช่อง SN ให้เลื่อนไปช่อง MAC
                 const macInputIndex = index * 2 + 1;
                 inputRefs.current[macInputIndex]?.focus();
             } else if (field === 'macAddress') {
-                // ถ้ากด Enter ที่ช่อง MAC
                 if (index === manualItems.length - 1) {
-                    // และเป็นแถวสุดท้าย ให้เพิ่มแถวใหม่
                     addManualItemRow();
                 } else {
-                    // ถ้าไม่ใช่แถวสุดท้าย ให้เลื่อนไปช่อง SN ของแถวถัดไป
                     const nextSnInputIndex = (index + 1) * 2;
                     inputRefs.current[nextSnInputIndex]?.focus();
                 }
@@ -104,7 +97,6 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
     };
 
     const handleSubmit = async (activeTab) => {
-        // ... (Logic การ Submit ไม่มีการเปลี่ยนแปลง) ...
         if (!selectedModel) {
             toast.error("Please select a Product Model first.");
             return;
@@ -120,7 +112,7 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
                     serialNumber: item.serialNumber || null,
                     macAddress: item.macAddress || null,
                 }));
-        } else { // 'list' tab
+        } else {
             itemsPayload = listText
                 .split('\n')
                 .map(line => line.trim())
@@ -166,35 +158,37 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
         setListText("");
     };
 
+    const manualItemCount = manualItems.filter(i => i.serialNumber || i.macAddress).length;
+    const listItemCount = listText.split('\n').filter(l => l.trim()).length;
+
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle>Add Multiple Inventory Items</DialogTitle>
-                    <DialogDescription>Select a product model, then add items using one of the methods below.</DialogDescription>
+                    <DialogTitle>{t('batch_add_inventory_title')}</DialogTitle>
+                    <DialogDescription>{t('batch_add_inventory_description')}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label>Product Model <span className="text-red-500">*</span></Label>
+                        <Label>{t('tableHeader_productModel')} <span className="text-red-500">*</span></Label>
                         <ProductModelCombobox onSelect={handleModelSelect} />
                     </div>
                     {selectedModel && (
                         <Tabs defaultValue="manual" className="w-full">
                             <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="manual">Add Manually</TabsTrigger>
-                                <TabsTrigger value="list">Add from List</TabsTrigger>
+                                <TabsTrigger value="manual">{t('batch_add_manual_tab')}</TabsTrigger>
+                                <TabsTrigger value="list">{t('batch_add_list_tab')}</TabsTrigger>
                             </TabsList>
                             <TabsContent value="manual" className="mt-4">
                                 <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2">
                                     {manualItems.map((item, index) => (
                                         <div key={index} className="flex items-center gap-2">
                                             <Input
-                                                // *** 5. เพิ่ม Ref และ onKeyDown ***
                                                 ref={el => {
                                                     inputRefs.current[index * 2] = el;
                                                     if (index === 0) firstInputRef.current = el;
                                                 }}
-                                                placeholder="Serial Number"
+                                                placeholder={t('tableHeader_serialNumber')}
                                                 value={item.serialNumber}
                                                 onChange={(e) => handleManualItemChange(index, 'serialNumber', e.target.value)}
                                                 onKeyDown={(e) => handleKeyDown(e, index, 'serialNumber')}
@@ -202,7 +196,7 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
                                             />
                                             <Input
                                                 ref={el => inputRefs.current[index * 2 + 1] = el}
-                                                placeholder="MAC Address"
+                                                placeholder={t('tableHeader_macAddress')}
                                                 value={item.macAddress}
                                                 onChange={(e) => handleManualItemChange(index, 'macAddress', e.target.value)}
                                                 onKeyDown={(e) => handleKeyDown(e, index, 'macAddress')}
@@ -215,20 +209,18 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
                                     ))}
                                 </div>
                                 <Button variant="outline" size="sm" onClick={addManualItemRow} className="mt-3">
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Row
+                                    <PlusCircle className="mr-2 h-4 w-4" /> {t('batch_add_row_button')}
                                 </Button>
                                 <DialogFooter className="mt-6">
-                                    <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                                    <DialogClose asChild><Button type="button" variant="ghost">{t('cancel')}</Button></DialogClose>
                                     <Button onClick={() => handleSubmit('manual')} disabled={isLoading}>
-                                        {isLoading ? 'Saving...' : `Save ${manualItems.filter(i => i.serialNumber || i.macAddress).length} Items`}
+                                        {isLoading ? t('saving') : t('batch_add_save_button', { count: manualItemCount })}
                                     </Button>
                                 </DialogFooter>
                             </TabsContent>
                             <TabsContent value="list" className="mt-4">
-                               <Label htmlFor="list-input">Paste from Excel or Text file</Label>
-                                <p className="text-xs text-muted-foreground mb-2">
-                                    Each item must be on a new line. Use a **Tab** (from Excel) or a **comma (,)** to separate the Serial Number and MAC Address.
-                                </p>
+                               <Label htmlFor="list-input">{t('batch_add_list_label')}</Label>
+                                <p className="text-xs text-muted-foreground mb-2" dangerouslySetInnerHTML={{ __html: t('batch_add_list_description') }} />
                                 <Textarea
                                     id="list-input"
                                     className="h-48 font-mono text-sm"
@@ -245,9 +237,9 @@ SN-FROM-TEXT,DD:EE:FF:44:55:66
                                     onChange={(e) => setListText(e.target.value)}
                                 />
                                  <DialogFooter className="mt-6">
-                                    <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                                    <DialogClose asChild><Button type="button" variant="ghost">{t('cancel')}</Button></DialogClose>
                                     <Button onClick={() => handleSubmit('list')} disabled={isLoading}>
-                                        {isLoading ? 'Saving...' : `Save ${listText.split('\n').filter(l => l.trim()).length} Items`}
+                                        {isLoading ? t('saving') : t('batch_add_save_button', { count: listItemCount })}
                                     </Button>
                                 </DialogFooter>
                             </TabsContent>

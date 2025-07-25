@@ -2,7 +2,7 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card"; // --- 1. เพิ่ม CardDescription ---
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -13,9 +13,8 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useTranslation } from "react-i18next";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
-} from "@/components/ui/table"; // --- 2. Import Table Components ---
+} from "@/components/ui/table";
 
-// --- 3. แก้ไข SkeletonRow ---
 const SkeletonRow = () => (
     <TableRow>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
@@ -50,16 +49,15 @@ export default function RepairListPage() {
 
     return (
         <Card>
-            {/* --- 4. แก้ไข CardHeader --- */}
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <CardTitle>{t('repairOrders')}</CardTitle>
-                        <CardDescription>Manage all items sent for repair.</CardDescription>
+                        <CardDescription>{t('repairDescription')}</CardDescription>
                     </div>
                      {canManage && (
                         <Button onClick={() => navigate('/repairs/new')}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Create New Repair Order
+                            <PlusCircle className="mr-2 h-4 w-4" /> {t('repair_create_new')}
                         </Button>
                     )}
                 </div>
@@ -67,24 +65,23 @@ export default function RepairListPage() {
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
-                        placeholder="Search by Order ID, Sender, or Receiver..."
+                        placeholder={t('repair_search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="flex-grow"
                     />
                     <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
                         <SelectTrigger className="w-full sm:w-[220px]">
-                            <SelectValue placeholder="Filter by Status..." />
+                            <SelectValue placeholder={t('filter_by_status')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="All">All Statuses</SelectItem>
-                            <SelectItem value="REPAIRING">Repairing</SelectItem>
-                            <SelectItem value="PARTIALLY_RETURNED">Partially Returned</SelectItem>
-                            <SelectItem value="COMPLETED">Completed</SelectItem>
+                            <SelectItem value="All">{t('status_all')}</SelectItem>
+                            <SelectItem value="REPAIRING">{t('status_repairing')}</SelectItem>
+                            <SelectItem value="PARTIALLY_RETURNED">{t('status_partially_returned')}</SelectItem>
+                            <SelectItem value="COMPLETED">{t('status_completed')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
-                {/* --- 5. แก้ไขโครงสร้างตาราง --- */}
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -112,10 +109,10 @@ export default function RepairListPage() {
                                         interactive
                                     />
                                 </TableCell>
-                                <TableCell className="text-center">{r.returnedItemCount}/{r.totalItemCount} Returned</TableCell>
+                                <TableCell className="text-center">{r.returnedItemCount}/{r.totalItemCount} {t('item_status_returned')}</TableCell>
                                 <TableCell className="text-center">
                                     <Button variant="outline" size="sm" onClick={() => navigate(`/repairs/${r.id}`)}>
-                                        Details
+                                        {t('details')}
                                     </Button>
                                 </TableCell>
                             </TableRow>
@@ -125,7 +122,7 @@ export default function RepairListPage() {
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
                     <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
                         <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -134,11 +131,11 @@ export default function RepairListPage() {
                     </Select>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                    Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
+                    {t('pagination_info', { currentPage: pagination.currentPage, totalPages: pagination.totalPages, totalItems: pagination.totalItems })}
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>{t('previous')}</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
                 </div>
             </CardFooter>
         </Card>

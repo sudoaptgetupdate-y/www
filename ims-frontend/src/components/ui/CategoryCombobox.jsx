@@ -20,6 +20,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useTranslation } from "react-i18next";
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -31,6 +32,7 @@ function useDebounce(value, delay) {
 }
 
 export function CategoryCombobox({ selectedValue, onSelect, initialCategory }) {
+  const { t } = useTranslation();
   const token = useAuthStore((state) => state.token);
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,7 +94,7 @@ export function CategoryCombobox({ selectedValue, onSelect, initialCategory }) {
           <span className="truncate">
             {selectedValue && selectedCategoryDisplay
               ? selectedCategoryDisplay.name
-              : "Select category..."}
+              : t('select_category')}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -100,7 +102,7 @@ export function CategoryCombobox({ selectedValue, onSelect, initialCategory }) {
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search category name..."
+            placeholder={t('category_search_placeholder')}
             value={searchQuery}
             onValueChange={setSearchQuery}
           />

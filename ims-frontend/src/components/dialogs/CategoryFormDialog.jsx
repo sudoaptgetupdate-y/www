@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { toast } from 'sonner';
+import { useTranslation } from "react-i18next"; // --- 1. Import useTranslation ---
 
 const initialFormData = {
     name: '',
@@ -18,9 +19,8 @@ const initialFormData = {
     requiresSerialNumber: true
 };
 
-// --- START: แก้ไขชื่อฟังก์ชัน ---
 export default function CategoryFormDialog({ isOpen, setIsOpen, category, onSave }) {
-// --- END ---
+    const { t } = useTranslation(); // --- 2. เรียกใช้ Hook ---
     const [formData, setFormData] = useState(initialFormData);
     const token = useAuthStore((state) => state.token);
     const isEditMode = !!category;
@@ -60,16 +60,17 @@ export default function CategoryFormDialog({ isOpen, setIsOpen, category, onSave
             toast.error(error.response?.data?.error || `Failed to save category.`);
         }
     };
-
+    
+    // --- 3. เปลี่ยนข้อความเป็น t('...') ทั้งหมด ---
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{isEditMode ? 'Edit' : 'Add New'} Category</DialogTitle>
+                    <DialogTitle>{isEditMode ? t('category_form_edit_title') : t('category_form_add_title')}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">Category Name</Label>
+                        <Label htmlFor="name">{t('category_form_name')}</Label>
                         <Input id="name" value={formData.name} onChange={handleInputChange} required />
                     </div>
                     <div className="flex items-center space-x-2">
@@ -78,7 +79,7 @@ export default function CategoryFormDialog({ isOpen, setIsOpen, category, onSave
                             checked={formData.requiresSerialNumber}
                             onCheckedChange={(checked) => handleSwitchChange('requiresSerialNumber', checked)}
                         />
-                        <Label htmlFor="requiresSerialNumber">Requires Serial Number</Label>
+                        <Label htmlFor="requiresSerialNumber">{t('tableHeader_requiresSn')}</Label>
                     </div>
                      <div className="flex items-center space-x-2">
                         <Switch
@@ -86,10 +87,10 @@ export default function CategoryFormDialog({ isOpen, setIsOpen, category, onSave
                             checked={formData.requiresMacAddress}
                             onCheckedChange={(checked) => handleSwitchChange('requiresMacAddress', checked)}
                         />
-                        <Label htmlFor="requiresMacAddress">Requires MAC Address</Label>
+                        <Label htmlFor="requiresMacAddress">{t('tableHeader_requiresMac')}</Label>
                     </div>
                     <DialogFooter>
-                        <Button type="submit">Save</Button>
+                        <Button type="submit">{t('save')}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

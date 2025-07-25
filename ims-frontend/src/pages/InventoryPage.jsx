@@ -202,12 +202,12 @@ export default function InventoryPage() {
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>{t('inventory')} Management</CardTitle>
-                        <CardDescription>Manage all inventory items for sale.</CardDescription>
+                        <CardTitle>{t('inventory')}</CardTitle>
+                        <CardDescription>{t('inventory_description')}</CardDescription>
                     </div>
                     {canManage &&
                         <Button onClick={() => setIsBatchAddOpen(true)}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Inventory Item
+                            <PlusCircle className="mr-2 h-4 w-4" /> {t('inventory_add_new')}
                         </Button>
                     }
                 </div>
@@ -216,7 +216,7 @@ export default function InventoryPage() {
             <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <Input
-                        placeholder="Search by Serial, MAC, Model..."
+                        placeholder={t('createSale_search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="sm:col-span-2 lg:col-span-1"
@@ -231,10 +231,10 @@ export default function InventoryPage() {
                     />
                     <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
                         <SelectTrigger>
-                            <SelectValue placeholder="Filter by Status..." />
+                            <SelectValue placeholder={t('filter_by_status')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="All">All Statuses</SelectItem>
+                            <SelectItem value="All">{t('status_all')}</SelectItem>
                             <SelectItem value="IN_STOCK">In Stock</SelectItem>
                             <SelectItem value="SOLD">Sold</SelectItem>
                             <SelectItem value="BORROWED">Borrowed</SelectItem>
@@ -292,9 +292,9 @@ export default function InventoryPage() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuLabel>{t('tableHeader_actions')}</DropdownMenuLabel>
                                                 <DropdownMenuItem onClick={() => navigate(`/inventory/${item.id}/history`)}>
-                                                    <History className="mr-2 h-4 w-4" /> View History
+                                                    <History className="mr-2 h-4 w-4" /> {t('history')}
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     onClick={() => {
@@ -303,7 +303,7 @@ export default function InventoryPage() {
                                                     }}
                                                     disabled={item.status !== 'SOLD' && item.status !== 'BORROWED'}
                                                 >
-                                                    <View className="mr-2 h-4 w-4" /> View Details
+                                                    <View className="mr-2 h-4 w-4" /> {t('details')}
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem
@@ -325,7 +325,7 @@ export default function InventoryPage() {
                                                             onClick={() => openEditDialog(item)}
                                                             disabled={!['IN_STOCK', 'RESERVED', 'DEFECTIVE'].includes(item.status)}
                                                         >
-                                                            <Edit className="mr-2 h-4 w-4" /> Edit
+                                                            <Edit className="mr-2 h-4 w-4" /> {t('edit')}
                                                         </DropdownMenuItem>
                                                         {item.status === 'IN_STOCK' && (
                                                             <>
@@ -367,7 +367,7 @@ export default function InventoryPage() {
                                                             disabled={!['IN_STOCK', 'RESERVED', 'DECOMMISSIONED'].includes(item.status)}
                                                             onClick={() => setItemToDelete(item)}
                                                         >
-                                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                            <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
                                                         </DropdownMenuItem>
                                                     </>
                                                 )}
@@ -384,7 +384,7 @@ export default function InventoryPage() {
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
                     <Select value={pagination ? String(pagination.itemsPerPage) : "10"} onValueChange={handleItemsPerPageChange}>
                         <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -393,11 +393,11 @@ export default function InventoryPage() {
                     </Select>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                    Page {pagination?.currentPage || 1} of {pagination?.totalPages || 1} ({pagination?.totalItems || 0} items)
+                    {t('pagination_info', { currentPage: pagination?.currentPage || 1, totalPages: pagination?.totalPages || 1, totalItems: pagination?.totalItems || 0 })}
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>{t('previous')}</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
                 </div>
             </CardFooter>
 
@@ -408,8 +408,8 @@ export default function InventoryPage() {
                         <AlertDialogDescription>This will permanently delete the item: <strong>{itemToDelete?.serialNumber}</strong>.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDelete}>Continue</AlertDialogAction>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete}>{t('confirm')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -420,8 +420,8 @@ export default function InventoryPage() {
                         <AlertDialogDescription>This will decommission the item: <strong>{itemToDecommission?.serialNumber || itemToDecommission?.macAddress}</strong>.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDecommission}>Continue</AlertDialogAction>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDecommission}>{t('confirm')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -430,24 +430,24 @@ export default function InventoryPage() {
             )}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent>
-                    <DialogHeader><DialogTitle>Edit Item</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle>{t('edit')} Item</DialogTitle></DialogHeader>
                     <form onSubmit={handleEditSubmit} className="space-y-4 pt-4">
                         <div className="space-y-2">
-                             <Label>Product Model</Label>
+                             <Label>{t('tableHeader_productModel')}</Label>
                              <ProductModelCombobox onSelect={handleEditModelSelect} initialModel={selectedModelInfo} />
                         </div>
                         {selectedModelInfo && (
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2"><Label>Category</Label><Input value={selectedModelInfo.category.name} disabled /></div>
-                                <div className="space-y-2"><Label>Brand</Label><Input value={selectedModelInfo.brand.name} disabled /></div>
+                                <div className="space-y-2"><Label>{t('tableHeader_category')}</Label><Input value={selectedModelInfo.category.name} disabled /></div>
+                                <div className="space-y-2"><Label>{t('tableHeader_brand')}</Label><Input value={selectedModelInfo.brand.name} disabled /></div>
                             </div>
                         )}
                         <div className="space-y-2">
-                            <Label htmlFor="serialNumber">Serial Number {!isSerialRequired && <span className="text-xs text-slate-500 ml-2">(Not Required)</span>}</Label>
+                            <Label htmlFor="serialNumber">{t('tableHeader_serialNumber')} {!isSerialRequired && <span className="text-xs text-slate-500 ml-2">(Not Required)</span>}</Label>
                             <Input id="serialNumber" value={editFormData.serialNumber || ''} onChange={handleEditInputChange} required={isSerialRequired} disabled={!isSerialRequired} />
                         </div>
                         <div className="space-y-2">
-                             <Label htmlFor="macAddress">MAC Address {!isMacRequired && <span className="text-xs text-slate-500 ml-2">(Not Required)</span>}</Label>
+                             <Label htmlFor="macAddress">{t('tableHeader_macAddress')} {!isMacRequired && <span className="text-xs text-slate-500 ml-2">(Not Required)</span>}</Label>
                              <Input
                                 id="macAddress"
                                 value={editFormData.macAddress || ''}
@@ -458,7 +458,7 @@ export default function InventoryPage() {
                                 placeholder="AA:BB:CC:DD:EE:FF"
                              />
                         </div>
-                        <DialogFooter><Button type="submit">Save Changes</Button></DialogFooter>
+                        <DialogFooter><Button type="submit">{t('save')}</Button></DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>

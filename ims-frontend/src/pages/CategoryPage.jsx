@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card"; // --- 1. เพิ่ม CardFooter, CardDescription ---
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { Edit, Trash2, PlusCircle } from "lucide-react"; // --- 2. เพิ่ม PlusCircle ---
+import { Edit, Trash2, PlusCircle } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -17,11 +17,10 @@ import CategoryFormDialog from "@/components/dialogs/CategoryFormDialog";
 import { useTranslation } from "react-i18next";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
-} from "@/components/ui/table"; // --- 3. Import Table Components ---
-import { Label } from "@/components/ui/label"; // --- 4. Import เพิ่มเติม ---
+} from "@/components/ui/table";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// --- 5. แก้ไข SkeletonRow ---
 const SkeletonRow = () => (
     <TableRow>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
@@ -37,7 +36,6 @@ export default function CategoryPage() {
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
-    // --- 6. แก้ไขการเรียกใช้ usePaginatedFetch ---
     const {
         data: categories, pagination, isLoading, searchTerm, handleSearchChange, refreshData, handlePageChange, handleItemsPerPageChange
     } = usePaginatedFetch("/categories", 10); 
@@ -75,16 +73,15 @@ export default function CategoryPage() {
 
     return (
         <Card>
-            {/* --- 7. แก้ไข CardHeader --- */}
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <CardTitle>{t('categories')}</CardTitle>
-                        <CardDescription>Manage product categories and their properties.</CardDescription>
+                        <CardDescription>{t('categories_description')}</CardDescription>
                     </div>
                      {canManage &&
                         <Button onClick={handleAddNew}>
-                           <PlusCircle className="mr-2 h-4 w-4" /> Add New Category
+                           <PlusCircle className="mr-2 h-4 w-4" /> {t('categories_add_new')}
                         </Button>
                     }
                 </div>
@@ -92,13 +89,12 @@ export default function CategoryPage() {
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
-                        placeholder="Search by category name..."
+                        placeholder={t('category_search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="flex-grow"
                     />
                 </div>
-                {/* --- 8. แก้ไขโครงสร้างตาราง --- */}
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -114,16 +110,16 @@ export default function CategoryPage() {
                         ) : categories.map((category) => (
                             <TableRow key={category.id}>
                                 <TableCell>{category.name}</TableCell>
-                                <TableCell className="text-center">{category.requiresSerialNumber ? 'Yes' : 'No'}</TableCell>
-                                <TableCell className="text-center">{category.requiresMacAddress ? 'Yes' : 'No'}</TableCell>
+                                <TableCell className="text-center">{category.requiresSerialNumber ? t('yes') : t('no')}</TableCell>
+                                <TableCell className="text-center">{category.requiresMacAddress ? t('yes') : t('no')}</TableCell>
                                 {canManage && (
                                     <TableCell className="text-center">
                                         <div className="flex items-center justify-center gap-2">
                                             <Button variant="outline" size="sm" className="w-20" onClick={() => handleEdit(category)}>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                                <Edit className="mr-2 h-4 w-4" /> {t('edit')}
                                             </Button>
                                             <Button variant="destructive" size="sm" className="w-20" onClick={() => handleDelete(category)}>
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
                                             </Button>
                                         </div>
                                     </TableCell>
@@ -134,10 +130,9 @@ export default function CategoryPage() {
                 </Table>
             </CardContent>
             
-            {/* --- 9. เพิ่ม CardFooter และ Pagination --- */}
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
                     <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
                         <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -146,11 +141,11 @@ export default function CategoryPage() {
                     </Select>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                    Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
+                    {t('pagination_info', { currentPage: pagination.currentPage, totalPages: pagination.totalPages, totalItems: pagination.totalItems })}
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>{t('previous')}</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
                 </div>
             </CardFooter>
 
@@ -172,8 +167,8 @@ export default function CategoryPage() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDelete}>Continue</AlertDialogAction>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete}>{t('confirm')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

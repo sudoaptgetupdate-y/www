@@ -20,6 +20,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useTranslation } from "react-i18next"; // --- 1. Import useTranslation ---
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -31,6 +32,7 @@ function useDebounce(value, delay) {
 }
 
 export function AddressCombobox({ selectedValue, onSelect, initialAddress }) {
+  const { t } = useTranslation(); // --- 2. เรียกใช้ Hook ---
   const token = useAuthStore((state) => state.token);
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,7 +94,7 @@ export function AddressCombobox({ selectedValue, onSelect, initialAddress }) {
           <span className="truncate">
             {selectedValue && selectedAddressDisplay
               ? selectedAddressDisplay.name
-              : "Select address..."}
+              : t('select_address')}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -100,7 +102,7 @@ export function AddressCombobox({ selectedValue, onSelect, initialAddress }) {
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search address name..."
+            placeholder={t('address_search_placeholder')}
             value={searchQuery}
             onValueChange={setSearchQuery}
           />

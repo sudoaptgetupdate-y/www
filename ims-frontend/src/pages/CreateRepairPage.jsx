@@ -18,6 +18,7 @@ import { AddressCombobox } from "@/components/ui/AddressCombobox";
 import { CustomerCombobox } from "@/components/ui/CustomerCombobox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import CustomerFormDialog from "@/components/dialogs/CustomerFormDialog";
+import { useTranslation } from "react-i18next";
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -29,6 +30,7 @@ function useDebounce(value, delay) {
 }
 
 const CustomerItemDialog = ({ onAddItem }) => {
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [serialNumber, setSerialNumber] = useState("");
     const [selectedModel, setSelectedModel] = useState(null);
@@ -53,25 +55,25 @@ const CustomerItemDialog = ({ onAddItem }) => {
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <Button type="button" variant="outline" onClick={() => setIsOpen(true)}>
-                <PlusCircle className="mr-2" /> Register External Item
+                <PlusCircle className="mr-2" /> {t('createRepair_register_external')}
             </Button>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Register Item for Customer Repair</DialogTitle>
+                    <DialogTitle>{t('createRepair_register_external_title')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label>Product Model</Label>
+                        <Label>{t('tableHeader_productModel')}</Label>
                         <ProductModelCombobox onSelect={setSelectedModel} />
                     </div>
                     <div className="space-y-2">
-                        <Label>Serial Number</Label>
+                        <Label>{t('tableHeader_serialNumber')}</Label>
                         <Input value={serialNumber} onChange={(e) => setSerialNumber(e.target.value.toUpperCase())} />
                     </div>
                 </div>
                 <DialogFooter>
-                    <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-                    <Button onClick={handleSubmit}>Add Item</Button>
+                    <DialogClose asChild><Button type="button" variant="ghost">{t('cancel')}</Button></DialogClose>
+                    <Button onClick={handleSubmit}>{t('add')}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -79,46 +81,38 @@ const CustomerItemDialog = ({ onAddItem }) => {
 };
 
 export default function CreateRepairPage() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const token = useAuthStore((state) => state.token);
 
     const [repairType, setRepairType] = useState('INTERNAL'); // INTERNAL or CUSTOMER
     
-    // States for Customer Repair
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [purchaseHistory, setPurchaseHistory] = useState([]);
     const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
 
-    // States for Internal Repair
     const [internalItems, setInternalItems] = useState([]);
     const [itemSearch, setItemSearch] = useState("");
     const debouncedItemSearch = useDebounce(itemSearch, 500);
 
-    // Common States
     const [selectedItems, setSelectedItems] = useState([]);
     const [senderId, setSenderId] = useState("");
     const [receiverId, setReceiverId] = useState("");
     const [notes, setNotes] = useState("");
 
-    // --- START: ส่วนที่แก้ไข ---
-    // useEffect to reset states when repairType changes
     useEffect(() => {
-        setSelectedItems([]); // Always clear selected items
+        setSelectedItems([]);
         if (repairType === 'INTERNAL') {
-            // Reset customer-related states
             setSelectedCustomerId("");
             setSelectedCustomer(null);
             setPurchaseHistory([]);
         } else if (repairType === 'CUSTOMER') {
-            // Reset internal-related states
             setItemSearch("");
             setInternalItems([]);
         }
     }, [repairType]);
-    // --- END: ส่วนที่แก้ไข ---
 
-    // Fetch internal items for internal repair
     useEffect(() => {
         if (repairType !== 'INTERNAL' || !token) return;
 
@@ -139,7 +133,6 @@ export default function CreateRepairPage() {
         fetchItems();
     }, [repairType, debouncedItemSearch, token, selectedItems]);
 
-    // Fetch customer's purchase history
     useEffect(() => {
         if (repairType !== 'CUSTOMER' || !selectedCustomerId || !token) {
             setPurchaseHistory([]);
@@ -205,19 +198,19 @@ export default function CreateRepairPage() {
             <div className="lg:col-span-2 space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Step 1: Choose Repair Type</CardTitle>
+                        <CardTitle>{t('createRepair_step1_title')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <RadioGroup value={repairType} onValueChange={setRepairType} className="flex gap-4">
                             <Label htmlFor="internal" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary w-full">
                                 <RadioGroupItem value="INTERNAL" id="internal" className="sr-only" />
                                 <Truck className="mb-3 h-6 w-6" />
-                                Internal Repair
+                                {t('createRepair_type_internal')}
                             </Label>
                              <Label htmlFor="customer" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary w-full">
                                 <RadioGroupItem value="CUSTOMER" id="customer" className="sr-only" />
                                 <UserPlus className="mb-3 h-6 w-6" />
-                                For Customer
+                                {t('createRepair_type_customer')}
                             </Label>
                         </RadioGroup>
                     </CardContent>
@@ -225,17 +218,17 @@ export default function CreateRepairPage() {
 
                 {repairType === 'INTERNAL' && (
                      <Card>
-                        <CardHeader><CardTitle>Step 2: Select Company-Owned Items</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>{t('createRepair_step2_internal_title')}</CardTitle></CardHeader>
                         <CardContent>
-                            <Input placeholder="Search company items by S/N, Asset Code..." value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} />
+                            <Input placeholder={t('createRepair_search_asset_placeholder')} value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} />
                              <div className="mt-4 h-96 overflow-y-auto border rounded-md">
                                 <table className="w-full text-sm">
                                     <thead className="sticky top-0 bg-slate-100">
-                                        <tr className="border-b"><th className="p-2 text-left">Identifier</th><th className="p-2 text-left">Product</th><th className="p-2 text-left">Type</th><th className="p-2 text-center">Action</th></tr>
+                                        <tr className="border-b"><th className="p-2 text-left">{t('tableHeader_identifier')}</th><th className="p-2 text-left">{t('tableHeader_productModel')}</th><th className="p-2 text-left">{t('tableHeader_type')}</th><th className="p-2 text-center">{t('tableHeader_actions')}</th></tr>
                                     </thead>
                                     <tbody>
                                         {internalItems.map(item => (
-                                            <tr key={item.id} className="border-b"><td className="p-2 font-semibold">{item.assetCode || item.serialNumber}</td><td className="p-2">{item.productModel.modelNumber}</td><td className="p-2">{item.itemType}</td><td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>Add</Button></td></tr>
+                                            <tr key={item.id} className="border-b"><td className="p-2 font-semibold">{item.assetCode || item.serialNumber}</td><td className="p-2">{item.productModel.modelNumber}</td><td className="p-2">{item.itemType}</td><td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>{t('add')}</Button></td></tr>
                                         ))}
                                     </tbody>
                                 </table>
@@ -247,10 +240,10 @@ export default function CreateRepairPage() {
                 {repairType === 'CUSTOMER' && (
                      <Card>
                         <CardHeader>
-                            <CardTitle>Step 2: Select Customer & Item</CardTitle>
+                            <CardTitle>{t('createRepair_step2_customer_title')}</CardTitle>
                             <div className="flex items-center gap-2 pt-2">
                                 <div className="flex-grow"><CustomerCombobox selectedValue={selectedCustomerId} onSelect={setSelectedCustomerId} /></div>
-                                <Button variant="outline" size="sm" onClick={() => setIsCustomerFormOpen(true)}><UserPlus className="mr-2" />New</Button>
+                                <Button variant="outline" size="sm" onClick={() => setIsCustomerFormOpen(true)}><UserPlus className="mr-2" />{t('add_new')}</Button>
                             </div>
                         </CardHeader>
                         {selectedCustomerId && (
@@ -258,15 +251,15 @@ export default function CreateRepairPage() {
                                 <div className="flex gap-4 mb-4">
                                      <CustomerItemDialog onAddItem={handleAddItem} />
                                 </div>
-                                 <p className="text-sm text-muted-foreground mb-2 text-center">Or select from customer's purchase history below:</p>
+                                 <p className="text-sm text-muted-foreground mb-2 text-center">{t('createRepair_select_from_history')}</p>
                                 <div className="h-80 overflow-y-auto border rounded-md">
                                     <table className="w-full text-sm">
                                         <thead className="sticky top-0 bg-slate-100">
-                                            <tr className="border-b"><th className="p-2 text-left">Product</th><th className="p-2 text-left">Serial No.</th><th className="p-2 text-left">Purchase Date</th><th className="p-2 text-center">Action</th></tr>
+                                            <tr className="border-b"><th className="p-2 text-left">{t('tableHeader_productModel')}</th><th className="p-2 text-left">{t('tableHeader_serialNumber')}</th><th className="p-2 text-left">{t('tableHeader_purchaseDate')}</th><th className="p-2 text-center">{t('tableHeader_actions')}</th></tr>
                                         </thead>
                                         <tbody>
                                             {purchaseHistory.map(item => (
-                                                <tr key={item.id} className="border-b"><td className="p-2">{item.productModel.modelNumber}</td><td className="p-2">{item.serialNumber}</td><td className="p-2">{new Date(item.purchaseDate).toLocaleDateString()}</td><td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>Add</Button></td></tr>
+                                                <tr key={item.id} className="border-b"><td className="p-2">{item.productModel.modelNumber}</td><td className="p-2">{item.serialNumber}</td><td className="p-2">{new Date(item.purchaseDate).toLocaleDateString()}</td><td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>{t('add')}</Button></td></tr>
                                             ))}
                                         </tbody>
                                     </table>
@@ -277,16 +270,16 @@ export default function CreateRepairPage() {
                 )}
             </div>
             <Card>
-                <CardHeader><CardTitle>Step 3: Repair Order Summary</CardTitle></CardHeader>
+                <CardHeader><CardTitle>{t('createRepair_step3_title')}</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label>From (Sender)</Label><AddressCombobox selectedValue={senderId} onSelect={setSenderId} /></div>
-                        <div className="space-y-2"><Label>To (Receiver)</Label><AddressCombobox selectedValue={receiverId} onSelect={setReceiverId} /></div>
+                        <div className="space-y-2"><Label>{t('createRepair_sender_label')}</Label><AddressCombobox selectedValue={senderId} onSelect={setSenderId} /></div>
+                        <div className="space-y-2"><Label>{t('createRepair_receiver_label')}</Label><AddressCombobox selectedValue={receiverId} onSelect={setReceiverId} /></div>
                     </div>
-                    <div className="space-y-2"><Label>Notes / Problem Description</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+                    <div className="space-y-2"><Label>{t('createBorrowing_notes_label')}</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
                     <Separator />
                     <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Selected Items ({selectedItems.length})</h4>
+                        <h4 className="text-sm font-medium">{t('createSale_selected_items', { count: selectedItems.length })}</h4>
                         <div className="h-48 overflow-y-auto space-y-2 pr-2">
                             {selectedItems.map(item => (
                                 <div key={item.id} className="flex justify-between items-center bg-slate-50 p-2 rounded-md">
@@ -301,7 +294,7 @@ export default function CreateRepairPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button className="w-full" size="lg" onClick={handleSubmit}>Create Repair Order</Button>
+                    <Button className="w-full" size="lg" onClick={handleSubmit}>{t('createRepair_confirm_button')}</Button>
                 </CardFooter>
             </Card>
 
@@ -309,7 +302,7 @@ export default function CreateRepairPage() {
                 open={isCustomerFormOpen}
                 onOpenChange={setIsCustomerFormOpen}
                 isEditMode={false}
-                onSuccess={() => {}} // We don't need to refresh the main list here
+                onSuccess={() => {}}
             />
         </div>
     );

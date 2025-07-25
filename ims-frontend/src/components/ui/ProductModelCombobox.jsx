@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/popover";
 import useAuthStore from "@/store/authStore";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next"; // --- 1. Import useTranslation ---
 
-// Debounce hook to prevent API calls on every keystroke
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
@@ -32,15 +32,15 @@ function useDebounce(value, delay) {
 }
 
 export function ProductModelCombobox({ onSelect, initialModel }) {
+  const { t } = useTranslation(); // --- 2. เรียกใช้ Hook ---
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState([]);
   const [selectedModelDisplay, setSelectedModelDisplay] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const token = useAuthStore((state) => state.token);
-  const debouncedSearch = useDebounce(searchQuery, 500); // Increased delay slightly
+  const debouncedSearch = useDebounce(searchQuery, 500);
 
-  // Effect to set the initial value when in edit mode
   useEffect(() => {
     if (initialModel) {
       setSelectedModelDisplay(initialModel);
@@ -51,10 +51,9 @@ export function ProductModelCombobox({ onSelect, initialModel }) {
     }
   }, [initialModel]);
 
-  // Effect to fetch data when the popover is open and search term changes
   useEffect(() => {
     if (!open) {
-      setSearchQuery(""); // Reset search when closed
+      setSearchQuery("");
       return;
     }
 
@@ -73,12 +72,10 @@ export function ProductModelCombobox({ onSelect, initialModel }) {
         setIsLoading(false);
       }
     };
-
-    // This is the simplified and corrected logic
-    // Always fetch when the debounced search term changes.
+    
     fetchModels();
     
-  }, [debouncedSearch, open, token]); // Dependency array is now simpler
+  }, [debouncedSearch, open, token]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -89,7 +86,7 @@ export function ProductModelCombobox({ onSelect, initialModel }) {
           className="w-full justify-between"
         >
           <span className="truncate">
-            {selectedModelDisplay ? selectedModelDisplay.modelNumber : "Select product model..."}
+            {selectedModelDisplay ? selectedModelDisplay.modelNumber : t('select_product_model')}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -97,7 +94,7 @@ export function ProductModelCombobox({ onSelect, initialModel }) {
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search model number or brand..."
+            placeholder={t('product_model_search_placeholder')}
             value={searchQuery}
             onValueChange={setSearchQuery}
           />

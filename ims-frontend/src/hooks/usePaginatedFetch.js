@@ -24,23 +24,23 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, defaultFilt
     const location = useLocation();
     const navigate = useNavigate();
 
-    // --- START: แก้ไขส่วนนี้ใหม่ทั้งหมดเพื่อป้องกัน Infinite Loop ---
+    // --- START: แก้ไขส่วนนี้ใหม่ทั้งหมดเพื่อป้องกัน Bug ---
     const getInitialFilters = useCallback((locState) => {
         const locationState = locState || {};
+        // Use JSON.stringify to create a stable dependency for useCallback
         return locationState.status ? { ...defaultFilters, status: locationState.status } : defaultFilters;
     }, [JSON.stringify(defaultFilters)]);
 
     const [filters, setFilters] = useState(() => getInitialFilters(location.state));
 
-    // Effect นี้จะทำงานเฉพาะเมื่อ location.state เปลี่ยนแปลงเท่านั้น
+    // This effect should ONLY run when the location state itself changes.
     useEffect(() => {
         const newFilters = getInitialFilters(location.state);
-        // ตรวจสอบก่อน set state เพื่อไม่ให้ re-render โดยไม่จำเป็น
         if (JSON.stringify(newFilters) !== JSON.stringify(filters)) {
             setFilters(newFilters);
             setPagination(p => ({ ...p, currentPage: 1 }));
         }
-    }, [location.state, getInitialFilters, filters]);
+    }, [location.state, getInitialFilters]);
     // --- END: จบส่วนแก้ไข ---
 
     const [data, setData] = useState([]);
@@ -113,6 +113,7 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, defaultFilt
     };
     
     const handleFilterChange = (filterName, value) => {
+        // Clear location state if user manually changes a filter
         if (location.state?.status) {
             navigate(location.pathname, { replace: true, state: {} });
         }

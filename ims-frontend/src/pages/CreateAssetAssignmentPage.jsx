@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { UserCombobox } from "@/components/ui/UserCombobox";
+import { useTranslation } from "react-i18next";
+import { Trash2 } from "lucide-react";
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -23,13 +25,12 @@ function useDebounce(value, delay) {
 }
 
 export default function CreateAssetAssignmentPage() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
     const token = useAuthStore((state) => state.token);
 
-    // --- START: แก้ไข 1/4: เพิ่ม State เก็บข้อมูลดิบ ---
     const [fetchedAssets, setFetchedAssets] = useState([]);
-    // --- END ---
     const [availableAssets, setAvailableAssets] = useState([]);
     const [selectedUserId, setSelectedUserId] = useState("");
     const [selectedAssets, setSelectedAssets] = useState([]);
@@ -45,7 +46,6 @@ export default function CreateAssetAssignmentPage() {
         }
     }, [location.state]);
 
-    // --- START: แก้ไข 2/4: useEffect นี้จะทำหน้าที่ 'ดึง' ข้อมูลอย่างเดียว ---
     useEffect(() => {
         const fetchAvailableAssets = async () => {
             if (!token) return;
@@ -68,16 +68,12 @@ export default function CreateAssetAssignmentPage() {
         };
         fetchAvailableAssets();
     }, [token, debouncedAssetSearch]);
-    // --- END ---
 
-    // --- START: แก้ไข 3/4: useEffect ใหม่นี้จะทำหน้าที่ 'กรอง' ข้อมูลโดยเฉพาะ ---
     useEffect(() => {
         const selectedIds = new Set(selectedAssets.map(i => i.id));
         setAvailableAssets(fetchedAssets.filter(asset => !selectedIds.has(asset.id)));
     }, [selectedAssets, fetchedAssets]);
-    // --- END ---
 
-    // --- START: แก้ไข 4/4: ทำให้ Logic การ Add/Remove ง่ายขึ้น ---
     const handleAddItem = (assetToAdd) => {
         setSelectedAssets(prev => [...prev, assetToAdd]);
     };
@@ -85,7 +81,6 @@ export default function CreateAssetAssignmentPage() {
     const handleRemoveItem = (assetToRemove) => {
         setSelectedAssets(prev => prev.filter(asset => asset.id !== assetToRemove.id));
     };
-    // --- END ---
 
     const handleSubmit = async () => {
         if (!selectedUserId) {
@@ -118,12 +113,12 @@ export default function CreateAssetAssignmentPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2">
                 <CardHeader>
-                    <CardTitle>Select Assets to Assign</CardTitle>
-                    <CardDescription>Search for available assets in the warehouse.</CardDescription>
+                    <CardTitle>{t('createAssignment_title')}</CardTitle>
+                    <CardDescription>{t('createAssignment_description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Input
-                        placeholder="Search by Asset Code, S/N, or Product Model..."
+                        placeholder={t('asset_search_placeholder')}
                         value={assetSearch}
                         onChange={(e) => setAssetSearch(e.target.value)}
                         className="mb-4"
@@ -132,10 +127,10 @@ export default function CreateAssetAssignmentPage() {
                         <table className="w-full text-sm">
                             <thead className="sticky top-0 bg-slate-100">
                                 <tr className="border-b">
-                                    <th className="p-2 text-left">Asset Code</th>
-                                    <th className="p-2 text-left">Product</th>
-                                    <th className="p-2 text-left">Serial No.</th>
-                                    <th className="p-2 text-center">Action</th>
+                                    <th className="p-2 text-left">{t('tableHeader_assetCode')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
+                                    <th className="p-2 text-center">{t('tableHeader_actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -147,7 +142,7 @@ export default function CreateAssetAssignmentPage() {
                                         <td className="p-2">{asset.productModel.modelNumber}</td>
                                         <td className="p-2">{asset.serialNumber || '-'}</td>
                                         <td className="p-2 text-center">
-                                            <Button size="sm" onClick={() => handleAddItem(asset)}>Add</Button>
+                                            <Button size="sm" onClick={() => handleAddItem(asset)}>{t('add')}</Button>
                                         </td>
                                     </tr>
                                 ))}
@@ -157,27 +152,26 @@ export default function CreateAssetAssignmentPage() {
                 </CardContent>
             </Card>
             <Card>
-                <CardHeader><CardTitle>Assignment Summary</CardTitle></CardHeader>
+                <CardHeader><CardTitle>{t('createAssignment_summary_title')}</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label>Assign To (Employee)</Label>
+                        <Label>{t('createAssignment_assignee_label')}</Label>
                         <UserCombobox
                             selectedValue={selectedUserId}
                             onSelect={setSelectedUserId}
                         />
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="notes">Notes (Optional)</Label>
+                        <Label htmlFor="notes">{t('createBorrowing_notes_label')}</Label>
                         <Textarea
                             id="notes"
-                            placeholder="Add any relevant notes here..."
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                         />
                     </div>
                     <Separator />
                     <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Selected Assets ({selectedAssets.length})</h4>
+                        <h4 className="text-sm font-medium">{t('createSale_selected_items', { count: selectedAssets.length })}</h4>
                         {selectedAssets.length > 0 ? (
                             <div className="h-64 overflow-y-auto space-y-2 pr-2">
                                 {selectedAssets.map(asset => (
@@ -186,11 +180,11 @@ export default function CreateAssetAssignmentPage() {
                                             <p className="font-semibold">{asset.assetCode}</p>
                                             <p className="text-xs text-slate-500">{asset.productModel.modelNumber}</p>
                                         </div>
-                                        <Button variant="destructive" size="sm" onClick={() => handleRemoveItem(asset)}>Remove</Button>
+                                        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleRemoveItem(asset)}><Trash2 className="h-4 w-4" /></Button>
                                     </div>
                                 ))}
                             </div>
-                        ) : (<p className="text-sm text-slate-500 text-center py-8">No assets selected.</p>)}
+                        ) : (<p className="text-sm text-slate-500 text-center py-8">{t('createSale_no_items')}</p>)}
                     </div>
                 </CardContent>
                 <CardFooter>
@@ -200,7 +194,7 @@ export default function CreateAssetAssignmentPage() {
                         onClick={handleSubmit}
                         disabled={!selectedUserId || selectedAssets.length === 0}
                     >
-                        Confirm Assignment
+                        {t('createAssignment_confirm_button')}
                     </Button>
                 </CardFooter>
             </Card>

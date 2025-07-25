@@ -2,7 +2,7 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card"; // --- 1. เพิ่ม CardDescription ---
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,10 +12,9 @@ import { PlusCircle, ArrowUpDown } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
-} from "@/components/ui/table"; // --- 2. Import Table Components ---
+} from "@/components/ui/table";
+import { useTranslation } from "react-i18next";
 
-
-// --- 3. แก้ไข SkeletonRow ---
 const SkeletonRow = () => (
     <TableRow>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
@@ -29,9 +28,8 @@ const SkeletonRow = () => (
     </TableRow>
 );
 
-// --- 4. แก้ไข SortableHeader ---
 const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort }) => (
-    <TableHead className="p-2 text-left cursor-pointer hover:bg-slate-50" onClick={() => onSort(sortKey)}>
+    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => onSort(sortKey)}>
         <div className="flex items-center gap-2">
             {children}
             {currentSortBy === sortKey && <ArrowUpDown className={`h-4 w-4 ${sortOrder === 'desc' ? 'text-slate-400' : ''}`} />}
@@ -41,6 +39,7 @@ const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort })
 
 export default function BorrowingPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
@@ -64,16 +63,15 @@ export default function BorrowingPage() {
 
     return (
         <Card>
-            {/* --- 5. แก้ไข CardHeader --- */}
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>Borrowing Records</CardTitle>
-                        <CardDescription>Track and manage all borrowing and return records.</CardDescription>
+                        <CardTitle>{t('borrowing_title')}</CardTitle>
+                        <CardDescription>{t('borrowingDescription')}</CardDescription>
                     </div>
                     {canManage && (
                         <Button onClick={() => navigate('/borrowings/new')}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Create New Borrowing
+                            <PlusCircle className="mr-2 h-4 w-4" /> {t('borrowing_create_new')}
                         </Button>
                     )}
                 </div>
@@ -81,43 +79,42 @@ export default function BorrowingPage() {
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
-                        placeholder="Search by Customer, Admin, or Serial Number..."
+                        placeholder={t('borrowing_search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="flex-grow"
                     />
                     <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
                         <SelectTrigger className="w-full sm:w-[180px]">
-                            <SelectValue placeholder="Filter by Status..." />
+                            <SelectValue placeholder={t('filter_by_status')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="All">All Statuses</SelectItem>
-                            <SelectItem value="BORROWED">Borrowed</SelectItem>
-                            <SelectItem value="RETURNED">Returned</SelectItem>
-                            <SelectItem value="OVERDUE">Overdue</SelectItem>
+                            <SelectItem value="All">{t('status_all')}</SelectItem>
+                            <SelectItem value="BORROWED">{t('status_borrowed')}</SelectItem>
+                            <SelectItem value="RETURNED">{t('status_returned')}</SelectItem>
+                            <SelectItem value="OVERDUE">{t('status_overdue')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
-                {/* --- 6. แก้ไขโครงสร้างตาราง --- */}
                 <Table>
                     <TableHeader>
                         <TableRow>
                             <SortableHeader sortKey="id" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                Record ID
+                                {t('tableHeader_recordId')}
                             </SortableHeader>
                             <SortableHeader sortKey="customer" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                Customer
+                                {t('tableHeader_customer')}
                             </SortableHeader>
                             <SortableHeader sortKey="borrowDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                Borrow Date
+                                {t('tableHeader_borrowDate')}
                             </SortableHeader>
                             <SortableHeader sortKey="dueDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                Due Date
+                                {t('tableHeader_dueDate')}
                             </SortableHeader>
-                            <TableHead className="p-2 text-center">Status</TableHead>
-                            <TableHead className="p-2 text-center">Item Status</TableHead>
-                            <TableHead className="p-2 text-left">Approved By</TableHead>
-                            <TableHead className="p-2 text-center">Actions</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_itemStatus')}</TableHead>
+                            <TableHead className="text-left">{t('tableHeader_approvedBy')}</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -137,11 +134,11 @@ export default function BorrowingPage() {
                                         interactive
                                     />
                                 </TableCell>
-                                <TableCell className="text-center">{b.returnedItemCount}/{b.totalItemCount} Returned</TableCell>
+                                <TableCell className="text-center">{b.returnedItemCount}/{b.totalItemCount} {t('item_status_returned')}</TableCell>
                                 <TableCell>{b.approvedBy?.name || 'N/A'}</TableCell>
                                 <TableCell className="text-center">
                                     <Button variant="outline" size="sm" onClick={() => navigate(`/borrowings/${b.id}`)}>
-                                        Details
+                                        {t('details')}
                                     </Button>
                                 </TableCell>
                             </TableRow>
@@ -151,7 +148,7 @@ export default function BorrowingPage() {
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
                     <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
                         <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -160,11 +157,11 @@ export default function BorrowingPage() {
                     </Select>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                    Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
+                    {t('pagination_info', { currentPage: pagination.currentPage, totalPages: pagination.totalPages, totalItems: pagination.totalItems })}
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>{t('previous')}</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
                 </div>
             </CardFooter>
         </Card>
