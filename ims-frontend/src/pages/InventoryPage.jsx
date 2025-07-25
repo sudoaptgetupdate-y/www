@@ -310,13 +310,13 @@ export default function InventoryPage() {
                                                     onClick={() => handleSellItem(item)}
                                                     disabled={item.status !== 'IN_STOCK'}
                                                 >
-                                                    <ShoppingCart className="mr-2 h-4 w-4" /> Sell This Item
+                                                    <ShoppingCart className="mr-2 h-4 w-4" /> {t('action_sell')}
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     onClick={() => handleBorrowItem(item)}
                                                     disabled={item.status !== 'IN_STOCK'}
                                                 >
-                                                    <ArrowRightLeft className="mr-2 h-4 w-4" /> Borrow This Item
+                                                    <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('action_borrow')}
                                                 </DropdownMenuItem>
                                                 {canManage && (
                                                     <>
@@ -330,26 +330,26 @@ export default function InventoryPage() {
                                                         {item.status === 'IN_STOCK' && (
                                                             <>
                                                                 <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'reserve', 'Item marked as RESERVED.')}>
-                                                                    <ArchiveRestore className="mr-2 h-4 w-4" /> Mark as Reserved
+                                                                    <ArchiveRestore className="mr-2 h-4 w-4" /> {t('action_mark_reserved')}
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem className="text-orange-600 focus:text-orange-500" onClick={() => handleStatusChange(item.id, 'defect', 'Item marked as DEFECTIVE.')}>
-                                                                    <ShieldAlert className="mr-2 h-4 w-4" /> Mark as Defective
+                                                                    <ShieldAlert className="mr-2 h-4 w-4" /> {t('action_mark_defective')}
                                                                 </DropdownMenuItem>
                                                             </>
                                                         )}
                                                         {item.status === 'RESERVED' && (
                                                             <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'unreserve', 'Item is now IN STOCK.')}>
-                                                                <ArrowRightLeft className="mr-2 h-4 w-4" /> Unreserve
+                                                                <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('action_unreserve')}
                                                             </DropdownMenuItem>
                                                         )}
                                                          {item.status === 'DEFECTIVE' && (
                                                             <DropdownMenuItem className="text-green-600 focus:text-green-500" onClick={() => handleStatusChange(item.id, 'in-stock', 'Item marked as IN STOCK.')}>
-                                                                <ShieldCheck className="mr-2 h-4 w-4" /> Mark as In Stock
+                                                                <ShieldCheck className="mr-2 h-4 w-4" /> {t('action_mark_in_stock')}
                                                             </DropdownMenuItem>
                                                         )}
                                                         {item.status === 'DECOMMISSIONED' ? (
                                                             <DropdownMenuItem onClick={() => handleReinstateItem(item.id)}>
-                                                                <ArrowRightLeft className="mr-2 h-4 w-4" /> Reinstate
+                                                                <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('action_reinstate')}
                                                             </DropdownMenuItem>
                                                         ) : (
                                                             <DropdownMenuItem
@@ -358,7 +358,7 @@ export default function InventoryPage() {
                                                                 disabled={!['IN_STOCK', 'DEFECTIVE'].includes(item.status)}
                                                                 onClick={() => setItemToDecommission(item)}
                                                             >
-                                                                <Archive className="mr-2 h-4 w-4" /> Decommission
+                                                                <Archive className="mr-2 h-4 w-4" /> {t('action_decommission')}
                                                             </DropdownMenuItem>
                                                         )}
                                                         <DropdownMenuItem

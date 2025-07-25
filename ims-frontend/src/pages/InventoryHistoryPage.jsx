@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { getStatusProperties } from "@/lib/statusUtils";
+import { useTranslation } from "react-i18next";
 
 const eventConfig = {
     CREATE: { icon: <PlusCircle className="h-4 w-4" /> },
@@ -35,6 +36,7 @@ const eventConfig = {
 export default function InventoryHistoryPage() {
     const { itemId } = useParams();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const [itemDetails, setItemDetails] = useState(null);
     const [history, setHistory] = useState([]);
@@ -83,33 +85,34 @@ export default function InventoryHistoryPage() {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <Package className="h-6 w-6" /> Item History
+                        <Package className="h-6 w-6" /> {t('item_history_title')}
                     </h1>
                     <p className="text-muted-foreground">
-                        Tracking history for: {itemDetails.productModel.modelNumber} (S/N: {itemDetails.serialNumber || 'N/A'})
+                        {t('item_history_description', { 
+                            modelNumber: itemDetails.productModel.modelNumber, 
+                            serialNumber: itemDetails.serialNumber || 'N/A' 
+                        })}
                     </p>
                 </div>
                 <Button variant="outline" onClick={() => navigate('/inventory')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Inventory
+                    {t('item_history_back_button')}
                 </Button>
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>Transaction Log</CardTitle>
-                    <CardDescription>A complete chronological history of this item.</CardDescription>
+                    <CardTitle>{t('item_history_log_title')}</CardTitle>
+                    <CardDescription>{t('item_history_log_description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {/* --- START: แก้ไขโดยเพิ่ม div ครอบ table --- */}
                     <div className="border rounded-lg overflow-x-auto">
                         <table className="w-full text-sm whitespace-nowrap">
-                    {/* --- END --- */}
                             <thead>
                                 <tr className="border-b">
-                                    <th className="p-2 text-left">Date</th>
-                                    <th className="p-2 text-left">Details</th>
-                                    <th className="p-2 text-left">Handled By</th>
-                                    <th className="p-2 text-center w-40">Event</th>
+                                    <th className="p-2 text-left">{t('tableHeader_date')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_details')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_handledBy')}</th>
+                                    <th className="p-2 text-center w-40">{t('tableHeader_event')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -151,7 +154,7 @@ export default function InventoryHistoryPage() {
                                         </td>
                                     </tr>
                                 )}) : (
-                                    <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">No transaction history found for this item.</td></tr>
+                                    <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">{t('item_history_no_history')}</td></tr>
                                 )}
                             </tbody>
                         </table>

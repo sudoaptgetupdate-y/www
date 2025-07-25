@@ -20,8 +20,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useTranslation } from "react-i18next";
 
-// --- START: เพิ่ม useDebounce ---
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
@@ -30,19 +30,17 @@ function useDebounce(value, delay) {
     }, [value, delay]);
     return debouncedValue;
 }
-// --- END ---
 
 export function UserCombobox({ selectedValue, onSelect, initialUser }) {
+  const { t } = useTranslation(); // เพิ่ม useTranslation
   const token = useAuthStore((state) => state.token);
   const [open, setOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState([]); // เปลี่ยนชื่อ state
+  const [searchResults, setSearchResults] = useState([]);
   const [selectedUserDisplay, setSelectedUserDisplay] = useState(null);
   
-  // --- START: เพิ่ม State และ Debounce สำหรับการค้นหา ---
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  // --- END ---
 
   useEffect(() => {
     if (initialUser) {
@@ -53,7 +51,6 @@ export function UserCombobox({ selectedValue, onSelect, initialUser }) {
     }
   }, [initialUser]);
   
-  // --- START: แก้ไข useEffect ให้ค้นหาข้อมูลแทนการดึงทั้งหมด ---
   useEffect(() => {
     if (!open) {
       setSearchQuery("");
@@ -67,6 +64,7 @@ export function UserCombobox({ selectedValue, onSelect, initialUser }) {
           headers: { Authorization: `Bearer ${token}` },
           params: { search: debouncedSearchQuery, limit: 10 },
         });
+        // **แก้ไขกลับมาใช้ .data เหมือนเวอร์ชันที่ถูกต้องของคุณ**
         setSearchResults(response.data.data);
       } catch (error) {
         toast.error("Failed to fetch users.");
@@ -76,7 +74,6 @@ export function UserCombobox({ selectedValue, onSelect, initialUser }) {
     };
     fetchUsers();
   }, [debouncedSearchQuery, open, token]);
-  // --- END ---
   
   useEffect(() => {
     if (selectedValue) {
@@ -96,16 +93,15 @@ export function UserCombobox({ selectedValue, onSelect, initialUser }) {
           <span className="truncate">
             {selectedValue && selectedUserDisplay
               ? `${selectedUserDisplay.name} (${selectedUserDisplay.username})`
-              : "Select user..."}
+              : t('select_user')} {/* แปล Placeholder */}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        {/* --- START: แก้ไข Command ให้รองรับการค้นหาจาก API --- */}
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search user by name..."
+            placeholder={t('user_combobox_search_placeholder')} // แปล Placeholder
             value={searchQuery}
             onValueChange={setSearchQuery}
           />
@@ -113,10 +109,11 @@ export function UserCombobox({ selectedValue, onSelect, initialUser }) {
             {isLoading && <div className="p-2 text-center text-sm">Loading...</div>}
             <CommandEmpty>No user found.</CommandEmpty>
             <CommandGroup>
-              {searchResults.map((user) => (
+              {/* เพิ่มการป้องกัน .map เพื่อความปลอดภัย */}
+              {(searchResults || []).map((user) => (
                 <CommandItem
                   key={user.id}
-                  value={String(user.id)} // ใช้ ID เป็น value
+                  value={String(user.id)}
                   onSelect={() => {
                      onSelect(String(user.id));
                      setSelectedUserDisplay(user);
@@ -135,7 +132,6 @@ export function UserCombobox({ selectedValue, onSelect, initialUser }) {
             </CommandGroup>
           </CommandList>
         </Command>
-        {/* --- END --- */}
       </PopoverContent>
     </Popover>
   );

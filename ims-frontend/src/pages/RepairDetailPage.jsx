@@ -23,11 +23,13 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useTranslation } from "react-i18next";
 
 
 export default function RepairDetailPage() {
     const { repairId } = useParams();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const [repairOrder, setRepairOrder] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -113,19 +115,19 @@ export default function RepairDetailPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
                 <div>
-                    <h1 className="text-2xl font-bold">Repair Order Details</h1>
-                    <p className="text-muted-foreground">Viewing details for Repair ID #{formattedRepairId}</p>
+                    <h1 className="text-2xl font-bold">{t('repair_detail_title')}</h1>
+                    <p className="text-muted-foreground">{t('repair_detail_description', { id: formattedRepairId })}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={() => navigate(-1)}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
+                        <ArrowLeft className="mr-2 h-4 w-4" /> {t('repair_detail_back_button')}
                     </Button>
                     <Button variant="outline" onClick={() => window.print()}>
-                        <Printer className="mr-2 h-4 w-4" /> Print / PDF
+                        <Printer className="mr-2 h-4 w-4" /> {t('repair_detail_print_button')}
                     </Button>
                     {itemsStillAtRepair.length > 0 && (
                         <Button onClick={() => setIsReturnDialogOpen(true)}>
-                            <Wrench className="mr-2"/> Receive Items from Repair
+                            <Wrench className="mr-2"/> {t('repair_detail_receive_button')}
                         </Button>
                     )}
                 </div>
@@ -133,16 +135,16 @@ export default function RepairDetailPage() {
             
             <Card className="printable-area p-4 sm:p-6 md:p-8 font-sarabun">
                 <div className="print-header hidden">
-                    <h1 className="text-xl font-bold">ใบส่งซ่อมสินค้า / Repair Order</h1>
+                    <h1 className="text-xl font-bold">{t('print_header_title')}</h1>
                 </div>
 
                 <CardHeader className="p-0 mb-6">
                      <div className="flex justify-between items-start mb-6">
                         <div>
-                            <p className="text-lg font-semibold">Repair Order</p>
-                            <p className="text-sm"><strong>ID:</strong> #{formattedRepairId}</p>
-                            <p className="text-sm"><strong>Date Sent:</strong> {new Date(repairOrder.repairDate).toLocaleString('th-TH')}</p>
-                            <p className="text-sm"><strong>Created By:</strong> {repairOrder.createdBy?.name || 'N/A'}</p>
+                            <p className="text-lg font-semibold">{t('repairOrders')}</p>
+                            <p className="text-sm"><strong>{t('repair_form_id')}</strong> #{formattedRepairId}</p>
+                            <p className="text-sm"><strong>{t('repair_form_date_sent')}</strong> {new Date(repairOrder.repairDate).toLocaleString('th-TH')}</p>
+                            <p className="text-sm"><strong>{t('repair_form_created_by')}</strong> {repairOrder.createdBy?.name || 'N/A'}</p>
                         </div>
                         <div className="text-right no-print">
                             <StatusBadge status={repairOrder.status} className="w-32 text-base" />
@@ -151,14 +153,14 @@ export default function RepairDetailPage() {
                     
                      <div className="grid md:grid-cols-2 gap-6 text-sm border-t border-b py-4">
                         <div className="space-y-1">
-                            <p className="text-muted-foreground font-semibold">FROM (SENDER):</p>
+                            <p className="text-muted-foreground font-semibold">{t('repair_form_sender')}</p>
                             <p className="font-bold text-base">{repairOrder.sender?.name || 'N/A'}</p>
                             <p>{repairOrder.sender?.contactPerson || '-'}</p>
                             <p>โทร. {repairOrder.sender?.phone || '-'}</p>
                             <p>{repairOrder.sender?.address || '-'}</p>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-muted-foreground font-semibold">TO (RECEIVER/REPAIR CENTER):</p>
+                            <p className="text-muted-foreground font-semibold">{t('repair_form_receiver')}</p>
                             <p className="font-bold text-base">{repairOrder.receiver?.name || 'N/A'}</p>
                              <p>{repairOrder.receiver?.contactPerson || '-'}</p>
                             <p>โทร. {repairOrder.receiver?.phone || '-'}</p>
@@ -168,7 +170,7 @@ export default function RepairDetailPage() {
 
                     {repairOrder.notes && (
                         <div className="mt-6">
-                            <p className="font-semibold">หมายเหตุ / อาการเสีย (Notes / Problem Description):</p>
+                            <p className="font-semibold">{t('repair_form_notes')}</p>
                             <p className="whitespace-pre-wrap text-sm text-muted-foreground border p-3 rounded-md bg-muted/30 no-print">{repairOrder.notes}</p>
                             <p className="whitespace-pre-wrap text-sm print-block hidden">{repairOrder.notes}</p> {/* For printing */}
                         </div>
@@ -176,16 +178,16 @@ export default function RepairDetailPage() {
                 </CardHeader>
 
                 <CardContent className="p-0 mt-6">
-                    <p className="font-semibold mb-2 text-base">Items Sent for Repair ({repairOrder.items.length})</p>
+                    <p className="font-semibold mb-2 text-base">{t('repair_form_items_sent', { count: repairOrder.items.length })}</p>
                     <div className="border rounded-lg overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b bg-muted/40">
-                                    <th className="p-2 text-left">Identifier</th>
-                                    <th className="p-2 text-left">Product Model</th>
-                                    <th className="p-2 text-left">Serial Number</th>
-                                    <th className="p-2 text-left">Owner</th>
-                                    <th className="p-2 text-left">Status</th>
+                                    <th className="p-2 text-left">{t('tableHeader_identifier')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_owner')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_status')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -219,12 +221,12 @@ export default function RepairDetailPage() {
                     <div className="signature-box">
                         <div className="signature-line"></div>
                         <p>( {repairOrder.createdBy?.name || '.....................................................'} )</p>
-                        <p>ผู้ส่งมอบสินค้า</p>
+                        <p>{t('print_sender_signature')}</p>
                     </div>
                     <div className="signature-box">
                         <div className="signature-line"></div>
                         <p>( ..................................................... )</p>
-                        <p>ผู้รับสินค้า</p>
+                        <p>{t('print_receiver_signature')}</p>
                     </div>
                 </div>
             </Card>
@@ -232,8 +234,8 @@ export default function RepairDetailPage() {
             <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>Receive Items from Repair</DialogTitle>
-                        <DialogDescription>Select items that have been returned and specify their repair outcome.</DialogDescription>
+                        <DialogTitle>{t('receive_dialog_title')}</DialogTitle>
+                        <DialogDescription>{t('receive_dialog_description')}</DialogDescription>
                     </DialogHeader>
                     <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto">
                         {itemsToReturn.map(item => (
@@ -245,15 +247,15 @@ export default function RepairDetailPage() {
                                     <p className="font-semibold">{item.displayName}</p>
                                     {item.isSelected && (
                                         <div className="mt-2 space-y-2">
-                                            <Label>Repair Outcome</Label>
+                                            <Label>{t('receive_dialog_outcome_label')}</Label>
                                             <RadioGroup onValueChange={(value) => handleOutcomeChange(item.inventoryItemId, value)} value={item.repairOutcome}>
                                                 <div className="flex items-center space-x-2">
                                                     <RadioGroupItem value="REPAIRED_SUCCESSFULLY" id={`success-${item.inventoryItemId}`} />
-                                                    <Label htmlFor={`success-${item.inventoryItemId}`}>Repaired Successfully</Label>
+                                                    <Label htmlFor={`success-${item.inventoryItemId}`}>{t('receive_dialog_outcome_success')}</Label>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
                                                     <RadioGroupItem value="UNREPAIRABLE" id={`fail-${item.inventoryItemId}`} />
-                                                    <Label htmlFor={`fail-${item.inventoryItemId}`}>Unrepairable / Repair Failed</Label>
+                                                    <Label htmlFor={`fail-${item.inventoryItemId}`}>{t('receive_dialog_outcome_fail')}</Label>
                                                 </div>
                                             </RadioGroup>
                                         </div>
@@ -263,21 +265,21 @@ export default function RepairDetailPage() {
                         ))}
                     </div>
                     <DialogFooter>
-                        <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                        <DialogClose asChild><Button type="button" variant="ghost">{t('cancel')}</Button></DialogClose>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button disabled={itemsToReturn.filter(i => i.isSelected).length === 0}>Confirm Return</Button>
+                                <Button disabled={itemsToReturn.filter(i => i.isSelected).length === 0}>{t('receive_dialog_confirm_button')}</Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>Confirm Item Return</AlertDialogTitle>
+                                    <AlertDialogTitle>{t('receive_dialog_alert_title')}</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        Are you sure you want to process the return for the selected items with their specified outcomes? This action cannot be undone.
+                                        {t('receive_dialog_alert_description')}
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleConfirmReturn}>Continue</AlertDialogAction>
+                                    <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleConfirmReturn}>{t('continue')}</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>

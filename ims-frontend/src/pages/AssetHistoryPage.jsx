@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { getStatusProperties } from "@/lib/statusUtils";
+import { useTranslation } from "react-i18next";
 
 const eventConfig = {
     CREATE: { icon: <PlusCircle className="h-4 w-4" /> },
@@ -29,6 +30,7 @@ const eventConfig = {
 export default function AssetHistoryPage() {
     const { assetId } = useParams();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const [asset, setAsset] = useState(null);
     const [history, setHistory] = useState([]);
@@ -38,11 +40,9 @@ export default function AssetHistoryPage() {
         const fetchData = async () => {
             if (!assetId || !token) return;
             try {
-                // --- START: แก้ไข Endpoint ที่เรียกใช้ ---
                 const response = await axiosInstance.get(`/history/${assetId}`, { 
                     headers: { Authorization: `Bearer ${token}` } 
                 });
-                // --- END ---
                 setAsset(response.data.itemDetails);
                 setHistory(response.data.history);
             } catch (error) {
@@ -54,7 +54,6 @@ export default function AssetHistoryPage() {
         fetchData();
     }, [assetId, token]);
     
-    // --- START: แก้ไข Logic การสร้าง Link ---
     const getTransactionLink = (eventType, details) => {
         if (!details) return null;
         switch (eventType) {
@@ -68,7 +67,6 @@ export default function AssetHistoryPage() {
                 return null;
         }
     };
-    // --- END ---
     
     if (loading) return <p>Loading history...</p>;
     if (!asset) return <p>Asset not found.</p>;
@@ -77,34 +75,33 @@ export default function AssetHistoryPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold">Asset History</h1>
-                    <p className="text-muted-foreground">For Asset: {asset.assetCode} ({asset.productModel.modelNumber})</p>
+                    <h1 className="text-2xl font-bold">{t('asset_history_title')}</h1>
+                    <p className="text-muted-foreground">{t('asset_history_description')} {asset.assetCode} ({asset.productModel.modelNumber})</p>
                 </div>
                 <Button variant="outline" onClick={() => navigate('/assets')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to All Assets
+                    {t('asset_history_back_button')}
                 </Button>
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>History Log</CardTitle>
-                    <CardDescription>A complete log of events for this asset.</CardDescription>
+                    <CardTitle>{t('asset_history_log_title')}</CardTitle>
+                    <CardDescription>{t('asset_history_log_description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left">Date</th>
-                                <th className="p-2 text-left">Details</th>
-                                <th className="p-2 text-left">Handled By</th>
-                                <th className="p-2 text-center w-40">Event</th>
+                                <th className="p-2 text-left">{t('tableHeader_date')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_details')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_handledBy')}</th>
+                                <th className="p-2 text-center w-40">{t('tableHeader_event')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {history.length > 0 ? history.map((event) => {
                                 const link = getTransactionLink(event.eventType, event.details);
 
-                                // --- START: แก้ไข Logic การแสดงผล Badge ---
                                 const getDisplayInfo = (historyEvent) => {
                                      if (historyEvent.eventType === 'REPAIR_RETURNED') {
                                         if (historyEvent.details.outcome === 'REPAIRED_SUCCESSFULLY') {
@@ -120,7 +117,6 @@ export default function AssetHistoryPage() {
                                 const { status: displayStatus } = getDisplayInfo(event);
                                 const eventIcon = eventConfig[displayStatus]?.icon;
                                 const { label: eventLabel } = getStatusProperties(displayStatus);
-                                // --- END ---
 
                                 return (
                                     <tr key={event.id} className="border-b">
@@ -140,7 +136,7 @@ export default function AssetHistoryPage() {
                                     </tr>
                                 );
                             }) : (
-                                <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">No history found for this asset.</td></tr>
+                                <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">{t('asset_history_no_history')}</td></tr>
                             )}
                         </tbody>
                     </table>

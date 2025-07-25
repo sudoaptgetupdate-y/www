@@ -27,6 +27,7 @@ import BatchAddAssetDialog from "@/components/dialogs/BatchAddAssetDialog";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table"; 
+import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <TableRow>
@@ -50,6 +51,7 @@ const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort })
 
 export default function AssetPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const { user: currentUser } = useAuthStore((state) => state);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
@@ -109,16 +111,16 @@ export default function AssetPage() {
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>All Company Assets (Master List)</CardTitle>
-                        <CardDescription>A complete list of all company-owned assets.</CardDescription>
+                        <CardTitle>{t('assetList_title')}</CardTitle>
+                        <CardDescription>{t('assetList_description')}</CardDescription>
                     </div>
                     {canManage &&
                         <div className="flex flex-wrap gap-2">
                             <Button variant="outline" onClick={() => setIsBatchAddOpen(true)}>
-                                <PlusCircle className="mr-2 h-4 w-4" /> Add Asset
+                                <PlusCircle className="mr-2 h-4 w-4" /> {t('asset_add_new')}
                             </Button>
                             <Button onClick={() => navigate('/asset-assignments/new')}>
-                               <ArrowRightLeft className="mr-2 h-4 w-4" /> Assign
+                               <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('assignments')}
                             </Button>
                         </div>
                     }
@@ -127,7 +129,7 @@ export default function AssetPage() {
             <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <Input
-                        placeholder="Search by Asset Code, S/N, Model..."
+                        placeholder={t('asset_search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="sm:col-span-2 lg:col-span-1"
@@ -142,15 +144,15 @@ export default function AssetPage() {
                     />
                     <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
                         <SelectTrigger>
-                            <SelectValue placeholder="Filter by Status..." />
+                            <SelectValue placeholder={t('filter_by_status')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="All">All Statuses</SelectItem>
-                            <SelectItem value="IN_WAREHOUSE">In Warehouse</SelectItem>
-                            <SelectItem value="ASSIGNED">Assigned</SelectItem>
-                            <SelectItem value="DECOMMISSIONED">Archived</SelectItem>
-                            <SelectItem value="DEFECTIVE">Defective</SelectItem>
-                            <SelectItem value="REPAIRING">Repairing</SelectItem>
+                            <SelectItem value="All">{t('status_all')}</SelectItem>
+                            <SelectItem value="IN_WAREHOUSE">{t('status_in_warehouse')}</SelectItem>
+                            <SelectItem value="ASSIGNED">{t('status_assigned')}</SelectItem>
+                            <SelectItem value="DECOMMISSIONED">{t('status_archived')}</SelectItem>
+                            <SelectItem value="DEFECTIVE">{t('status_defective')}</SelectItem>
+                            <SelectItem value="REPAIRING">{t('status_repairing')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -158,17 +160,17 @@ export default function AssetPage() {
                     <TableHeader>
                         <TableRow>
                             <SortableHeader sortKey="assetCode" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                Asset Code
+                                {t('tableHeader_assetCode')}
                             </SortableHeader>
                             <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                Product Model
+                                {t('tableHeader_productModel')}
                             </SortableHeader>
                             <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                Serial Number
+                                {t('tableHeader_serialNumber')}
                             </SortableHeader>
-                            <TableHead className="text-center">Status</TableHead>
-                            <TableHead>Assigned To</TableHead>
-                            <TableHead className="text-center">Actions</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
+                            <TableHead>{t('tableHeader_assignedTo')}</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -206,19 +208,19 @@ export default function AssetPage() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                            <DropdownMenuLabel>{t('tableHeader_actions')}</DropdownMenuLabel>
                                             <DropdownMenuItem onClick={() => navigate(`/assets/${asset.id}/history`)}>
-                                                <History className="mr-2 h-4 w-4" /> View History
+                                                <History className="mr-2 h-4 w-4" /> {t('action_view_history')}
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => navigate(`/assets/edit/${asset.id}`)}>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit Asset
+                                                <Edit className="mr-2 h-4 w-4" /> {t('action_edit_asset')}
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem
                                                 onClick={() => handleAssignItem(asset)}
                                                 disabled={asset.status !== 'IN_WAREHOUSE'}
                                             >
-                                                <ArrowRightLeft className="mr-2 h-4 w-4" /> Assign this asset
+                                                <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('action_assign_asset')}
                                             </DropdownMenuItem>
 
                                             {asset.status === 'IN_WAREHOUSE' && (
@@ -228,19 +230,19 @@ export default function AssetPage() {
                                                             className="text-red-600 focus:text-red-500"
                                                             onSelect={(e) => e.preventDefault()}
                                                         >
-                                                            <Archive className="mr-2 h-4 w-4" /> Decommission
+                                                            <Archive className="mr-2 h-4 w-4" /> {t('action_decommission')}
                                                         </DropdownMenuItem>
                                                     </AlertDialogTrigger>
                                                     <AlertDialogContent>
-                                                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will decommission asset: <strong>{asset.assetCode}</strong>.</AlertDialogDescription></AlertDialogHeader>
-                                                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDecommission(asset.id)}>Confirm</AlertDialogAction></AlertDialogFooter>
+                                                        <AlertDialogHeader><AlertDialogTitle>{t('asset_alert_decommission_title')}</AlertDialogTitle><AlertDialogDescription>{t('asset_alert_decommission_description')} <strong>{asset.assetCode}</strong>.</AlertDialogDescription></AlertDialogHeader>
+                                                        <AlertDialogFooter><AlertDialogCancel>{t('cancel')}</AlertDialogCancel><AlertDialogAction onClick={() => handleDecommission(asset.id)}>{t('confirm')}</AlertDialogAction></AlertDialogFooter>
                                                     </AlertDialogContent>
                                                 </AlertDialog>
                                             )}
 
                                             {asset.status === 'DECOMMISSIONED' && (
                                                 <DropdownMenuItem onClick={() => handleReinstate(asset.id)}>
-                                                    <ArrowRightLeft className="mr-2 h-4 w-4" /> Reinstate
+                                                    <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('action_reinstate')}
                                                 </DropdownMenuItem>
                                             )}
                                         </DropdownMenuContent>
@@ -253,7 +255,7 @@ export default function AssetPage() {
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
                     <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
                         <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -262,11 +264,11 @@ export default function AssetPage() {
                     </Select>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                    Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
+                    {t('pagination_info', { currentPage: pagination.currentPage, totalPages: pagination.totalPages, totalItems: pagination.totalItems })}
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>{t('previous')}</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
                 </div>
             </CardFooter>
 

@@ -48,19 +48,36 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
         setSelectedModel(model);
     };
 
-    const handleManualItemChange = (index, field, value) => {
-        const newItems = [...manualItems];
-        let processedValue = translateThaiToEnglish(value);
+    // --- START: แก้ไขฟังก์ชันจัดการ Input ใหม่ทั้งหมด ---
+    const handleInputChange = (e, index, field) => {
+        const inputElement = e.currentTarget;
+        const rawValue = inputElement.value;
 
+        // 1. แปลงภาษาและจัดรูปแบบ
+        let processedValue = translateThaiToEnglish(rawValue);
         if (field === 'macAddress') {
             processedValue = formatMacAddress(processedValue);
         } else {
             processedValue = processedValue.toUpperCase();
         }
-        
-        newItems[index][field] = processedValue;
-        setManualItems(newItems);
+
+        // 2. อัปเดต State ของ React
+        // ใช้ functional update เพื่อให้แน่ใจว่าเราได้ State ที่ล่าสุดเสมอ
+        setManualItems(currentItems => {
+            const newItems = [...currentItems];
+            newItems[index][field] = processedValue;
+            return newItems;
+        });
+
+        // 3. อัปเดตค่าใน Input element โดยตรง (สำคัญมาก)
+        // เพื่อให้การแสดงผลถูกต้องทันที และป้องกันการขัดแย้งกับ State
+        if (inputElement.value !== processedValue) {
+            const selectionStart = inputElement.selectionStart;
+            inputElement.value = processedValue;
+            inputElement.setSelectionRange(selectionStart, selectionStart);
+        }
     };
+    // --- END ---
 
     const addManualItemRow = () => {
         if (manualItems.length < MAX_ITEMS_MANUAL) {
@@ -190,7 +207,7 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
                                                 }}
                                                 placeholder={t('tableHeader_serialNumber')}
                                                 value={item.serialNumber}
-                                                onChange={(e) => handleManualItemChange(index, 'serialNumber', e.target.value)}
+                                                onChange={(e) => handleInputChange(e, index, 'serialNumber')}
                                                 onKeyDown={(e) => handleKeyDown(e, index, 'serialNumber')}
                                                 disabled={!selectedModel?.category.requiresSerialNumber}
                                             />
@@ -198,7 +215,7 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
                                                 ref={el => inputRefs.current[index * 2 + 1] = el}
                                                 placeholder={t('tableHeader_macAddress')}
                                                 value={item.macAddress}
-                                                onChange={(e) => handleManualItemChange(index, 'macAddress', e.target.value)}
+                                                onChange={(e) => handleInputChange(e, index, 'macAddress')}
                                                 onKeyDown={(e) => handleKeyDown(e, index, 'macAddress')}
                                                 disabled={!selectedModel?.category.requiresMacAddress}
                                             />

@@ -153,17 +153,17 @@ export default function UserManagementPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <CardTitle>{t('userManagement')}</CardTitle>
-                        <CardDescription>Manage user accounts, roles, and permissions.</CardDescription>
+                        <CardDescription>{t('userManagement_description')}</CardDescription>
                     </div>
                      <Button onClick={() => openDialog()}>
-                        <UserPlus className="mr-2 h-4 w-4" /> Add New User
+                        <UserPlus className="mr-2 h-4 w-4" /> {t('user_add_new')}
                     </Button>
                 </div>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
-                        placeholder="Search by name, email, or username..."
+                        placeholder={t('user_search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="flex-grow"
@@ -205,25 +205,25 @@ export default function UserManagementPage() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                            <DropdownMenuLabel>{t('tableHeader_actions')}</DropdownMenuLabel>
                                             <DropdownMenuItem onClick={() => navigate(`/users/${user.id}/assets`)}>
-                                                <Package className="mr-2 h-4 w-4" /> View Assets
+                                                <Package className="mr-2 h-4 w-4" /> {t('user_view_assets')}
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => openDialog(user)}>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit User
+                                                <Edit className="mr-2 h-4 w-4" /> {t('user_edit')}
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                              {user.id !== currentUser.id && (
                                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={() => setUserToToggleStatus(user)}>
                                                     {user.accountStatus === 'ACTIVE' ? 
-                                                        <><ShieldOff className="mr-2 h-4 w-4 text-red-500"/> <span className="text-red-500">Disable</span></> : 
-                                                        <><ShieldCheck className="mr-2 h-4 w-4 text-green-500"/> <span className="text-green-500">Enable</span></>
+                                                        <><ShieldOff className="mr-2 h-4 w-4 text-red-500"/> <span className="text-red-500">{t('user_disable')}</span></> : 
+                                                        <><ShieldCheck className="mr-2 h-4 w-4 text-green-500"/> <span className="text-green-500">{t('user_enable')}</span></>
                                                     }
                                                 </DropdownMenuItem>
                                              )}
                                             {user.id !== currentUser.id && (
                                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={() => setUserToDelete(user)} className="text-red-600 focus:text-red-500">
-                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete User
+                                                    <Trash2 className="mr-2 h-4 w-4" /> {t('user_delete')}
                                                 </DropdownMenuItem>
                                             )}
                                         </DropdownMenuContent>
@@ -236,7 +236,7 @@ export default function UserManagementPage() {
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
                     <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
                         <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -245,62 +245,62 @@ export default function UserManagementPage() {
                     </Select>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                    Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
+                    {t('pagination_info', { currentPage: pagination.currentPage, totalPages: pagination.totalPages, totalItems: pagination.totalItems })}
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>{t('previous')}</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
                 </div>
             </CardFooter>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{isEditMode ? 'Edit' : 'Add New'} User</DialogTitle>
+                        <DialogTitle>{isEditMode ? t('user_form_edit_title') : t('user_form_add_title')}</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">Name</Label>
+                                <Label htmlFor="name">{t('tableHeader_name')}</Label>
                                 <Input id="name" value={formData.name} onChange={handleInputChange} required />
                             </div>
                              <div className="space-y-2">
-                                <Label htmlFor="username">Username</Label>
+                                <Label htmlFor="username">{t('user_form_username')}</Label>
                                 <Input id="username" value={formData.username} onChange={handleInputChange} required disabled={isEditMode} />
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
+                            <Label htmlFor="email">{t('tableHeader_email')}</Label>
                             <Input id="email" type="email" value={formData.email} onChange={handleInputChange} required />
                         </div>
                          <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
-                            <Input id="password" type="password" onChange={handleInputChange} placeholder={isEditMode ? "Leave blank to keep current password" : ""} required={!isEditMode} />
+                            <Label htmlFor="password">{t('user_form_password')}</Label>
+                            <Input id="password" type="password" onChange={handleInputChange} placeholder={isEditMode ? t('user_form_password_placeholder') : ""} required={!isEditMode} />
                         </div>
                          <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Role</Label>
+                                <Label>{t('tableHeader_role')}</Label>
                                 <Select value={formData.role} onValueChange={(value) => handleSelectChange('role', value)}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="EMPLOYEE">Employee</SelectItem>
-                                        <SelectItem value="ADMIN">Admin</SelectItem>
-                                        <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                                        <SelectItem value="EMPLOYEE">{t('user_form_role_employee')}</SelectItem>
+                                        <SelectItem value="ADMIN">{t('user_form_role_admin')}</SelectItem>
+                                        <SelectItem value="SUPER_ADMIN">{t('user_form_role_super_admin')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label>Account Status</Label>
+                                <Label>{t('user_form_status')}</Label>
                                 <Select value={formData.accountStatus} onValueChange={(value) => handleSelectChange('accountStatus', value)}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="ACTIVE">Active</SelectItem>
-                                        <SelectItem value="DISABLED">Disabled</SelectItem>
+                                        <SelectItem value="ACTIVE">{t('user_form_status_active')}</SelectItem>
+                                        <SelectItem value="DISABLED">{t('user_form_status_disabled')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
-                        <DialogFooter><Button type="submit">Save</Button></DialogFooter>
+                        <DialogFooter><Button type="submit">{t('save')}</Button></DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
@@ -308,14 +308,14 @@ export default function UserManagementPage() {
              <AlertDialog open={!!userToToggleStatus} onOpenChange={(isOpen) => !isOpen && setUserToToggleStatus(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('user_alert_toggle_status_title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                           This will {userToToggleStatus?.accountStatus === 'ACTIVE' ? 'disable' : 'enable'} the account for <strong>{userToToggleStatus?.name}</strong>.
+                           {t('user_alert_toggle_status_description', { action: userToToggleStatus?.accountStatus === 'ACTIVE' ? t('user_disable') : t('user_enable') })} <strong>{userToToggleStatus?.name}</strong>.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmToggleStatus}>Continue</AlertDialogAction>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmToggleStatus}>{t('confirm')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -323,14 +323,14 @@ export default function UserManagementPage() {
             <AlertDialog open={!!userToDelete} onOpenChange={(isOpen) => !isOpen && setUserToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('user_alert_delete_title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete the user: <strong>{userToDelete?.name}</strong>. This action cannot be undone.
+                           {t('user_alert_delete_description')} <strong>{userToDelete?.name}</strong>. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDelete}>Delete User</AlertDialogAction>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete}>{t('user_delete')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
