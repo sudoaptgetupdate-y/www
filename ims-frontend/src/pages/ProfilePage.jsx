@@ -11,7 +11,10 @@ import axiosInstance from '@/api/axiosInstance';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { useTranslation } from 'react-i18next'; // <-- 1. Import hook
+import { useTranslation } from 'react-i18next';
+// --- START: 1. Import ไอคอน ---
+import { User, Lock, Package } from 'lucide-react';
+// --- END ---
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -24,7 +27,7 @@ const SkeletonRow = () => (
 );
 
 const MyAssetsTab = () => {
-    const { t } = useTranslation(); // <-- 2. เรียกใช้ hook ใน Component ลูก
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const [assets, setAssets] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -50,14 +53,19 @@ const MyAssetsTab = () => {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>{t('my_assets')}</CardTitle>
-                <CardDescription>{t('my_assets_description')}</CardDescription>
+                {/* --- START: 2. ปรับปรุง CardHeader --- */}
+                <CardTitle className="flex items-center gap-2">
+                    <Package className="h-6 w-6" />
+                    {t('my_assets')}
+                </CardTitle>
+                <CardDescription className="mt-1">{t('my_assets_description')}</CardDescription>
+                {/* --- END --- */}
             </CardHeader>
             <CardContent>
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm whitespace-nowrap">
                         <thead>
-                            <tr className="border-b">
+                            <tr className="border-b bg-muted/50 hover:bg-muted/50">
                                 <th className="p-2 text-left">{t('tableHeader_assetCode')}</th>
                                 <th className="p-2 text-left">{t('tableHeader_product')}</th>
                                 <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
@@ -94,7 +102,7 @@ const MyAssetsTab = () => {
 };
 
 export default function ProfilePage() {
-    const { t } = useTranslation(); // <-- 3. เรียกใช้ hook ใน Component หลัก
+    const { t } = useTranslation();
     const { user, token, login } = useAuthStore();
     
     const [name, setName] = useState('');
@@ -171,8 +179,13 @@ export default function ProfilePage() {
             <TabsContent value="profile">
                 <Card>
                     <CardHeader>
-                        <CardTitle>{t('my_profile_title')}</CardTitle>
-                        <CardDescription>{t('my_profile_description')}</CardDescription>
+                        {/* --- START: 3. ปรับปรุง CardHeader --- */}
+                        <CardTitle className="flex items-center gap-2">
+                           <User className="h-6 w-6" />
+                           {t('my_profile_title')}
+                        </CardTitle>
+                        <CardDescription className="mt-1">{t('my_profile_description')}</CardDescription>
+                        {/* --- END --- */}
                     </CardHeader>
                     <form onSubmit={handleProfileSubmit}>
                         <CardContent className="space-y-4">
@@ -189,8 +202,13 @@ export default function ProfilePage() {
             <TabsContent value="password">
                 <Card>
                     <CardHeader>
-                        <CardTitle>{t('change_password')}</CardTitle>
-                        <CardDescription>{t('change_password_description')}</CardDescription>
+                        {/* --- START: 4. ปรับปรุง CardHeader --- */}
+                        <CardTitle className="flex items-center gap-2">
+                            <Lock className="h-6 w-6" />
+                            {t('change_password')}
+                        </CardTitle>
+                        <CardDescription className="mt-1">{t('change_password_description')}</CardDescription>
+                        {/* --- END --- */}
                     </CardHeader>
                     <form onSubmit={handlePasswordSubmit}>
                         <CardContent className="space-y-4">

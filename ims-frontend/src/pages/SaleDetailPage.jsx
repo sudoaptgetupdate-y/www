@@ -72,12 +72,15 @@ export default function SaleDetailPage() {
         <div className="space-y-6">
              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
                 <div>
+                    {/* --- START: ปรับปรุง Header --- */}
                     <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <FileText className="h-6 w-6" /> Sale Details
+                        <FileText className="h-6 w-6" /> 
+                        Sale Details
                     </h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground mt-1">
                         Viewing details for Sale ID #{formattedSaleId}
                     </p>
+                    {/* --- END --- */}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                     <Button variant="outline" onClick={() => navigate('/sales')}>

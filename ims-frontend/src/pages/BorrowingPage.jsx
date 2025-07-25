@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle, ArrowUpDown } from "lucide-react";
+// --- START: 1. Import ไอคอน ---
+import { PlusCircle, ArrowUpDown, ArrowRightLeft } from "lucide-react";
+// --- END ---
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
@@ -64,10 +66,14 @@ export default function BorrowingPage() {
     return (
         <Card>
             <CardHeader>
+                {/* --- START: 2. ปรับปรุง CardHeader --- */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>{t('borrowing_title')}</CardTitle>
-                        <CardDescription>{t('borrowingDescription')}</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                            <ArrowRightLeft className="h-6 w-6" />
+                            {t('borrowing_title')}
+                        </CardTitle>
+                        <CardDescription className="mt-1">{t('borrowingDescription')}</CardDescription>
                     </div>
                     {canManage && (
                         <Button onClick={() => navigate('/borrowings/new')}>
@@ -75,6 +81,7 @@ export default function BorrowingPage() {
                         </Button>
                     )}
                 </div>
+                {/* --- END --- */}
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -96,55 +103,59 @@ export default function BorrowingPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <SortableHeader sortKey="id" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_recordId')}
-                            </SortableHeader>
-                            <SortableHeader sortKey="customer" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_customer')}
-                            </SortableHeader>
-                            <SortableHeader sortKey="borrowDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_borrowDate')}
-                            </SortableHeader>
-                            <SortableHeader sortKey="dueDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_dueDate')}
-                            </SortableHeader>
-                            <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_itemStatus')}</TableHead>
-                            <TableHead className="text-left">{t('tableHeader_approvedBy')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                        ) : borrowings.map((b) => (
-                            <TableRow key={b.id}>
-                                <TableCell>#{b.id}</TableCell>
-                                <TableCell>{b.borrower?.name || 'N/A'}</TableCell>
-                                <TableCell>{new Date(b.borrowDate).toLocaleDateString()}</TableCell>
-                                <TableCell>{b.dueDate ? new Date(b.dueDate).toLocaleDateString() : 'N/A'}</TableCell>
-                                <TableCell className="text-center">
-                                    <StatusBadge 
-                                        status={b.status} 
-                                        className="w-24" 
-                                        onClick={() => navigate(`/borrowings/${b.id}`)}
-                                        interactive
-                                    />
-                                </TableCell>
-                                <TableCell className="text-center">{b.returnedItemCount}/{b.totalItemCount} {t('item_status_returned')}</TableCell>
-                                <TableCell>{b.approvedBy?.name || 'N/A'}</TableCell>
-                                <TableCell className="text-center">
-                                    <Button variant="outline" size="sm" onClick={() => navigate(`/borrowings/${b.id}`)}>
-                                        {t('details')}
-                                    </Button>
-                                </TableCell>
+                {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
+                <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                <SortableHeader sortKey="id" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_recordId')}
+                                </SortableHeader>
+                                <SortableHeader sortKey="customer" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_customer')}
+                                </SortableHeader>
+                                <SortableHeader sortKey="borrowDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_borrowDate')}
+                                </SortableHeader>
+                                <SortableHeader sortKey="dueDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_dueDate')}
+                                </SortableHeader>
+                                <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_itemStatus')}</TableHead>
+                                <TableHead className="text-left">{t('tableHeader_approvedBy')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                            ) : borrowings.map((b) => (
+                                <TableRow key={b.id}>
+                                    <TableCell>#{b.id}</TableCell>
+                                    <TableCell>{b.borrower?.name || 'N/A'}</TableCell>
+                                    <TableCell>{new Date(b.borrowDate).toLocaleDateString()}</TableCell>
+                                    <TableCell>{b.dueDate ? new Date(b.dueDate).toLocaleDateString() : 'N/A'}</TableCell>
+                                    <TableCell className="text-center">
+                                        <StatusBadge 
+                                            status={b.status} 
+                                            className="w-24" 
+                                            onClick={() => navigate(`/borrowings/${b.id}`)}
+                                            interactive
+                                        />
+                                    </TableCell>
+                                    <TableCell className="text-center">{b.returnedItemCount}/{b.totalItemCount} {t('item_status_returned')}</TableCell>
+                                    <TableCell>{b.approvedBy?.name || 'N/A'}</TableCell>
+                                    <TableCell className="text-center">
+                                        <Button variant="outline" size="sm" onClick={() => navigate(`/borrowings/${b.id}`)}>
+                                            {t('details')}
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                {/* --- END --- */}
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">

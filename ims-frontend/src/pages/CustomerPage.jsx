@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { History, Edit, UserPlus } from "lucide-react";
+import { History, Edit, UserPlus, Users } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -27,6 +27,9 @@ const SkeletonRow = () => (
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        {/* --- START: เพิ่ม Skeleton สำหรับ Address --- */}
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        {/* --- END --- */}
         <TableCell className="text-center"><div className="h-8 w-44 bg-gray-200 rounded-md animate-pulse mx-auto"></div></TableCell>
     </TableRow>
 );
@@ -79,8 +82,13 @@ export default function CustomerPage() {
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>{t('customers_title')}</CardTitle>
-                        <CardDescription>{t('customers_description')}</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                            <Users className="h-6 w-6" /> 
+                            {t('customers_title')}
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                            {t('customers_description')}
+                        </CardDescription>
                     </div>
                     {canManage && 
                         <Button onClick={handleAddNew}>
@@ -98,39 +106,47 @@ export default function CustomerPage() {
                         className="flex-grow"
                     />
                 </div>
-                 <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{t('tableHeader_code')}</TableHead>
-                            <TableHead>{t('tableHeader_name')}</TableHead>
-                            <TableHead>{t('tableHeader_phone')}</TableHead>
-                            {canManage && <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                        ) : customers.map((customer) => (
-                            <TableRow key={customer.id}>
-                                <TableCell>{customer.customerCode}</TableCell>
-                                <TableCell>{customer.name}</TableCell>
-                                <TableCell>{customer.phone}</TableCell>
-                                {canManage && (
-                                    <TableCell className="text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Button variant="outline" size="sm" onClick={() => navigate(`/customers/${customer.id}/history`)}>
-                                                <History className="mr-2 h-4 w-4" /> {t('history')}
-                                            </Button>
-                                            <Button variant="outline" size="sm" onClick={() => handleEdit(customer)}>
-                                                <Edit className="mr-2 h-4 w-4" /> {t('edit')}
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                )}
+                <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                <TableHead>{t('tableHeader_code')}</TableHead>
+                                <TableHead>{t('tableHeader_name')}</TableHead>
+                                <TableHead>{t('tableHeader_phone')}</TableHead>
+                                {/* --- START: เพิ่ม Header ของ Address --- */}
+                                <TableHead>{t('tableHeader_address')}</TableHead>
+                                {/* --- END --- */}
+                                {canManage && <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>}
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                            ) : customers.map((customer) => (
+                                <TableRow key={customer.id}>
+                                    <TableCell>{customer.customerCode}</TableCell>
+                                    <TableCell>{customer.name}</TableCell>
+                                    <TableCell>{customer.phone}</TableCell>
+                                    {/* --- START: เพิ่ม Cell ของ Address --- */}
+                                    <TableCell>{customer.address || '-'}</TableCell>
+                                    {/* --- END --- */}
+                                    {canManage && (
+                                        <TableCell className="text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => navigate(`/customers/${customer.id}/history`)}>
+                                                    <History className="mr-2 h-4 w-4" /> {t('history')}
+                                                </Button>
+                                                <Button variant="outline" size="sm" onClick={() => handleEdit(customer)}>
+                                                    <Edit className="mr-2 h-4 w-4" /> {t('edit')}
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">

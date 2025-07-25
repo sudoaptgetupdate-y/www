@@ -4,12 +4,16 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+// --- START: 1. Import CardFooter และส่วนประกอบสำหรับ Pagination ---
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// --- END ---
 import { toast } from "sonner";
 import {
     ArrowLeft, PlusCircle, Edit, ArchiveRestore, ArchiveX,
-    ArrowRightLeft, CornerUpLeft, Wrench, ShieldCheck, Package, ShieldAlert
+    ArrowRightLeft, CornerUpLeft, Wrench, ShieldCheck, Package, ShieldAlert, History as HistoryIcon
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { getStatusProperties } from "@/lib/statusUtils";
@@ -35,6 +39,11 @@ export default function AssetHistoryPage() {
     const [asset, setAsset] = useState(null);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // --- START: 2. เพิ่ม State สำหรับจัดการ Pagination ---
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    // --- END ---
 
     useEffect(() => {
         const fetchData = async () => {
@@ -71,14 +80,34 @@ export default function AssetHistoryPage() {
     if (loading) return <p>Loading history...</p>;
     if (!asset) return <p>Asset not found.</p>;
 
+    // --- START: 3. เพิ่ม Logic สำหรับคำนวณและแบ่งหน้าข้อมูล ---
+    const totalPages = Math.ceil(history.length / itemsPerPage);
+    const paginatedHistory = history.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+        }
+    };
+
+    const handleItemsPerPageChange = (newSize) => {
+        setItemsPerPage(parseInt(newSize, 10));
+        setCurrentPage(1);
+    };
+    // --- END ---
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <Package className="h-6 w-6" /> {t('asset_history_title')}
+                        <HistoryIcon className="h-6 w-6" />
+                        {t('asset_history_title')}
                     </h1>
-                    <div className="text-muted-foreground">
+                    <div className="text-muted-foreground mt-1">
                         <p>
                            {t('asset_history_description')} {asset.assetCode} ({asset.productModel.modelNumber})
                         </p>
@@ -101,7 +130,7 @@ export default function AssetHistoryPage() {
                     <div className="border rounded-lg overflow-x-auto">
                         <table className="w-full text-sm whitespace-nowrap">
                             <thead>
-                                <tr className="border-b">
+                                <tr className="border-b bg-muted/50 hover:bg-muted/50">
                                     <th className="p-2 text-left">{t('tableHeader_date')}</th>
                                     <th className="p-2 text-left">{t('tableHeader_details')}</th>
                                     <th className="p-2 text-left">{t('tableHeader_handledBy')}</th>
@@ -109,7 +138,8 @@ export default function AssetHistoryPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {history.length > 0 ? history.map((event) => {
+                                {/* --- START: 4. เปลี่ยนไปใช้ข้อมูลที่แบ่งหน้าแล้ว --- */}
+                                {paginatedHistory.length > 0 ? paginatedHistory.map((event) => {
                                     const link = getTransactionLink(event.eventType, event.details);
 
                                     const getDisplayInfo = (historyEvent) => {
@@ -148,10 +178,33 @@ export default function AssetHistoryPage() {
                                 }) : (
                                     <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">{t('asset_history_no_history')}</td></tr>
                                 )}
+                                {/* --- END --- */}
                             </tbody>
                         </table>
                     </div>
                 </CardContent>
+                {/* --- START: 5. เพิ่ม CardFooter พร้อมส่วนควบคุม Pagination --- */}
+                {history.length > 0 && (
+                    <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
+                            <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                                <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                            {t('pagination_info', { currentPage: currentPage, totalPages: totalPages, totalItems: history.length })}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage <= 1}>{t('previous')}</Button>
+                            <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages}>{t('next')}</Button>
+                        </div>
+                    </CardFooter>
+                )}
+                {/* --- END --- */}
             </Card>
         </div>
     );

@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle, Edit, Trash2, ArrowUpDown } from "lucide-react";
+// --- START: 1. Import ไอคอน ---
+import { PlusCircle, Edit, Trash2, ArrowUpDown, Boxes } from "lucide-react";
+// --- END ---
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from "@/components/ui/dialog";
@@ -141,10 +143,14 @@ export default function ProductModelPage() {
     return (
         <Card>
             <CardHeader>
+                {/* --- START: 2. ปรับปรุง CardHeader --- */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>{t('models')}</CardTitle>
-                        <CardDescription>{t('product_models_description')}</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                           <Boxes className="h-6 w-6" />
+                           {t('models')}
+                        </CardTitle>
+                        <CardDescription className="mt-1">{t('product_models_description')}</CardDescription>
                     </div>
                     {canManage &&
                         <Button onClick={() => openDialog()}>
@@ -152,6 +158,7 @@ export default function ProductModelPage() {
                         </Button>
                     }
                 </div>
+                {/* --- END --- */}
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
@@ -170,49 +177,53 @@ export default function ProductModelPage() {
                         onSelect={(value) => handleFilterChange('brandId', value)}
                     />
                 </div>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <SortableHeader sortKey="modelNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_productModel')}
-                            </SortableHeader>
-                            <SortableHeader sortKey="category" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_category')}
-                            </SortableHeader>
-                            <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_brand')}
-                            </SortableHeader>
-                            <SortableHeader sortKey="sellingPrice" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange} className="text-right">
-                                {t('tableHeader_price')}
-                            </SortableHeader>
-                            {canManage && <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                        ) : productModels.map((model) => (
-                            <TableRow key={model.id}>
-                                <TableCell>{model.modelNumber}</TableCell>
-                                <TableCell>{model.category.name}</TableCell>
-                                <TableCell>{model.brand.name}</TableCell>
-                                <TableCell className="text-right">{model.sellingPrice.toFixed(2)}</TableCell>
-                                {canManage && (
-                                    <TableCell className="text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Button variant="outline" size="sm" className="w-20" onClick={() => openDialog(model)}>
-                                                <Edit className="mr-2 h-4 w-4" /> {t('edit')}
-                                            </Button>
-                                            <Button variant="destructive" size="sm" className="w-20" onClick={() => setModelToDelete(model)}>
-                                                <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                )}
+                {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
+                <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                <SortableHeader sortKey="modelNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_productModel')}
+                                </SortableHeader>
+                                <SortableHeader sortKey="category" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_category')}
+                                </SortableHeader>
+                                <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_brand')}
+                                </SortableHeader>
+                                <SortableHeader sortKey="sellingPrice" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange} className="text-right">
+                                    {t('tableHeader_price')}
+                                </SortableHeader>
+                                {canManage && <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>}
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                            ) : productModels.map((model) => (
+                                <TableRow key={model.id}>
+                                    <TableCell>{model.modelNumber}</TableCell>
+                                    <TableCell>{model.category.name}</TableCell>
+                                    <TableCell>{model.brand.name}</TableCell>
+                                    <TableCell className="text-right">{model.sellingPrice.toFixed(2)}</TableCell>
+                                    {canManage && (
+                                        <TableCell className="text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Button variant="outline" size="sm" className="w-20" onClick={() => openDialog(model)}>
+                                                    <Edit className="mr-2 h-4 w-4" /> {t('edit')}
+                                                </Button>
+                                                <Button variant="destructive" size="sm" className="w-20" onClick={() => setModelToDelete(model)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                {/* --- END --- */}
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">

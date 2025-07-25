@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { UserPlus, Edit, Trash2, MoreHorizontal, Package, ShieldOff, ShieldCheck } from "lucide-react";
+// --- START: 1. Import ไอคอน ---
+import { UserPlus, Edit, Trash2, MoreHorizontal, Package, ShieldOff, ShieldCheck, Settings } from "lucide-react";
+// --- END ---
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from "@/components/ui/dialog";
@@ -150,15 +152,20 @@ export default function UserManagementPage() {
     return (
         <Card>
             <CardHeader>
+                {/* --- START: 2. ปรับปรุง CardHeader --- */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>{t('userManagement')}</CardTitle>
-                        <CardDescription>{t('userManagement_description')}</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                           <Settings className="h-6 w-6" />
+                           {t('userManagement')}
+                        </CardTitle>
+                        <CardDescription className="mt-1">{t('userManagement_description')}</CardDescription>
                     </div>
                      <Button onClick={() => openDialog()}>
                         <UserPlus className="mr-2 h-4 w-4" /> {t('user_add_new')}
                     </Button>
                 </div>
+                {/* --- END --- */}
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -169,70 +176,74 @@ export default function UserManagementPage() {
                         className="flex-grow"
                     />
                 </div>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{t('tableHeader_name')}</TableHead>
-                            <TableHead>{t('tableHeader_email')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_role')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                        ) : users.map((user) => (
-                            <TableRow key={user.id}>
-                                <TableCell>{user.name}</TableCell>
-                                <TableCell>{user.email}</TableCell>
-                                <TableCell className="text-center">
-                                    <Badge variant={user.role === 'SUPER_ADMIN' ? 'destructive' : (user.role === 'ADMIN' ? 'secondary' : 'outline')}>
-                                        {user.role}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                    <Badge variant={user.accountStatus === 'ACTIVE' ? 'success' : 'destructive'}>
-                                        {user.accountStatus}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                   <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="primary-outline" size="icon" className="h-8 w-14 p-0">
-                                                <span className="sr-only">Open menu</span>
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>{t('tableHeader_actions')}</DropdownMenuLabel>
-                                            <DropdownMenuItem onClick={() => navigate(`/users/${user.id}/assets`)}>
-                                                <Package className="mr-2 h-4 w-4" /> {t('user_view_assets')}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => openDialog(user)}>
-                                                <Edit className="mr-2 h-4 w-4" /> {t('user_edit')}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                             {user.id !== currentUser.id && (
-                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={() => setUserToToggleStatus(user)}>
-                                                    {user.accountStatus === 'ACTIVE' ? 
-                                                        <><ShieldOff className="mr-2 h-4 w-4 text-red-500"/> <span className="text-red-500">{t('user_disable')}</span></> : 
-                                                        <><ShieldCheck className="mr-2 h-4 w-4 text-green-500"/> <span className="text-green-500">{t('user_enable')}</span></>
-                                                    }
-                                                </DropdownMenuItem>
-                                             )}
-                                            {user.id !== currentUser.id && (
-                                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={() => setUserToDelete(user)} className="text-red-600 focus:text-red-500">
-                                                    <Trash2 className="mr-2 h-4 w-4" /> {t('user_delete')}
-                                                </DropdownMenuItem>
-                                            )}
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
+                {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
+                <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                <TableHead>{t('tableHeader_name')}</TableHead>
+                                <TableHead>{t('tableHeader_email')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_role')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                            ) : users.map((user) => (
+                                <TableRow key={user.id}>
+                                    <TableCell>{user.name}</TableCell>
+                                    <TableCell>{user.email}</TableCell>
+                                    <TableCell className="text-center">
+                                        <Badge variant={user.role === 'SUPER_ADMIN' ? 'destructive' : (user.role === 'ADMIN' ? 'secondary' : 'outline')}>
+                                            {user.role}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <Badge variant={user.accountStatus === 'ACTIVE' ? 'success' : 'destructive'}>
+                                            {user.accountStatus}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                       <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="primary-outline" size="icon" className="h-8 w-14 p-0">
+                                                    <span className="sr-only">Open menu</span>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>{t('tableHeader_actions')}</DropdownMenuLabel>
+                                                <DropdownMenuItem onClick={() => navigate(`/users/${user.id}/assets`)}>
+                                                    <Package className="mr-2 h-4 w-4" /> {t('user_view_assets')}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => openDialog(user)}>
+                                                    <Edit className="mr-2 h-4 w-4" /> {t('user_edit')}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                 {user.id !== currentUser.id && (
+                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={() => setUserToToggleStatus(user)}>
+                                                        {user.accountStatus === 'ACTIVE' ? 
+                                                            <><ShieldOff className="mr-2 h-4 w-4 text-red-500"/> <span className="text-red-500">{t('user_disable')}</span></> : 
+                                                            <><ShieldCheck className="mr-2 h-4 w-4 text-green-500"/> <span className="text-green-500">{t('user_enable')}</span></>
+                                                        }
+                                                    </DropdownMenuItem>
+                                                 )}
+                                                {user.id !== currentUser.id && (
+                                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={() => setUserToDelete(user)} className="text-red-600 focus:text-red-500">
+                                                        <Trash2 className="mr-2 h-4 w-4" /> {t('user_delete')}
+                                                    </DropdownMenuItem>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                {/* --- END --- */}
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">

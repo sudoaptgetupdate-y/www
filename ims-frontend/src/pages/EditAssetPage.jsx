@@ -10,7 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ProductModelCombobox } from "@/components/ui/ProductModelCombobox";
-import { ArrowLeft } from "lucide-react";
+// --- START: 1. Import ไอคอน ---
+import { ArrowLeft, Edit } from "lucide-react";
+// --- END ---
 
 const formatMacAddress = (value) => {
   const cleaned = (value || '').replace(/[^0-9a-fA-F]/g, '').toUpperCase();
@@ -37,9 +39,7 @@ export default function EditAssetPage() {
     useEffect(() => {
         const fetchAsset = async () => {
             try {
-                // --- START: แก้ไขบรรทัดนี้ ---
                 const response = await axiosInstance.get(`/assets/${assetId}`, {
-                // --- END: แก้ไขบรรทัดนี้ ---
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const assetData = response.data;
@@ -48,7 +48,7 @@ export default function EditAssetPage() {
                     serialNumber: assetData.serialNumber || '',
                     macAddress: assetData.macAddress || '',
                     productModelId: assetData.productModelId,
-                    status: assetData.status // เพิ่ม status เข้ามาด้วย
+                    status: assetData.status
                 });
                 setInitialModel(assetData.productModel);
                 setIsMacRequired(assetData.productModel.category.requiresMacAddress);
@@ -94,9 +94,7 @@ export default function EditAssetPage() {
             return;
         }
         try {
-            // --- START: แก้ไขบรรทัดนี้ ---
             await axiosInstance.put(`/assets/${assetId}`, formData, { 
-            // --- END: แก้ไขบรรทัดนี้ ---
                 headers: { Authorization: `Bearer ${token}` } 
             });
             toast.success("Asset updated successfully!");
@@ -116,8 +114,13 @@ export default function EditAssetPage() {
             </Button>
             <Card>
                 <CardHeader>
-                    <CardTitle>Edit Asset</CardTitle>
-                    <CardDescription>Update the details for asset code: {formData.assetCode}</CardDescription>
+                    {/* --- START: 2. ปรับปรุง CardHeader --- */}
+                    <CardTitle className="flex items-center gap-2">
+                        <Edit className="h-6 w-6" />
+                        Edit Asset
+                    </CardTitle>
+                    <CardDescription className="mt-1">Update the details for asset code: {formData.assetCode}</CardDescription>
+                    {/* --- END --- */}
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
                     <CardContent className="space-y-4">

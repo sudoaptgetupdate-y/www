@@ -6,14 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { Edit, Trash2, PlusCircle } from "lucide-react";
+// --- START: 1. Import ไอคอน ---
+import { Edit, Trash2, PlusCircle, Truck } from "lucide-react";
+// --- END ---
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import axiosInstance from '@/api/axiosInstance';
 import { toast } from 'sonner';
-import SupplierFormDialog from "@/components/dialogs/SupplierFormDialog"; // <-- Import a new dialog
+import SupplierFormDialog from "@/components/dialogs/SupplierFormDialog";
 import { useTranslation } from "react-i18next";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
@@ -70,10 +72,14 @@ export default function SupplierPage() {
     return (
         <Card>
             <CardHeader>
+                {/* --- START: 2. ปรับปรุง CardHeader --- */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>{t('suppliers_title')}</CardTitle>
-                        <CardDescription>{t('suppliers_description')}</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                            <Truck className="h-6 w-6" />
+                            {t('suppliers_title')}
+                        </CardTitle>
+                        <CardDescription className="mt-1">{t('suppliers_description')}</CardDescription>
                     </div>
                      {canManage && 
                         <Button onClick={handleAddNew}>
@@ -81,6 +87,7 @@ export default function SupplierPage() {
                         </Button>
                     }
                 </div>
+                {/* --- END --- */}
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -91,39 +98,43 @@ export default function SupplierPage() {
                         className="flex-grow"
                     />
                 </div>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{t('tableHeader_code')}</TableHead>
-                            <TableHead>{t('tableHeader_name')}</TableHead>
-                            <TableHead>{t('tableHeader_phone')}</TableHead>
-                            {canManage && <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                        ) : suppliers.map((supplier) => (
-                            <TableRow key={supplier.id}>
-                                <TableCell>{supplier.supplierCode}</TableCell>
-                                <TableCell>{supplier.name}</TableCell>
-                                <TableCell>{supplier.phone || '-'}</TableCell>
-                                {canManage && (
-                                    <TableCell className="text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Button variant="outline" size="sm" className="w-20" onClick={() => handleEdit(supplier)}>
-                                                <Edit className="mr-2 h-4 w-4" /> {t('edit')}
-                                            </Button>
-                                            <Button variant="destructive" size="sm" className="w-20" onClick={() => setSupplierToDelete(supplier)}>
-                                                <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                )}
+                {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
+                <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                <TableHead>{t('tableHeader_code')}</TableHead>
+                                <TableHead>{t('tableHeader_name')}</TableHead>
+                                <TableHead>{t('tableHeader_phone')}</TableHead>
+                                {canManage && <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>}
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                            ) : suppliers.map((supplier) => (
+                                <TableRow key={supplier.id}>
+                                    <TableCell>{supplier.supplierCode}</TableCell>
+                                    <TableCell>{supplier.name}</TableCell>
+                                    <TableCell>{supplier.phone || '-'}</TableCell>
+                                    {canManage && (
+                                        <TableCell className="text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Button variant="outline" size="sm" className="w-20" onClick={() => handleEdit(supplier)}>
+                                                    <Edit className="mr-2 h-4 w-4" /> {t('edit')}
+                                                </Button>
+                                                <Button variant="destructive" size="sm" className="w-20" onClick={() => setSupplierToDelete(supplier)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                {/* --- END --- */}
             </CardContent>
 
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">

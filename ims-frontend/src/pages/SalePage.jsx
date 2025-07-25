@@ -8,12 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle, ArrowUpDown } from "lucide-react";
+// --- START: 1. Import ไอคอน ---
+import { PlusCircle, ArrowUpDown, ShoppingCart } from "lucide-react";
+// --- END ---
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
-import { useTranslation } from "react-i18next"; // --- 1. Import useTranslation ---
+import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <TableRow>
@@ -38,7 +40,7 @@ const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort })
 
 export default function SalePage() {
     const navigate = useNavigate();
-    const { t } = useTranslation(); // --- 2. เรียกใช้ Hook ---
+    const { t } = useTranslation();
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
@@ -60,10 +62,14 @@ export default function SalePage() {
     return (
         <Card>
             <CardHeader>
+                {/* --- START: 2. ปรับปรุง CardHeader --- */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>{t('sales_title')}</CardTitle>
-                        <CardDescription>{t('salesDescription')}</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                            <ShoppingCart className="h-6 w-6" />
+                            {t('sales_title')}
+                        </CardTitle>
+                        <CardDescription className="mt-1">{t('salesDescription')}</CardDescription>
                     </div>
                     {canManage && (
                         <Button onClick={() => navigate('/sales/new')}>
@@ -71,6 +77,7 @@ export default function SalePage() {
                         </Button>
                     )}
                 </div>
+                {/* --- END --- */}
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -91,53 +98,57 @@ export default function SalePage() {
                         </SelectContent>
                     </Select>
                 </div>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <SortableHeader sortKey="id" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_saleId')}
-                            </SortableHeader>
-                            <SortableHeader sortKey="customer" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_customer')}
-                            </SortableHeader>
-                            <SortableHeader sortKey="saleDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_saleDate')}
-                            </SortableHeader>
-                            <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_items')}</TableHead>
-                            <SortableHeader sortKey="total" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_total')}
-                            </SortableHeader>
-                            <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                        ) : sales.map((sale) => (
-                            <TableRow key={sale.id}>
-                                <TableCell>#{sale.id}</TableCell>
-                                <TableCell>{sale.customer?.name || 'N/A'}</TableCell>
-                                <TableCell>{new Date(sale.saleDate).toLocaleString()}</TableCell>
-                                <TableCell className="text-center">
-                                    <StatusBadge 
-                                        status={sale.status} 
-                                        className="w-24" 
-                                        onClick={() => navigate(`/sales/${sale.id}`)}
-                                        interactive
-                                    />
-                                </TableCell>
-                                <TableCell className="text-center">{sale.itemsSold.length}</TableCell>
-                                <TableCell className="text-right">{sale.total.toLocaleString('en-US')} THB</TableCell>
-                                <TableCell className="text-center">
-                                    <Button variant="outline" size="sm" onClick={() => navigate(`/sales/${sale.id}`)}>
-                                        {t('details')}
-                                    </Button>
-                                </TableCell>
+                {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
+                <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                <SortableHeader sortKey="id" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_saleId')}
+                                </SortableHeader>
+                                <SortableHeader sortKey="customer" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_customer')}
+                                </SortableHeader>
+                                <SortableHeader sortKey="saleDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_saleDate')}
+                                </SortableHeader>
+                                <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_items')}</TableHead>
+                                <SortableHeader sortKey="total" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_total')}
+                                </SortableHeader>
+                                <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                            ) : sales.map((sale) => (
+                                <TableRow key={sale.id}>
+                                    <TableCell>#{sale.id}</TableCell>
+                                    <TableCell>{sale.customer?.name || 'N/A'}</TableCell>
+                                    <TableCell>{new Date(sale.saleDate).toLocaleString()}</TableCell>
+                                    <TableCell className="text-center">
+                                        <StatusBadge 
+                                            status={sale.status} 
+                                            className="w-24" 
+                                            onClick={() => navigate(`/sales/${sale.id}`)}
+                                            interactive
+                                        />
+                                    </TableCell>
+                                    <TableCell className="text-center">{sale.itemsSold.length}</TableCell>
+                                    <TableCell className="text-right">{sale.total.toLocaleString('en-US')} THB</TableCell>
+                                    <TableCell className="text-center">
+                                        <Button variant="outline" size="sm" onClick={() => navigate(`/sales/${sale.id}`)}>
+                                            {t('details')}
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                {/* --- END --- */}
             </CardContent>
              <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">

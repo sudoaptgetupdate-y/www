@@ -10,7 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ProductModelCombobox } from "@/components/ui/ProductModelCombobox";
-import { ArrowLeft } from "lucide-react";
+// --- START: 1. Import ไอคอน ---
+import { ArrowLeft, PackagePlus } from "lucide-react";
+// --- END ---
 
 const formatMacAddress = (value) => {
   const cleaned = (value || '').replace(/[^0-9a-fA-F]/g, '').toUpperCase();
@@ -81,9 +83,7 @@ export default function CreateAssetPage() {
         }
         
         try {
-            // --- START: ส่วนที่แก้ไข ---
             await axiosInstance.post("/assets", formData, { 
-            // --- END: ส่วนที่แก้ไข ---
                 headers: { Authorization: `Bearer ${token}` } 
             });
             toast.success(`Asset has been added to the warehouse successfully!`);
@@ -101,8 +101,13 @@ export default function CreateAssetPage() {
             </Button>
             <Card>
                 <CardHeader>
-                    <CardTitle>Add New Company Asset</CardTitle>
-                    <CardDescription>Enter the details of the new asset to add it to the warehouse.</CardDescription>
+                    {/* --- START: 2. ปรับปรุง CardHeader --- */}
+                    <CardTitle className="flex items-center gap-2">
+                        <PackagePlus className="h-6 w-6" />
+                        Add New Company Asset
+                    </CardTitle>
+                    <CardDescription className="mt-1">Enter the details of the new asset to add it to the warehouse.</CardDescription>
+                    {/* --- END --- */}
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
                     <CardContent className="space-y-4">

@@ -7,7 +7,9 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, CheckSquare, Square, Printer, CornerDownLeft } from "lucide-react";
+// --- START: 1. Import ไอคอน ---
+import { ArrowLeft, CheckSquare, Square, Printer, CornerDownLeft, HardDrive } from "lucide-react";
+// --- END ---
 import {
     AlertDialog,
     AlertDialogAction,
@@ -85,10 +87,15 @@ export default function AssetAssignmentDetailPage() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
+                {/* --- START: 2. ปรับปรุง Header --- */}
                 <div>
-                    <h1 className="text-2xl font-bold">Assignment Details</h1>
-                    <p className="text-muted-foreground">Viewing details for Assignment ID #{formattedAssignmentId}</p>
+                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                        <HardDrive className="h-6 w-6" />
+                        Assignment Details
+                    </h1>
+                    <p className="text-muted-foreground mt-1">Viewing details for Assignment ID #{formattedAssignmentId}</p>
                 </div>
+                {/* --- END --- */}
                  <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={() => navigate(-1)}>
                         <ArrowLeft className="mr-2 h-4 w-4" />

@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle } from "lucide-react";
+// --- START: 1. Import ไอคอน ---
+import { PlusCircle, HardDrive } from "lucide-react";
+// --- END ---
 import { StatusBadge } from "@/components/ui/StatusBadge"; 
 import { useTranslation } from "react-i18next";
 import {
@@ -49,10 +51,14 @@ export default function AssetAssignmentPage() {
     return (
         <Card>
             <CardHeader>
+                {/* --- START: 2. ปรับปรุง CardHeader --- */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>{t('assignments')}</CardTitle>
-                        <CardDescription>{t('assignments_description')}</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                            <HardDrive className="h-6 w-6" />
+                            {t('assignments')}
+                        </CardTitle>
+                        <CardDescription className="mt-1">{t('assignments_description')}</CardDescription>
                     </div>
                     {canManage && (
                         <Button onClick={() => navigate('/asset-assignments/new')}>
@@ -60,6 +66,7 @@ export default function AssetAssignmentPage() {
                         </Button>
                     )}
                 </div>
+                {/* --- END --- */}
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -81,47 +88,51 @@ export default function AssetAssignmentPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{t('tableHeader_assignmentId')}</TableHead>
-                            <TableHead>{t('tableHeader_assignedTo')}</TableHead>
-                            <TableHead>{t('tableHeader_assignedDate')}</TableHead>
-                            <TableHead>{t('tableHeader_returnDate')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_itemStatus')}</TableHead>
-                            <TableHead>{t('tableHeader_approvedBy')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                        ) : assignments.map((a) => (
-                            <TableRow key={a.id}>
-                                <TableCell>#{a.id}</TableCell>
-                                <TableCell>{a.assignee.name}</TableCell>
-                                <TableCell>{new Date(a.assignedDate).toLocaleDateString()}</TableCell>
-                                <TableCell>{a.returnDate ? new Date(a.returnDate).toLocaleDateString() : 'N/A'}</TableCell>
-                                <TableCell className="text-center">
-                                    <StatusBadge 
-                                        status={a.status} 
-                                        className="w-32"
-                                        onClick={() => navigate(`/asset-assignments/${a.id}`)}
-                                        interactive
-                                    />
-                                </TableCell>
-                                <TableCell className="text-center">{a.returnedItemCount}/{a.totalItemCount} {t('item_status_returned')}</TableCell>
-                                <TableCell>{a.approvedBy.name}</TableCell>
-                                <TableCell className="text-center">
-                                    <Button variant="outline" size="sm" onClick={() => navigate(`/asset-assignments/${a.id}`)}>
-                                        {t('details')}
-                                    </Button>
-                                </TableCell>
+                {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
+                <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                <TableHead>{t('tableHeader_assignmentId')}</TableHead>
+                                <TableHead>{t('tableHeader_assignedTo')}</TableHead>
+                                <TableHead>{t('tableHeader_assignedDate')}</TableHead>
+                                <TableHead>{t('tableHeader_returnDate')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_itemStatus')}</TableHead>
+                                <TableHead>{t('tableHeader_approvedBy')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                            ) : assignments.map((a) => (
+                                <TableRow key={a.id}>
+                                    <TableCell>#{a.id}</TableCell>
+                                    <TableCell>{a.assignee.name}</TableCell>
+                                    <TableCell>{new Date(a.assignedDate).toLocaleDateString()}</TableCell>
+                                    <TableCell>{a.returnDate ? new Date(a.returnDate).toLocaleDateString() : 'N/A'}</TableCell>
+                                    <TableCell className="text-center">
+                                        <StatusBadge 
+                                            status={a.status} 
+                                            className="w-32"
+                                            onClick={() => navigate(`/asset-assignments/${a.id}`)}
+                                            interactive
+                                        />
+                                    </TableCell>
+                                    <TableCell className="text-center">{a.returnedItemCount}/{a.totalItemCount} {t('item_status_returned')}</TableCell>
+                                    <TableCell>{a.approvedBy.name}</TableCell>
+                                    <TableCell className="text-center">
+                                        <Button variant="outline" size="sm" onClick={() => navigate(`/asset-assignments/${a.id}`)}>
+                                            {t('details')}
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                {/* --- END --- */}
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">

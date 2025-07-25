@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle, MoreHorizontal, History, Edit, ArrowRightLeft, Archive, ArrowUpDown } from "lucide-react";
+// --- START: 1. Import ไอคอน ---
+import { PlusCircle, MoreHorizontal, History, Edit, ArrowRightLeft, Archive, ArrowUpDown, Layers } from "lucide-react";
+// --- END ---
 import { toast } from "sonner";
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -110,10 +112,14 @@ export default function AssetPage() {
     return (
         <Card>
             <CardHeader>
+                {/* --- START: 2. ปรับปรุง CardHeader --- */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>{t('assetList_title')}</CardTitle>
-                        <CardDescription>{t('assetList_description')}</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                           <Layers className="h-6 w-6" />
+                           {t('assetList_title')}
+                        </CardTitle>
+                        <CardDescription className="mt-1">{t('assetList_description')}</CardDescription>
                     </div>
                     {canManage &&
                         <div className="flex flex-wrap gap-2">
@@ -126,6 +132,7 @@ export default function AssetPage() {
                         </div>
                     }
                 </div>
+                {/* --- END --- */}
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -157,110 +164,110 @@ export default function AssetPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            {/* --- START: แก้ไขลำดับคอลัมน์ --- */}
-                            <SortableHeader sortKey="assetCode" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_assetCode')}
-                            </SortableHeader>
-                            <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_brand')}
-                            </SortableHeader>
-                            <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_productModel')}
-                            </SortableHeader>
-                            {/* --- END --- */}
-                            <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                {t('tableHeader_serialNumber')}
-                            </SortableHeader>
-                            <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
-                            <TableHead>{t('tableHeader_assignedTo')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                        ) : assets.map((asset) => (
-                            <TableRow key={asset.id}>
-                                {/* --- START: แก้ไขลำดับ Cell --- */}
-                                <TableCell>{asset.assetCode}</TableCell>
-                                <TableCell>{asset.productModel.brand.name}</TableCell>
-                                <TableCell>{asset.productModel?.modelNumber || 'N/A'}</TableCell>
-                                {/* --- END --- */}
-                                <TableCell>{asset.serialNumber || 'N/A'}</TableCell>
-                                <TableCell className="text-center">
-                                    <StatusBadge
-                                        status={asset.status}
-                                        className="w-28"
-                                        onClick={() => {
-                                            if (asset.status === 'ASSIGNED' && asset.assignmentId) {
-                                                navigate(`/asset-assignments/${asset.assignmentId}`);
-                                            } else if (asset.status === 'REPAIRING' && asset.repairId) {
-                                                navigate(`/repairs/${asset.repairId}`);
-                                            }
-                                        }}
-                                        interactive={
-                                            (asset.status === 'ASSIGNED' && asset.assignmentId) ||
-                                            (asset.status === 'REPAIRING' && asset.repairId)
-                                        }
-                                    />
-                                </TableCell>
-                                <TableCell>{asset.assignedTo?.name || '-'}</TableCell>
-                                <TableCell className="text-center">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="primary-outline" size="icon" className="h-8 w-14 p-0">
-                                                <span className="sr-only">Open menu</span>
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>{t('tableHeader_actions')}</DropdownMenuLabel>
-                                            <DropdownMenuItem onClick={() => navigate(`/assets/${asset.id}/history`)}>
-                                                <History className="mr-2 h-4 w-4" /> {t('action_view_history')}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => navigate(`/assets/edit/${asset.id}`)}>
-                                                <Edit className="mr-2 h-4 w-4" /> {t('action_edit_asset')}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem
-                                                onClick={() => handleAssignItem(asset)}
-                                                disabled={asset.status !== 'IN_WAREHOUSE'}
-                                            >
-                                                <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('action_assign_asset')}
-                                            </DropdownMenuItem>
-
-                                            {asset.status === 'IN_WAREHOUSE' && (
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                         <DropdownMenuItem
-                                                            className="text-red-600 focus:text-red-500"
-                                                            onSelect={(e) => e.preventDefault()}
-                                                        >
-                                                            <Archive className="mr-2 h-4 w-4" /> {t('action_decommission')}
-                                                        </DropdownMenuItem>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader><AlertDialogTitle>{t('asset_alert_decommission_title')}</AlertDialogTitle><AlertDialogDescription>{t('asset_alert_decommission_description')} <strong>{asset.assetCode}</strong>.</AlertDialogDescription></AlertDialogHeader>
-                                                        <AlertDialogFooter><AlertDialogCancel>{t('cancel')}</AlertDialogCancel><AlertDialogAction onClick={() => handleDecommission(asset.id)}>{t('confirm')}</AlertDialogAction></AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            )}
-
-                                            {asset.status === 'DECOMMISSIONED' && (
-                                                <DropdownMenuItem onClick={() => handleReinstate(asset.id)}>
-                                                    <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('action_reinstate')}
-                                                </DropdownMenuItem>
-                                            )}
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
+                {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
+                <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                <SortableHeader sortKey="assetCode" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_assetCode')}
+                                </SortableHeader>
+                                <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_brand')}
+                                </SortableHeader>
+                                <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_productModel')}
+                                </SortableHeader>
+                                <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_serialNumber')}
+                                </SortableHeader>
+                                <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
+                                <TableHead>{t('tableHeader_assignedTo')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                            ) : assets.map((asset) => (
+                                <TableRow key={asset.id}>
+                                    <TableCell>{asset.assetCode}</TableCell>
+                                    <TableCell>{asset.productModel.brand.name}</TableCell>
+                                    <TableCell>{asset.productModel?.modelNumber || 'N/A'}</TableCell>
+                                    <TableCell>{asset.serialNumber || 'N/A'}</TableCell>
+                                    <TableCell className="text-center">
+                                        <StatusBadge
+                                            status={asset.status}
+                                            className="w-28"
+                                            onClick={() => {
+                                                if (asset.status === 'ASSIGNED' && asset.assignmentId) {
+                                                    navigate(`/asset-assignments/${asset.assignmentId}`);
+                                                } else if (asset.status === 'REPAIRING' && asset.repairId) {
+                                                    navigate(`/repairs/${asset.repairId}`);
+                                                }
+                                            }}
+                                            interactive={
+                                                (asset.status === 'ASSIGNED' && asset.assignmentId) ||
+                                                (asset.status === 'REPAIRING' && asset.repairId)
+                                            }
+                                        />
+                                    </TableCell>
+                                    <TableCell>{asset.assignedTo?.name || '-'}</TableCell>
+                                    <TableCell className="text-center">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="primary-outline" size="icon" className="h-8 w-14 p-0">
+                                                    <span className="sr-only">Open menu</span>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>{t('tableHeader_actions')}</DropdownMenuLabel>
+                                                <DropdownMenuItem onClick={() => navigate(`/assets/${asset.id}/history`)}>
+                                                    <History className="mr-2 h-4 w-4" /> {t('action_view_history')}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => navigate(`/assets/edit/${asset.id}`)}>
+                                                    <Edit className="mr-2 h-4 w-4" /> {t('action_edit_asset')}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    onClick={() => handleAssignItem(asset)}
+                                                    disabled={asset.status !== 'IN_WAREHOUSE'}
+                                                >
+                                                    <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('action_assign_asset')}
+                                                </DropdownMenuItem>
+
+                                                {asset.status === 'IN_WAREHOUSE' && (
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                             <DropdownMenuItem
+                                                                className="text-red-600 focus:text-red-500"
+                                                                onSelect={(e) => e.preventDefault()}
+                                                            >
+                                                                <Archive className="mr-2 h-4 w-4" /> {t('action_decommission')}
+                                                            </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader><AlertDialogTitle>{t('asset_alert_decommission_title')}</AlertDialogTitle><AlertDialogDescription>{t('asset_alert_decommission_description')} <strong>{asset.assetCode}</strong>.</AlertDialogDescription></AlertDialogHeader>
+                                                            <AlertDialogFooter><AlertDialogCancel>{t('cancel')}</AlertDialogCancel><AlertDialogAction onClick={() => handleDecommission(asset.id)}>{t('confirm')}</AlertDialogAction></AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                )}
+
+                                                {asset.status === 'DECOMMISSIONED' && (
+                                                    <DropdownMenuItem onClick={() => handleReinstate(asset.id)}>
+                                                        <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('action_reinstate')}
+                                                    </DropdownMenuItem>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                {/* --- END --- */}
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -10,6 +10,17 @@ import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { CustomerCombobox } from "@/components/ui/CustomerCombobox";
+// --- START: 1. Import ไอคอน ---
+import { Trash2, Edit } from "lucide-react";
+// --- END ---
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -34,7 +45,6 @@ export default function EditSalePage() {
     
     const debouncedItemSearch = useDebounce(itemSearch, 500);
 
-    // useEffect สำหรับดึงข้อมูลตั้งต้นของ Sale ที่จะแก้ไข
     useEffect(() => {
         const fetchInitialData = async () => {
             if (!token || !saleId) return;
@@ -47,14 +57,19 @@ export default function EditSalePage() {
                 setSelectedCustomerId(String(saleData.customerId));
                 setSelectedItems(saleData.itemsSold);
                 
-                // ดึงรายการสินค้าทั้งหมดหลังจากได้ข้อมูล sale แล้ว
-                const inventoryRes = await axiosInstance.get("/inventory-items", {
+                const inventoryRes = await axiosInstance.get("/inventory", {
                     headers: { Authorization: `Bearer ${token}` },
-                    params: { all: 'true', search: '' }
+                    params: { status: 'IN_STOCK', search: '', limit: 1000 }
                 });
 
                 const selectedIds = new Set(saleData.itemsSold.map(i => i.id));
-                setAvailableItems(inventoryRes.data.filter(item => !selectedIds.has(item.id)));
+                const allAvailable = inventoryRes.data.data || [];
+                
+                // Add current items back to the available pool for display logic, then filter out selected ones
+                const currentAndAvailable = [...saleData.itemsSold, ...allAvailable];
+                const uniqueAvailable = Array.from(new Map(currentAndAvailable.map(item => [item.id, item])).values());
+
+                setAvailableItems(uniqueAvailable.filter(item => !selectedIds.has(item.id)));
 
             } catch (error) {
                 toast.error("Failed to fetch initial sale data.");
@@ -66,23 +81,22 @@ export default function EditSalePage() {
         fetchInitialData();
     }, [saleId, token, navigate]);
     
-    // useEffect สำหรับค้นหาสินค้า (ทำงานหลังจาก loading ข้อมูลตั้งต้นเสร็จ)
     useEffect(() => {
+        if (loading || !token) return;
         const fetchInventoryOnSearch = async () => {
-            if (loading || !token) return; // ไม่ต้องทำถ้ายังโหลดข้อมูลตั้งต้นไม่เสร็จ
             try {
-                const inventoryRes = await axiosInstance.get("/inventory-items", {
+                const inventoryRes = await axiosInstance.get("/inventory", {
                     headers: { Authorization: `Bearer ${token}` },
-                    params: { all: 'true', search: debouncedItemSearch }
+                    params: { status: 'IN_STOCK', search: debouncedItemSearch, limit: 100 }
                 });
                 const selectedIds = new Set(selectedItems.map(i => i.id));
-                setAvailableItems(inventoryRes.data.filter(item => !selectedIds.has(item.id)));
+                setAvailableItems((inventoryRes.data.data || []).filter(item => !selectedIds.has(item.id)));
             } catch (error) {
                 toast.error("Failed to fetch inventory items.");
             }
         };
         fetchInventoryOnSearch();
-    }, [debouncedItemSearch, loading, token]);
+    }, [debouncedItemSearch, loading, token, selectedItems]);
 
     const handleAddItem = (itemToAdd) => {
         setSelectedItems(prev => [...prev, itemToAdd]);
@@ -91,9 +105,7 @@ export default function EditSalePage() {
     
     const handleRemoveItem = (itemToRemove) => {
         setSelectedItems(prev => prev.filter(item => item.id !== itemToRemove.id));
-        if (!itemSearch) {
-            setAvailableItems(prev => [itemToRemove, ...prev]);
-        }
+        setAvailableItems(prev => [itemToRemove, ...prev]);
     };
 
     const handleSubmit = async () => {
@@ -107,7 +119,7 @@ export default function EditSalePage() {
         try {
             await axiosInstance.put(`/sales/${saleId}`, payload, { headers: { Authorization: `Bearer ${token}` } });
             toast.success("Sale updated successfully!");
-            navigate("/sales");
+            navigate(`/sales/${saleId}`);
         } catch (error) {
             toast.error(error.response?.data?.error || "Failed to update sale.");
         }
@@ -133,19 +145,20 @@ export default function EditSalePage() {
                         onChange={(e) => setItemSearch(e.target.value)} 
                         className="mb-4" 
                     />
-                    <div className="h-96 overflow-y-auto border rounded-md">
-                        <table className="w-full text-sm">
-                            <thead className="sticky top-0 bg-slate-100">
-                                <tr className="border-b">
-                                    <th className="p-2 text-left">Category</th>
-                                    <th className="p-2 text-left">Brand</th>
-                                    <th className="p-2 text-left">Product</th>
-                                    <th className="p-2 text-left">Serial No.</th>
-                                    <th className="p-2 text-right">Price</th>
-                                    <th className="p-2 text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    {/* --- START: 4. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
+                    <div className="border rounded-md">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                    <TableHead>Category</TableHead>
+                                    <TableHead>Brand</TableHead>
+                                    <TableHead>Product</TableHead>
+                                    <TableHead>Serial No.</TableHead>
+                                    <TableHead className="text-right">Price</TableHead>
+                                    <TableHead className="text-center">Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {availableItems.map(item => (
                                 <tr key={item.id} className="border-b">
                                     <td className="p-2">{item.productModel.category.name}</td>
@@ -156,13 +169,21 @@ export default function EditSalePage() {
                                     <td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>Add</Button></td>
                                 </tr>
                                 ))}
-                            </tbody>
-                        </table>
+                            </TableBody>
+                        </Table>
                     </div>
+                    {/* --- END --- */}
                 </CardContent>
             </Card>
             <Card>
-                <CardHeader><CardTitle>Edit Sale (ID: {saleId})</CardTitle></CardHeader>
+                {/* --- START: 5. ปรับปรุง CardHeader --- */}
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Edit className="h-6 w-6" />
+                        Edit Sale (ID: {saleId})
+                    </CardTitle>
+                </CardHeader>
+                {/* --- END --- */}
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label>Customer</Label>
@@ -182,7 +203,7 @@ export default function EditSalePage() {
                                         <p className="font-semibold">{item.productModel.modelNumber}</p>
                                         <p className="text-xs text-slate-500">{item.serialNumber || 'No S/N'}</p>
                                     </div>
-                                    <Button variant="destructive" size="sm" onClick={() => handleRemoveItem(item)}>Remove</Button>
+                                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleRemoveItem(item)}><Trash2 className="h-4 w-4" /></Button>
                                 </div>
                             ))}
                         </div>

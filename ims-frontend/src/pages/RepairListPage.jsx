@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle } from "lucide-react";
+// --- START: 1. Import ไอคอน ---
+import { PlusCircle, Wrench } from "lucide-react";
+// --- END ---
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useTranslation } from "react-i18next";
 import {
@@ -50,10 +52,14 @@ export default function RepairListPage() {
     return (
         <Card>
             <CardHeader>
+                {/* --- START: 2. ปรับปรุง CardHeader --- */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>{t('repairOrders')}</CardTitle>
-                        <CardDescription>{t('repairDescription')}</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                            <Wrench className="h-6 w-6" />
+                            {t('repairOrders')}
+                        </CardTitle>
+                        <CardDescription className="mt-1">{t('repairDescription')}</CardDescription>
                     </div>
                      {canManage && (
                         <Button onClick={() => navigate('/repairs/new')}>
@@ -61,6 +67,7 @@ export default function RepairListPage() {
                         </Button>
                     )}
                 </div>
+                {/* --- END --- */}
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -82,43 +89,47 @@ export default function RepairListPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{t('tableHeader_repairId')}</TableHead>
-                            <TableHead>{t('tableHeader_sentTo')}</TableHead>
-                            <TableHead>{t('tableHeader_repairDate')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_itemStatus')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                        ) : repairs.map((r) => (
-                            <TableRow key={r.id}>
-                                <TableCell>#{r.id}</TableCell>
-                                <TableCell>{r.receiver?.name || 'N/A'}</TableCell>
-                                <TableCell>{new Date(r.repairDate).toLocaleDateString()}</TableCell>
-                                <TableCell className="text-center">
-                                    <StatusBadge
-                                        status={r.status}
-                                        className="w-32"
-                                        onClick={() => navigate(`/repairs/${r.id}`)}
-                                        interactive
-                                    />
-                                </TableCell>
-                                <TableCell className="text-center">{r.returnedItemCount}/{r.totalItemCount} {t('item_status_returned')}</TableCell>
-                                <TableCell className="text-center">
-                                    <Button variant="outline" size="sm" onClick={() => navigate(`/repairs/${r.id}`)}>
-                                        {t('details')}
-                                    </Button>
-                                </TableCell>
+                {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
+                <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                <TableHead>{t('tableHeader_repairId')}</TableHead>
+                                <TableHead>{t('tableHeader_sentTo')}</TableHead>
+                                <TableHead>{t('tableHeader_repairDate')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_itemStatus')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                            ) : repairs.map((r) => (
+                                <TableRow key={r.id}>
+                                    <TableCell>#{r.id}</TableCell>
+                                    <TableCell>{r.receiver?.name || 'N/A'}</TableCell>
+                                    <TableCell>{new Date(r.repairDate).toLocaleDateString()}</TableCell>
+                                    <TableCell className="text-center">
+                                        <StatusBadge
+                                            status={r.status}
+                                            className="w-32"
+                                            onClick={() => navigate(`/repairs/${r.id}`)}
+                                            interactive
+                                        />
+                                    </TableCell>
+                                    <TableCell className="text-center">{r.returnedItemCount}/{r.totalItemCount} {t('item_status_returned')}</TableCell>
+                                    <TableCell className="text-center">
+                                        <Button variant="outline" size="sm" onClick={() => navigate(`/repairs/${r.id}`)}>
+                                            {t('details')}
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                {/* --- END --- */}
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">

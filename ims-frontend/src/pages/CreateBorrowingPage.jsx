@@ -22,15 +22,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-function useDebounce(value, delay) {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-    useEffect(() => {
-        const handler = setTimeout(() => { setDebouncedValue(value); }, delay);
-        return () => { clearTimeout(handler); };
-    }, [value, delay]);
-    return debouncedValue;
-}
+// --- START: 1. Import สิ่งที่จำเป็นเข้ามา ---
+import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
+import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
+import { BrandCombobox } from "@/components/ui/BrandCombobox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// --- END ---
 
 export default function CreateBorrowingPage() {
     const { t } = useTranslation();
@@ -38,15 +35,28 @@ export default function CreateBorrowingPage() {
     const location = useLocation();
     const token = useAuthStore((state) => state.token);
 
-    const [fetchedItems, setFetchedItems] = useState([]);
-    const [availableItems, setAvailableItems] = useState([]);
     const [selectedBorrowerId, setSelectedBorrowerId] = useState("");
     const [selectedItems, setSelectedItems] = useState([]);
-    const [itemSearch, setItemSearch] = useState("");
     const [dueDate, setDueDate] = useState("");
     const [notes, setNotes] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const debouncedItemSearch = useDebounce(itemSearch, 500);
+
+    // --- START: 2. ใช้ usePaginatedFetch Hook ---
+    const {
+        data: availableItems,
+        pagination,
+        isLoading,
+        searchTerm,
+        filters,
+        handleSearchChange,
+        handlePageChange,
+        handleItemsPerPageChange,
+        handleFilterChange
+    } = usePaginatedFetch("/inventory", 10, {
+        status: "IN_STOCK", // Hardcode status เป็น IN_STOCK เสมอ
+        categoryId: "All",
+        brandId: "All"
+    });
+    // --- END ---
 
     useEffect(() => {
         const initialItems = location.state?.initialItems || [];
@@ -55,32 +65,10 @@ export default function CreateBorrowingPage() {
         }
     }, [location.state]);
 
-    useEffect(() => {
-        const fetchAvailableItems = async () => {
-            if (!token) return;
-            setIsLoading(true);
-            try {
-                const response = await axiosInstance.get("/inventory", {
-                    headers: { Authorization: `Bearer ${token}` },
-                    params: { status: 'IN_STOCK', search: debouncedItemSearch, limit: 100 }
-                });
-                setFetchedItems(response.data.data);
-            } catch (error) {
-                toast.error("Failed to fetch available items.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchAvailableItems();
-    }, [token, debouncedItemSearch]);
-
-    useEffect(() => {
-        const selectedIds = new Set(selectedItems.map(i => i.id));
-        setAvailableItems(fetchedItems.filter(item => !selectedIds.has(item.id)));
-    }, [selectedItems, fetchedItems]);
-
     const handleAddItem = (itemToAdd) => {
-        setSelectedItems(prev => [...prev, itemToAdd]);
+        if (!selectedItems.some(item => item.id === itemToAdd.id)) {
+            setSelectedItems(prev => [...prev, itemToAdd]);
+        }
     };
 
     const handleRemoveItem = (itemToRemove) => {
@@ -114,6 +102,11 @@ export default function CreateBorrowingPage() {
             toast.error(error.response?.data?.error || "Failed to create borrowing record.");
         }
     };
+    
+    // กรองรายการสินค้าที่แสดงผล ไม่ให้แสดงรายการที่ถูกเลือกไปแล้ว
+    const displayedAvailableItems = availableItems.filter(
+        item => !selectedItems.some(selected => selected.id === item.id)
+    );
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -123,12 +116,24 @@ export default function CreateBorrowingPage() {
                     <CardDescription>{t('createBorrowing_description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Input
-                        placeholder={t('createSale_search_placeholder')}
-                        value={itemSearch}
-                        onChange={(e) => setItemSearch(e.target.value)}
-                        className="mb-4"
-                    />
+                    {/* --- START: 3. เพิ่ม UI สำหรับ Filter --- */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                        <Input
+                            placeholder={t('createSale_search_placeholder')}
+                            value={searchTerm}
+                            onChange={(e) => handleSearchChange(e.target.value)}
+                            className="sm:col-span-3 lg:col-span-1"
+                        />
+                        <CategoryCombobox
+                            selectedValue={filters.categoryId}
+                            onSelect={(value) => handleFilterChange('categoryId', value)}
+                        />
+                        <BrandCombobox
+                            selectedValue={filters.brandId}
+                            onSelect={(value) => handleFilterChange('brandId', value)}
+                        />
+                    </div>
+                    {/* --- END --- */}
                     <div className="border rounded-md">
                         <Table>
                             <TableHeader>
@@ -141,8 +146,9 @@ export default function CreateBorrowingPage() {
                             </TableHeader>
                             <TableBody>
                                 {isLoading ? (
-                                    <TableRow><TableCell colSpan="4" className="text-center p-4">Searching...</TableCell></TableRow>
-                                ) : availableItems.map(item => (
+                                    <TableRow><TableCell colSpan="4" className="text-center h-24">Searching...</TableCell></TableRow>
+                                ) : displayedAvailableItems.length > 0 ? (
+                                    displayedAvailableItems.map(item => (
                                     <TableRow key={item.id}>
                                         <TableCell>{item.productModel.brand.name}</TableCell>
                                         <TableCell>{item.productModel.modelNumber}</TableCell>
@@ -153,11 +159,34 @@ export default function CreateBorrowingPage() {
                                             </Button>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                ))) : (
+                                    <TableRow><TableCell colSpan="4" className="text-center h-24">No available items found.</TableCell></TableRow>
+                                )
+                                }
                             </TableBody>
                         </Table>
                     </div>
                 </CardContent>
+                {/* --- START: 4. เพิ่ม UI สำหรับ Pagination --- */}
+                <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
+                        <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                            <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                        {t('pagination_info', { currentPage: pagination.currentPage, totalPages: pagination.totalPages, totalItems: pagination.totalItems })}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>{t('previous')}</Button>
+                        <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
+                    </div>
+                </CardFooter>
+                {/* --- END --- */}
             </Card>
             <Card>
                 <CardHeader><CardTitle>{t('createBorrowing_summary_title')}</CardTitle></CardHeader>

@@ -22,15 +22,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+// --- START: 1. Import สิ่งที่จำเป็นเข้ามา ---
+import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
+import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
+import { BrandCombobox } from "@/components/ui/BrandCombobox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// --- END ---
 
-function useDebounce(value, delay) {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-    useEffect(() => {
-        const handler = setTimeout(() => { setDebouncedValue(value); }, delay);
-        return () => { clearTimeout(handler); };
-    }, [value, delay]);
-    return debouncedValue;
-}
 
 export default function CreateAssetAssignmentPage() {
     const { t } = useTranslation();
@@ -38,14 +36,27 @@ export default function CreateAssetAssignmentPage() {
     const location = useLocation();
     const token = useAuthStore((state) => state.token);
 
-    const [fetchedAssets, setFetchedAssets] = useState([]);
-    const [availableAssets, setAvailableAssets] = useState([]);
     const [selectedUserId, setSelectedUserId] = useState("");
     const [selectedAssets, setSelectedAssets] = useState([]);
-    const [assetSearch, setAssetSearch] = useState("");
     const [notes, setNotes] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const debouncedAssetSearch = useDebounce(assetSearch, 500);
+    
+    // --- START: 2. ใช้ usePaginatedFetch Hook ---
+    const {
+        data: availableAssets,
+        pagination,
+        isLoading,
+        searchTerm,
+        filters,
+        handleSearchChange,
+        handlePageChange,
+        handleItemsPerPageChange,
+        handleFilterChange
+    } = usePaginatedFetch("/assets", 10, {
+        status: "IN_WAREHOUSE", // Hardcode status เป็น IN_WAREHOUSE เสมอ
+        categoryId: "All",
+        brandId: "All"
+    });
+    // --- END ---
 
     useEffect(() => {
         const initialItems = location.state?.initialItems || [];
@@ -54,36 +65,11 @@ export default function CreateAssetAssignmentPage() {
         }
     }, [location.state]);
 
-    useEffect(() => {
-        const fetchAvailableAssets = async () => {
-            if (!token) return;
-            setIsLoading(true);
-            try {
-                const response = await axiosInstance.get("/assets", {
-                    headers: { Authorization: `Bearer ${token}` },
-                    params: {
-                        status: 'IN_WAREHOUSE',
-                        search: debouncedAssetSearch,
-                        limit: 100
-                    }
-                });
-                setFetchedAssets(response.data.data);
-            } catch (error) {
-                toast.error("Failed to fetch available assets.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchAvailableAssets();
-    }, [token, debouncedAssetSearch]);
-
-    useEffect(() => {
-        const selectedIds = new Set(selectedAssets.map(i => i.id));
-        setAvailableAssets(fetchedAssets.filter(asset => !selectedIds.has(asset.id)));
-    }, [selectedAssets, fetchedAssets]);
 
     const handleAddItem = (assetToAdd) => {
-        setSelectedAssets(prev => [...prev, assetToAdd]);
+        if (!selectedAssets.some(asset => asset.id === assetToAdd.id)) {
+            setSelectedAssets(prev => [...prev, assetToAdd]);
+        }
     };
 
     const handleRemoveItem = (assetToRemove) => {
@@ -116,6 +102,11 @@ export default function CreateAssetAssignmentPage() {
             toast.error(error.response?.data?.error || "Failed to create assignment.");
         }
     };
+    
+    // กรองรายการทรัพย์สินที่แสดงผล ไม่ให้แสดงรายการที่ถูกเลือกไปแล้ว
+    const displayedAvailableAssets = availableAssets.filter(
+        asset => !selectedAssets.some(selected => selected.id === asset.id)
+    );
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -125,12 +116,24 @@ export default function CreateAssetAssignmentPage() {
                     <CardDescription>{t('createAssignment_description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Input
-                        placeholder={t('asset_search_placeholder')}
-                        value={assetSearch}
-                        onChange={(e) => setAssetSearch(e.target.value)}
-                        className="mb-4"
-                    />
+                    {/* --- START: 3. เพิ่ม UI สำหรับ Filter --- */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                        <Input
+                            placeholder={t('asset_search_placeholder')}
+                            value={searchTerm}
+                            onChange={(e) => handleSearchChange(e.target.value)}
+                            className="sm:col-span-3 lg:col-span-1"
+                        />
+                        <CategoryCombobox
+                            selectedValue={filters.categoryId}
+                            onSelect={(value) => handleFilterChange('categoryId', value)}
+                        />
+                        <BrandCombobox
+                            selectedValue={filters.brandId}
+                            onSelect={(value) => handleFilterChange('brandId', value)}
+                        />
+                    </div>
+                    {/* --- END --- */}
                     <div className="border rounded-md">
                         <Table>
                             <TableHeader>
@@ -144,8 +147,9 @@ export default function CreateAssetAssignmentPage() {
                             </TableHeader>
                             <TableBody>
                                 {isLoading ? (
-                                    <TableRow><TableCell colSpan="5" className="text-center p-4">Searching...</TableCell></TableRow>
-                                ) : availableAssets.map(asset => (
+                                    <TableRow><TableCell colSpan="5" className="text-center h-24">Searching...</TableCell></TableRow>
+                                ) : displayedAvailableAssets.length > 0 ? (
+                                    displayedAvailableAssets.map(asset => (
                                     <TableRow key={asset.id}>
                                         <TableCell>{asset.assetCode}</TableCell>
                                         <TableCell>{asset.productModel.brand.name}</TableCell>
@@ -155,11 +159,34 @@ export default function CreateAssetAssignmentPage() {
                                             <Button variant="primary-outline" size="sm" onClick={() => handleAddItem(asset)}>{t('add')}</Button>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                ))) : (
+                                    <TableRow><TableCell colSpan="5" className="text-center h-24">No available assets found.</TableCell></TableRow>
+                                )
+                                }
                             </TableBody>
                         </Table>
                     </div>
                 </CardContent>
+                {/* --- START: 4. เพิ่ม UI สำหรับ Pagination --- */}
+                <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
+                        <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                            <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                        {t('pagination_info', { currentPage: pagination.currentPage, totalPages: pagination.totalPages, totalItems: pagination.totalItems })}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>{t('previous')}</Button>
+                        <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
+                    </div>
+                </CardFooter>
+                {/* --- END --- */}
             </Card>
             <Card>
                 <CardHeader><CardTitle>{t('createAssignment_summary_title')}</CardTitle></CardHeader>

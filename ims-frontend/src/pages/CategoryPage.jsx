@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { Edit, Trash2, PlusCircle } from "lucide-react";
+// --- START: 1. Import ไอคอน ---
+import { Edit, Trash2, PlusCircle, Tag } from "lucide-react";
+// --- END ---
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -74,10 +76,14 @@ export default function CategoryPage() {
     return (
         <Card>
             <CardHeader>
+                {/* --- START: 2. ปรับปรุง CardHeader --- */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>{t('categories')}</CardTitle>
-                        <CardDescription>{t('categories_description')}</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                            <Tag className="h-6 w-6" />
+                            {t('categories')}
+                        </CardTitle>
+                        <CardDescription className="mt-1">{t('categories_description')}</CardDescription>
                     </div>
                      {canManage &&
                         <Button onClick={handleAddNew}>
@@ -85,6 +91,7 @@ export default function CategoryPage() {
                         </Button>
                     }
                 </div>
+                {/* --- END --- */}
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -95,39 +102,43 @@ export default function CategoryPage() {
                         className="flex-grow"
                     />
                 </div>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{t('tableHeader_name')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_requiresSn')}</TableHead>
-                            <TableHead className="text-center">{t('tableHeader_requiresMac')}</TableHead>
-                            {canManage && <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
-                        ) : categories.map((category) => (
-                            <TableRow key={category.id}>
-                                <TableCell>{category.name}</TableCell>
-                                <TableCell className="text-center">{category.requiresSerialNumber ? t('yes') : t('no')}</TableCell>
-                                <TableCell className="text-center">{category.requiresMacAddress ? t('yes') : t('no')}</TableCell>
-                                {canManage && (
-                                    <TableCell className="text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Button variant="outline" size="sm" className="w-20" onClick={() => handleEdit(category)}>
-                                                <Edit className="mr-2 h-4 w-4" /> {t('edit')}
-                                            </Button>
-                                            <Button variant="destructive" size="sm" className="w-20" onClick={() => handleDelete(category)}>
-                                                <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                )}
+                {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
+                <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                <TableHead>{t('tableHeader_name')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_requiresSn')}</TableHead>
+                                <TableHead className="text-center">{t('tableHeader_requiresMac')}</TableHead>
+                                {canManage && <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>}
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                            ) : categories.map((category) => (
+                                <TableRow key={category.id}>
+                                    <TableCell>{category.name}</TableCell>
+                                    <TableCell className="text-center">{category.requiresSerialNumber ? t('yes') : t('no')}</TableCell>
+                                    <TableCell className="text-center">{category.requiresMacAddress ? t('yes') : t('no')}</TableCell>
+                                    {canManage && (
+                                        <TableCell className="text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Button variant="outline" size="sm" className="w-20" onClick={() => handleEdit(category)}>
+                                                    <Edit className="mr-2 h-4 w-4" /> {t('edit')}
+                                                </Button>
+                                                <Button variant="destructive" size="sm" className="w-20" onClick={() => handleDelete(category)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                {/* --- END --- */}
             </CardContent>
             
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">

@@ -7,7 +7,9 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+// --- START: 1. Import ไอคอน ---
 import { ArrowLeft, Printer, CheckSquare, Square, Wrench } from "lucide-react";
+// --- END ---
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
@@ -114,10 +116,15 @@ export default function RepairDetailPage() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
+                {/* --- START: 2. ปรับปรุง Header --- */}
                 <div>
-                    <h1 className="text-2xl font-bold">{t('repair_detail_title')}</h1>
+                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                        <Wrench className="h-6 w-6" />
+                        {t('repair_detail_title')}
+                    </h1>
                     <p className="text-muted-foreground">{t('repair_detail_description', { id: formattedRepairId })}</p>
                 </div>
+                {/* --- END --- */}
                 <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={() => navigate(-1)}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> {t('repair_detail_back_button')}

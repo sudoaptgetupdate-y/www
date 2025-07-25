@@ -7,7 +7,9 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+// --- START: 1. Import ไอคอน ---
+import { ArrowLeft, Package } from "lucide-react";
+// --- END ---
 
 export default function UserActiveAssetsPage() {
     const { userId } = useParams();
@@ -42,10 +44,15 @@ export default function UserActiveAssetsPage() {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
+                {/* --- START: 2. ปรับปรุง Header --- */}
                 <div>
-                    <h1 className="text-2xl font-bold">Currently Assigned Assets</h1>
-                    <p className="text-muted-foreground">For User: {userName}</p>
+                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                        <Package className="h-6 w-6" />
+                        Currently Assigned Assets
+                    </h1>
+                    <p className="text-muted-foreground mt-1">For User: {userName}</p>
                 </div>
+                {/* --- END --- */}
                 <Button variant="outline" onClick={() => navigate(`/users/${userId}/assets`)}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Full History
@@ -56,28 +63,32 @@ export default function UserActiveAssetsPage() {
                     <CardTitle>Active Assets ({assets.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="p-2 text-left">Asset Code</th>
-                                <th className="p-2 text-left">Product</th>
-                                <th className="p-2 text-left">Serial Number</th>
-                                <th className="p-2 text-left">Assigned On</th>
-                                <th className="p-2 text-left">From Assignment ID</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {assets.map(item => (
-                                <tr key={item.id} className="border-b">
-                                    <td className="p-2">{item.assetCode}</td>
-                                    <td className="p-2">{item.productModel.modelNumber}</td>
-                                    <td className="p-2">{item.serialNumber || 'N/A'}</td>
-                                    <td className="p-2">{new Date(item.assignedDate).toLocaleDateString()}</td>
-                                    <td className="p-2">#{item.assignmentId}</td>
+                    {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
+                    <div className="border rounded-md">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b bg-muted/50 hover:bg-muted/50">
+                                    <th className="p-2 text-left">Asset Code</th>
+                                    <th className="p-2 text-left">Product</th>
+                                    <th className="p-2 text-left">Serial Number</th>
+                                    <th className="p-2 text-left">Assigned On</th>
+                                    <th className="p-2 text-left">From Assignment ID</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {assets.map(item => (
+                                    <tr key={item.id} className="border-b">
+                                        <td className="p-2">{item.assetCode}</td>
+                                        <td className="p-2">{item.productModel.modelNumber}</td>
+                                        <td className="p-2">{item.serialNumber || 'N/A'}</td>
+                                        <td className="p-2">{new Date(item.assignedDate).toLocaleDateString()}</td>
+                                        <td className="p-2">#{item.assignmentId}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    {/* --- END --- */}
                 </CardContent>
             </Card>
         </div>

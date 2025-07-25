@@ -28,6 +28,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+// --- START: 1. Import สิ่งที่จำเป็นเข้ามา ---
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+// --- END ---
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -100,10 +109,20 @@ export default function CreateRepairPage() {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [purchaseHistory, setPurchaseHistory] = useState([]);
     const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
+    // --- START: 2. เพิ่ม State สำหรับ Customer Repair ---
+    const [purchaseHistorySearch, setPurchaseHistorySearch] = useState("");
+    // --- END ---
 
     const [internalItems, setInternalItems] = useState([]);
     const [itemSearch, setItemSearch] = useState("");
     const debouncedItemSearch = useDebounce(itemSearch, 500);
+    
+    // --- START: 3. เพิ่ม State สำหรับ Internal Repair ---
+    const [internalItemStatusFilter, setInternalItemStatusFilter] = useState("DEFECTIVE");
+    const [isInternalItemsLoading, setIsInternalItemsLoading] = useState(false);
+    const [internalCurrentPage, setInternalCurrentPage] = useState(1);
+    const INTERNAL_ITEMS_PER_PAGE = 10;
+    // --- END ---
 
     const [selectedItems, setSelectedItems] = useState([]);
     const [senderId, setSenderId] = useState("");
@@ -122,34 +141,43 @@ export default function CreateRepairPage() {
         }
     }, [repairType]);
 
+    // --- START: 4. ปรับปรุง useEffect สำหรับ Internal Repair ---
     useEffect(() => {
         if (repairType !== 'INTERNAL' || !token) return;
 
         const fetchItems = async () => {
-            const params = { search: debouncedItemSearch, limit: 100 };
-            try {
-                const [invInStockRes, invDefectiveRes, assetWarehouseRes, assetDefectiveRes] = await Promise.all([
-                    axiosInstance.get('/inventory', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'IN_STOCK' } }),
+            setIsInternalItemsLoading(true);
+            setInternalCurrentPage(1);
+            const params = { search: debouncedItemSearch, limit: 1000 }; // ดึงมาเยอะเผื่อ filter
+            
+            const endpoints = {
+                'DEFECTIVE': [
                     axiosInstance.get('/inventory', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'DEFECTIVE' } }),
-                    axiosInstance.get('/assets', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'IN_WAREHOUSE' } }),
                     axiosInstance.get('/assets', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'DEFECTIVE' } })
-                ]);
-                const combined = [
-                    ...(invInStockRes.data?.data || []),
-                    ...(invDefectiveRes.data?.data || []),
-                    ...(assetWarehouseRes.data?.data || []),
-                    ...(assetDefectiveRes.data?.data || [])
-                ];
+                ],
+                'IN_STOCK': [axiosInstance.get('/inventory', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'IN_STOCK' } })],
+                'IN_WAREHOUSE': [axiosInstance.get('/assets', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'IN_WAREHOUSE' } })],
+            };
+            
+            const allEndpoints = [].concat(...Object.values(endpoints));
+            const requests = internalItemStatusFilter === 'All' ? allEndpoints : (endpoints[internalItemStatusFilter] || []);
+
+            try {
+                const responses = await Promise.all(requests);
+                const combined = responses.flatMap(res => res.data?.data || []);
                 const selectedIds = new Set(selectedItems.map(i => i.id));
                 setInternalItems(combined.filter(item => !selectedIds.has(item.id)));
             } catch (error) {
                 console.error("Fetch items error:", error);
                 toast.error("Failed to search for items.");
                 setInternalItems([]);
+            } finally {
+                setIsInternalItemsLoading(false);
             }
         };
         fetchItems();
-    }, [repairType, debouncedItemSearch, token, selectedItems]);
+    }, [repairType, debouncedItemSearch, token, selectedItems, internalItemStatusFilter]);
+    // --- END ---
 
     useEffect(() => {
         if (repairType !== 'CUSTOMER' || !selectedCustomerId || !token) {
@@ -210,6 +238,21 @@ export default function CreateRepairPage() {
             toast.error(error.response?.data?.error || "Failed to create repair order.");
         }
     };
+    
+    // --- START: 5. Logic สำหรับ Client-side Pagination ---
+    const internalTotalPages = Math.ceil(internalItems.length / INTERNAL_ITEMS_PER_PAGE);
+    const internalPaginatedItems = internalItems.slice(
+        (internalCurrentPage - 1) * INTERNAL_ITEMS_PER_PAGE,
+        internalCurrentPage * INTERNAL_ITEMS_PER_PAGE
+    );
+    // --- END ---
+
+    // --- START: 6. Logic สำหรับกรองประวัติการซื้อของลูกค้า ---
+    const filteredPurchaseHistory = purchaseHistory.filter(item => 
+        (item.serialNumber?.toLowerCase().includes(purchaseHistorySearch.toLowerCase())) ||
+        (item.productModel.modelNumber.toLowerCase().includes(purchaseHistorySearch.toLowerCase()))
+    );
+    // --- END ---
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -238,7 +281,27 @@ export default function CreateRepairPage() {
                      <Card>
                         <CardHeader><CardTitle>{t('createRepair_step2_internal_title')}</CardTitle></CardHeader>
                         <CardContent>
-                            <Input placeholder={t('createRepair_search_asset_placeholder')} value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} />
+                            {/* --- START: 7. เพิ่ม UI สำหรับ Filter --- */}
+                            <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                                <Input 
+                                    placeholder={t('createRepair_search_asset_placeholder')} 
+                                    value={itemSearch} 
+                                    onChange={(e) => setItemSearch(e.target.value)}
+                                    className="flex-grow"
+                                />
+                                <Select value={internalItemStatusFilter} onValueChange={setInternalItemStatusFilter}>
+                                    <SelectTrigger className="w-full sm:w-[220px]">
+                                        <SelectValue placeholder={t('filter_by_status')} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="All">{t('status_all')}</SelectItem>
+                                        <SelectItem value="DEFECTIVE">{t('status_defective')}</SelectItem>
+                                        <SelectItem value="IN_STOCK">In Stock (Sale)</SelectItem>
+                                        <SelectItem value="IN_WAREHOUSE">In Warehouse (Asset)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {/* --- END --- */}
                              <div className="mt-4 border rounded-md">
                                 <Table>
                                     <TableHeader>
@@ -252,13 +315,15 @@ export default function CreateRepairPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {internalItems.map(item => (
+                                        {isInternalItemsLoading ? (
+                                             <TableRow><TableCell colSpan={6} className="text-center h-24">Loading...</TableCell></TableRow>
+                                        ) : internalPaginatedItems.map(item => (
                                             <TableRow key={item.id}>
                                                 <TableCell>{item.productModel.brand.name}</TableCell>
                                                 <TableCell>{item.productModel.modelNumber}</TableCell>
                                                 <TableCell>{item.serialNumber || '-'}</TableCell>
                                                 <TableCell>{item.assetCode || '-'}</TableCell>
-                                                <TableCell><StatusBadge status={item.itemType} /></TableCell>
+                                                <TableCell><StatusBadge status={item.status} /></TableCell>
                                                 <TableCell className="text-center">
                                                     <Button variant="primary-outline" size="sm" onClick={() => handleAddItem(item)}>
                                                         {t('add')}
@@ -269,6 +334,19 @@ export default function CreateRepairPage() {
                                     </TableBody>
                                 </Table>
                             </div>
+                            {/* --- START: 8. เพิ่ม UI สำหรับ Pagination --- */}
+                            <div className="flex items-center justify-end gap-4 pt-4">
+                                <span className="text-sm text-muted-foreground">
+                                    Page {internalCurrentPage} of {internalTotalPages}
+                                </span>
+                                <Button variant="outline" size="sm" onClick={() => setInternalCurrentPage(p => p - 1)} disabled={internalCurrentPage <= 1}>
+                                    {t('previous')}
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => setInternalCurrentPage(p => p + 1)} disabled={internalCurrentPage >= internalTotalPages}>
+                                    {t('next')}
+                                </Button>
+                            </div>
+                             {/* --- END --- */}
                         </CardContent>
                     </Card>
                 )}
@@ -284,8 +362,16 @@ export default function CreateRepairPage() {
                         </CardHeader>
                         {selectedCustomerId && (
                              <CardContent>
-                                <div className="flex gap-4 mb-4">
+                                <div className="flex flex-col sm:flex-row gap-4 mb-4">
                                      <CustomerItemDialog onAddItem={handleAddItem} />
+                                      {/* --- START: 9. เพิ่มช่องค้นหาสำหรับประวัติการซื้อ --- */}
+                                     <Input 
+                                        placeholder="Search purchase history..." 
+                                        value={purchaseHistorySearch}
+                                        onChange={(e) => setPurchaseHistorySearch(e.target.value)}
+                                        className="flex-grow"
+                                     />
+                                      {/* --- END --- */}
                                 </div>
                                  <p className="text-sm text-muted-foreground mb-2 text-center">{t('createRepair_select_from_history')}</p>
                                 <div className="border rounded-md">
@@ -300,7 +386,8 @@ export default function CreateRepairPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {purchaseHistory.map(item => (
+                                            {/* --- START: 10. ใช้ Array ที่ผ่านการกรองแล้ว --- */}
+                                            {filteredPurchaseHistory.map(item => (
                                                 <TableRow key={item.id}>
                                                     <TableCell>{item.productModel.brand.name}</TableCell>
                                                     <TableCell>{item.productModel.modelNumber}</TableCell>
@@ -313,6 +400,7 @@ export default function CreateRepairPage() {
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
+                                            {/* --- END --- */}
                                         </TableBody>
                                     </Table>
                                 </div>
@@ -350,12 +438,15 @@ export default function CreateRepairPage() {
                 </CardFooter>
             </Card>
 
-            <CustomerFormDialog 
-                open={isCustomerFormOpen}
-                onOpenChange={setIsCustomerFormOpen}
-                isEditMode={false}
-                onSuccess={() => {}}
-            />
+            {isCustomerFormOpen && (
+                <CustomerFormDialog 
+                    isOpen={isCustomerFormOpen}
+                    setIsOpen={setIsCustomerFormOpen}
+                    onSave={() => {
+                        // อาจจะมีการ refresh combobox ในอนาคต
+                    }}
+                />
+            )}
         </div>
     );
 }
