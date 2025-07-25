@@ -83,7 +83,7 @@ export default function InventoryPage() {
         data: inventoryItems, pagination, isLoading, searchTerm, filters,
         sortBy, sortOrder, handleSortChange,
         handleSearchChange, handlePageChange, handleItemsPerPageChange, handleFilterChange, refreshData
-    } = usePaginatedFetch("/inventory", 10, { 
+    } = usePaginatedFetch("/inventory", 10, {
         status: initialStatus,
         categoryId: "All",
         brandId: "All"
@@ -249,7 +249,10 @@ export default function InventoryPage() {
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            {/* --- START: สลับตำแหน่งและเพิ่ม SortableHeader สำหรับ Brand --- */}
+                            <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_brand')}</SortableHeader>
                             <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_productModel')}</SortableHeader>
+                            {/* --- END --- */}
                             <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_serialNumber')}</SortableHeader>
                             <SortableHeader sortKey="macAddress" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_macAddress')}</SortableHeader>
                             <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
@@ -261,13 +264,16 @@ export default function InventoryPage() {
                         {isLoading ? (
                             [...Array(pagination.itemsPerPage)].map((_, i) => (
                                 <TableRow key={i}>
-                                    <TableCell colSpan={6}><div className="h-8 bg-muted rounded animate-pulse"></div></TableCell>
+                                    <TableCell colSpan={7}><div className="h-8 bg-muted rounded animate-pulse"></div></TableCell>
                                 </TableRow>
                             ))
                         ) : inventoryItems.length > 0 ? (
                             inventoryItems.map((item) => (
                                 <TableRow key={item.id}>
+                                    {/* --- START: สลับตำแหน่ง Cell --- */}
+                                    <TableCell>{item.productModel.brand.name}</TableCell>
                                     <TableCell className="font-medium">{item.productModel.modelNumber}</TableCell>
+                                    {/* --- END --- */}
                                     <TableCell>{item.serialNumber || '-'}</TableCell>
                                     <TableCell>{item.macAddress || '-'}</TableCell>
                                     <TableCell className="text-center">
@@ -377,7 +383,7 @@ export default function InventoryPage() {
                                 </TableRow>
                             ))
                         ) : (
-                            <TableRow><TableCell colSpan="6" className="text-center h-24">No items found.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan="7" className="text-center h-24">No items found.</TableCell></TableRow>
                         )}
                     </TableBody>
                 </Table>

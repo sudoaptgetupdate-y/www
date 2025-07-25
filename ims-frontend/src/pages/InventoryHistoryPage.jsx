@@ -87,12 +87,19 @@ export default function InventoryHistoryPage() {
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <Package className="h-6 w-6" /> {t('item_history_title')}
                     </h1>
-                    <p className="text-muted-foreground">
-                        {t('item_history_description', { 
-                            modelNumber: itemDetails.productModel.modelNumber, 
-                            serialNumber: itemDetails.serialNumber || 'N/A' 
-                        })}
-                    </p>
+                    {/* --- START: แก้ไขส่วนนี้ --- */}
+                    <div className="text-muted-foreground">
+                        <p>
+                            {t('item_history_description', { 
+                                modelNumber: itemDetails.productModel.modelNumber, 
+                                serialNumber: itemDetails.serialNumber || 'N/A' 
+                            })}
+                        </p>
+                        {itemDetails.supplier && (
+                            <p className="text-sm mt-1">{t('purchased_from')}: <span className="font-semibold">{itemDetails.supplier.name}</span></p>
+                        )}
+                    </div>
+                    {/* --- END --- */}
                 </div>
                 <Button variant="outline" onClick={() => navigate('/inventory')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />

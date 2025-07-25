@@ -1,6 +1,5 @@
 // controllers/productModelController.js
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
 
 // --- Create a new Product Model ---
 exports.createProductModel = async (req, res, next) => {

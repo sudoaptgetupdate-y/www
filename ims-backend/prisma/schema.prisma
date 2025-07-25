@@ -99,21 +99,42 @@ model User {
   accountStatus         AccountStatus @default(ACTIVE)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+
+  // Relationships
   createdCategories     Category[]
   createdBrands         Brand[]
   createdProductModels  ProductModel[]
   addedInventoryItems   InventoryItem[] @relation("AddedBy")
   createdCustomers      Customer[]
+  createdSuppliers      Supplier[]      // <-- เพิ่มความสัมพันธ์ใหม่
   salesMade             Sale[]
   approvedBorrowings    Borrowing[]     @relation("ApprovedBorrowings")
   voidedSales           Sale[]          @relation("VoidedSales")
-  
   approvedAssignments   AssetAssignment[] @relation("ApprovedAssignments")
   receivedAssignments   AssetAssignment[] @relation("ReceivedAssignments")
   createdRepairs        Repair[]
-  
   events                EventLog[]
 }
+
+// --- START: เพิ่ม Model ใหม่สำหรับ Supplier ---
+model Supplier {
+  id            Int      @id @default(autoincrement())
+  supplierCode  String   @unique
+  name          String
+  contactPerson String?
+  phone         String?
+  address       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  createdById   Int
+  createdBy     User     @relation(fields: [createdById], references: [id])
+  
+  inventoryItems InventoryItem[]
+
+  @@index([name])
+}
+// --- END ---
 
 model Customer {
   id           Int      @id @default(autoincrement())
@@ -139,22 +160,29 @@ model InventoryItem {
   status              ItemStatus               @default(IN_STOCK)
   createdAt           DateTime                 @default(now())
   updatedAt           DateTime                 @updatedAt
+  
   productModelId      Int
   productModel        ProductModel             @relation(fields: [productModelId], references: [id])
+
   addedById           Int
   addedBy             User                     @relation("AddedBy", fields: [addedById], references: [id])
   
+  // --- START: เพิ่ม Field และความสัมพันธ์สำหรับ Supplier ---
+  supplierId          Int?
+  supplier            Supplier?                @relation(fields: [supplierId], references: [id])
+  // --- END ---
+
   assignmentRecords   AssetAssignmentOnItems[]
   saleId              Int?
   sale                Sale?                    @relation(fields: [saleId], references: [id])
   borrowingRecords    BorrowingOnItems[]
   repairRecords       RepairOnItems[]
-
   eventLogs           EventLog[]
 
   @@index([status])
   @@index([itemType])
   @@index([ownerType])
+  @@index([supplierId]) // <-- เพิ่ม Index
 }
 
 model Borrowing {
@@ -180,6 +208,7 @@ model BorrowingOnItems {
   inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
   assignedAt      DateTime @default(now())
   returnedAt      DateTime?
+
   @@id([borrowingId, inventoryItemId])
 }
 
@@ -219,6 +248,7 @@ model ProductModel {
   createdById    Int
   createdBy      User     @relation(fields: [createdById], references: [id])
   inventoryItems InventoryItem[]
+
   @@unique([modelNumber, brandId])
 }
 
@@ -263,6 +293,7 @@ model AssetAssignmentOnItems {
   inventoryItem   InventoryItem   @relation(fields: [inventoryItemId], references: [id])
   assignedAt      DateTime        @default(now())
   returnedAt      DateTime?
+
   @@id([assignmentId, inventoryItemId])
 }
 

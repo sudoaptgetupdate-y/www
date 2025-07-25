@@ -1,7 +1,6 @@
 // ims-backend/controllers/repairController.js
-
-const { PrismaClient, ItemStatus, ItemOwner, RepairStatus, RepairOutcome, ItemType, EventType } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
+const { ItemStatus, ItemOwner, RepairStatus, RepairOutcome, ItemType, EventType } = require('@prisma/client'); // <-- Keep this line
 const repairController = {};
 
 // Helper function to create event logs consistently

@@ -1,7 +1,6 @@
 // controllers/saleController.js
-const { PrismaClient, EventType } = require('@prisma/client');
-const prisma = new PrismaClient();
-
+const prisma = require('../prisma/client');
+const { EventType } = require('@prisma/client'); // <-- Keep this line
 const saleController = {};
 
 // Helper function to create event logs consistently

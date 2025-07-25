@@ -290,5 +290,17 @@
   "print_header_title": "ใบส่งซ่อมสินค้า / Repair Order",
   "print_sender_signature": "Sender",
   "print_receiver_signature": "Receiver",
-  "user_combobox_search_placeholder": "Search for employee..."
+  "user_combobox_search_placeholder": "Search for employee...",
+  "suppliers": "Suppliers",
+  "suppliers_title": "Suppliers",
+  "suppliers_description": "Manage all supplier information.",
+  "suppliers_add_new": "Add New Supplier",
+  "suppliers_search_placeholder": "Search by name, code, or contact...",
+  "supplier_form_add_title": "Add New Supplier",
+  "supplier_form_edit_title": "Edit Supplier",
+  "supplier_form_code": "Supplier Code",
+  "supplier_form_name": "Supplier Name",
+  "select_supplier": "Select supplier...",
+  "supplier_search_placeholder": "Search by supplier name...",
+  "purchased_from": "Purchased from"
 }

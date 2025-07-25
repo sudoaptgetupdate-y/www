@@ -290,5 +290,17 @@
   "print_header_title": "ใบส่งซ่อมสินค้า / Repair Order",
   "print_sender_signature": "ผู้ส่งมอบสินค้า",
   "print_receiver_signature": "ผู้รับสินค้า",
-  "user_combobox_search_placeholder": "ค้นหาพนักงาน..."
+  "user_combobox_search_placeholder": "ค้นหาพนักงาน...",
+  "suppliers": "ผู้จัดจำหน่าย",
+  "suppliers_title": "ผู้จัดจำหน่าย",
+  "suppliers_description": "จัดการข้อมูลผู้จัดจำหน่ายทั้งหมด",
+  "suppliers_add_new": "เพิ่มผู้จัดจำหน่ายใหม่",
+  "suppliers_search_placeholder": "ค้นหาจากชื่อ, รหัส, หรือผู้ติดต่อ...",
+  "supplier_form_add_title": "เพิ่มผู้จัดจำหน่ายใหม่",
+  "supplier_form_edit_title": "แก้ไขข้อมูลผู้จัดจำหน่าย",
+  "supplier_form_code": "รหัสผู้จัดจำหน่าย",
+  "supplier_form_name": "ชื่อผู้จัดจำหน่าย",
+  "select_supplier": "เลือกผู้จัดจำหน่าย...",
+  "supplier_search_placeholder": "ค้นหาจากชื่อผู้จัดจำหน่าย...",
+  "purchased_from": "สั่งซื้อจาก"
 }

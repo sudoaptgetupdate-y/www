@@ -1,6 +1,5 @@
 // controllers/brandController.js
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
 
 // สร้าง Brand ใหม่
 exports.createBrand = async (req, res, next) => {

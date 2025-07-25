@@ -48,6 +48,7 @@ const AddressPage = lazy(() => import('./pages/AddressPage.jsx'));
 const RepairListPage = lazy(() => import('./pages/RepairListPage.jsx'));
 const CreateRepairPage = lazy(() => import('./pages/CreateRepairPage.jsx'));
 const RepairDetailPage = lazy(() => import('./pages/RepairDetailPage.jsx'));
+const SupplierPage = lazy(() => import('./pages/SupplierPage.jsx')); // <-- Import the new page
 
 // Fallback component to show while lazy components are loading
 const Loading = () => (
@@ -85,6 +86,7 @@ const routes = [
   { path: 'product-models', Page: ProductModelPage },
   { path: 'brands', Page: BrandPage },
   { path: 'categories', Page: CategoryPage },
+  { path: 'suppliers', Page: SupplierPage }, // <-- Add the new route
   // System & Repair
   { path: 'repairs', Page: RepairListPage },
   { path: 'repairs/new', Page: CreateRepairPage },

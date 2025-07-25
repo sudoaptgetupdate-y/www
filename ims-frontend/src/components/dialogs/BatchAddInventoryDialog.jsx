@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductModelCombobox } from "@/components/ui/ProductModelCombobox";
+import { SupplierCombobox } from "@/components/ui/SupplierCombobox";
 import { toast } from 'sonner';
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
@@ -28,6 +29,7 @@ const formatMacAddress = (value) => {
 export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
     const { t } = useTranslation();
     const [selectedModel, setSelectedModel] = useState(null);
+    const [selectedSupplierId, setSelectedSupplierId] = useState("");
     const [manualItems, setManualItems] = useState([{ serialNumber: '', macAddress: '' }]);
     const [listText, setListText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -48,12 +50,11 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
         setSelectedModel(model);
     };
 
-    // --- START: แก้ไขฟังก์ชันจัดการ Input ใหม่ทั้งหมด ---
     const handleInputChange = (e, index, field) => {
         const inputElement = e.currentTarget;
         const rawValue = inputElement.value;
+        const selectionStart = inputElement.selectionStart;
 
-        // 1. แปลงภาษาและจัดรูปแบบ
         let processedValue = translateThaiToEnglish(rawValue);
         if (field === 'macAddress') {
             processedValue = formatMacAddress(processedValue);
@@ -61,23 +62,19 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
             processedValue = processedValue.toUpperCase();
         }
 
-        // 2. อัปเดต State ของ React
-        // ใช้ functional update เพื่อให้แน่ใจว่าเราได้ State ที่ล่าสุดเสมอ
         setManualItems(currentItems => {
             const newItems = [...currentItems];
             newItems[index][field] = processedValue;
             return newItems;
         });
 
-        // 3. อัปเดตค่าใน Input element โดยตรง (สำคัญมาก)
-        // เพื่อให้การแสดงผลถูกต้องทันที และป้องกันการขัดแย้งกับ State
-        if (inputElement.value !== processedValue) {
-            const selectionStart = inputElement.selectionStart;
-            inputElement.value = processedValue;
-            inputElement.setSelectionRange(selectionStart, selectionStart);
-        }
+        requestAnimationFrame(() => {
+            if (inputElement.value !== processedValue) {
+                inputElement.value = processedValue;
+                inputElement.setSelectionRange(selectionStart, selectionStart);
+            }
+        });
     };
-    // --- END ---
 
     const addManualItemRow = () => {
         if (manualItems.length < MAX_ITEMS_MANUAL) {
@@ -151,6 +148,7 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
 
         const payload = {
             productModelId: selectedModel.id,
+            supplierId: selectedSupplierId ? parseInt(selectedSupplierId) : null,
             items: itemsPayload,
         };
 
@@ -171,6 +169,7 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
     const handleClose = () => {
         setIsOpen(false);
         setSelectedModel(null);
+        setSelectedSupplierId("");
         setManualItems([{ serialNumber: '', macAddress: '' }]);
         setListText("");
     };
@@ -186,9 +185,18 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
                     <DialogDescription>{t('batch_add_inventory_description')}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label>{t('tableHeader_productModel')} <span className="text-red-500">*</span></Label>
-                        <ProductModelCombobox onSelect={handleModelSelect} />
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>{t('tableHeader_productModel')} <span className="text-red-500">*</span></Label>
+                            <ProductModelCombobox onSelect={(model) => setSelectedModel(model)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>{t('suppliers')}</Label>
+                            <SupplierCombobox
+                                selectedValue={selectedSupplierId}
+                                onSelect={(value) => setSelectedSupplierId(value)}
+                            />
+                        </div>
                     </div>
                     {selectedModel && (
                         <Tabs defaultValue="manual" className="w-full">

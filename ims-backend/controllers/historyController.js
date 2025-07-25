@@ -1,8 +1,5 @@
 // ims-backend/controllers/historyController.js
-
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-
+const prisma = require('../prisma/client');
 const historyController = {};
 
 historyController.getHistoryByItemId = async (req, res, next) => {
@@ -17,7 +14,12 @@ historyController.getHistoryByItemId = async (req, res, next) => {
 
         const item = await prisma.inventoryItem.findUnique({
             where: { id },
-            include: { productModel: true }
+            // --- START: แก้ไขส่วนนี้ ---
+            include: { 
+                productModel: true,
+                supplier: true // เพิ่มการดึงข้อมูล Supplier
+            }
+            // --- END ---
         });
 
         if (!item) {

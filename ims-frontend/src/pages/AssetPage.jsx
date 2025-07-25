@@ -26,11 +26,12 @@ import { useState } from "react";
 import BatchAddAssetDialog from "@/components/dialogs/BatchAddAssetDialog";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
-} from "@/components/ui/table"; 
+} from "@/components/ui/table";
 import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <TableRow>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
@@ -72,7 +73,7 @@ export default function AssetPage() {
         handleItemsPerPageChange,
         handleFilterChange,
         refreshData
-    } = usePaginatedFetch("/assets", 10, { 
+    } = usePaginatedFetch("/assets", 10, {
         status: "All",
         categoryId: "All",
         brandId: "All"
@@ -159,12 +160,17 @@ export default function AssetPage() {
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            {/* --- START: แก้ไขลำดับคอลัมน์ --- */}
                             <SortableHeader sortKey="assetCode" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
                                 {t('tableHeader_assetCode')}
+                            </SortableHeader>
+                            <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                {t('tableHeader_brand')}
                             </SortableHeader>
                             <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
                                 {t('tableHeader_productModel')}
                             </SortableHeader>
+                            {/* --- END --- */}
                             <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
                                 {t('tableHeader_serialNumber')}
                             </SortableHeader>
@@ -178,12 +184,15 @@ export default function AssetPage() {
                             [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
                         ) : assets.map((asset) => (
                             <TableRow key={asset.id}>
+                                {/* --- START: แก้ไขลำดับ Cell --- */}
                                 <TableCell>{asset.assetCode}</TableCell>
+                                <TableCell>{asset.productModel.brand.name}</TableCell>
                                 <TableCell>{asset.productModel?.modelNumber || 'N/A'}</TableCell>
+                                {/* --- END --- */}
                                 <TableCell>{asset.serialNumber || 'N/A'}</TableCell>
                                 <TableCell className="text-center">
-                                    <StatusBadge 
-                                        status={asset.status} 
+                                    <StatusBadge
+                                        status={asset.status}
                                         className="w-28"
                                         onClick={() => {
                                             if (asset.status === 'ASSIGNED' && asset.assignmentId) {

@@ -1,7 +1,6 @@
 // ims-backend/controllers/addressController.js
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
 const addressController = {};
 
 // POST /api/addresses - สร้างที่อยู่ใหม่

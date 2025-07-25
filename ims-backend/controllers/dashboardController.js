@@ -1,6 +1,6 @@
 // controllers/dashboardController.js
-const { PrismaClient, ItemType } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
+const { ItemType } = require('@prisma/client'); // <-- Keep this line
 
 exports.getDashboardStats = async (req, res, next) => {
     try {

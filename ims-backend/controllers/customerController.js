@@ -1,6 +1,5 @@
 // controllers/customerController.js
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
 const customerController = {};
 
 customerController.createCustomer = async (req, res, next) => {

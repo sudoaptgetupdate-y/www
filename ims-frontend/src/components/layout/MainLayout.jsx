@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { 
     LogOut, Menu, X, UserCircle, User, ArrowRightLeft, Building2, 
     ShoppingCart, Settings, Package, Boxes, Tag, Users as UsersIcon, 
-    HardDrive, Layers, Wrench, BookUser
+    HardDrive, Layers, Wrench, BookUser, Truck // <-- Import Truck icon
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -122,6 +122,9 @@ const MainLayout = () => {
                         <NavItem to="/product-models" icon={<Boxes size={18}/>} text={t('models')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                         <NavItem to="/brands" icon={<Building2 size={18}/>} text={t('brands')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                         <NavItem to="/categories" icon={<Tag size={18}/>} text={t('categories')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        {/* --- START: Add new NavItem for Suppliers --- */}
+                        <NavItem to="/suppliers" icon={<Truck size={18}/>} text={t('suppliers')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        {/* --- END --- */}
                     </div>
                 </div>
 
@@ -173,18 +176,14 @@ const MainLayout = () => {
             
             <div className="flex-1 flex flex-col max-h-screen font-sarabun">
                 <header className="bg-white/80 backdrop-blur-sm sticky top-0 z-10 border-b flex justify-between items-center px-4 h-[65px]">
-                    {/* --- START: แก้ไขส่วนของปุ่มเมนู --- */}
                     <div className="flex items-center gap-2">
-                        {/* Mobile Menu Button */}
                         <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(true)}>
                             <Menu className="h-6 w-6" />
                         </Button>
-                        {/* Desktop Collapse Button */}
                         <Button variant="ghost" size="icon" className="hidden md:flex" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}>
                             <Menu className="h-6 w-6" />
                         </Button>
                     </div>
-                    {/* --- END --- */}
                     
                     <div className="flex items-center gap-2">
                         <LanguageToggle />

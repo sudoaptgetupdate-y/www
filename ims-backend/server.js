@@ -27,6 +27,7 @@ const saleRoute = require('./routes/saleRoute');
 const dashboardRoute = require('./routes/dashboardRoute');
 const userRoute = require('./routes/userRoute');
 const borrowingRoute = require('./routes/borrowingRoute');
+const supplierRoute = require('./routes/supplierRoute');
 
 
 const app = express();
@@ -50,14 +51,12 @@ app.use('/api/dashboard', dashboardRoute);
 app.use('/api/users', userRoute);
 app.use('/api/borrowings', borrowingRoute);
 
-// --- START: ลงทะเบียน routes ใหม่ ---
 app.use('/api/addresses', addressRoute);
 app.use('/api/repairs', repairRoute);
-// --- END: ลงทะเบียน routes ใหม่ ---
+app.use('/api/suppliers', supplierRoute);
 
-// --- START: เพิ่ม Error Handling Middleware (ต้องอยู่หลังสุดเสมอ) ---
 app.use(errorHandler);
-// --- END: เพิ่ม Error Handling Middleware ---
+
 
 
 const port = process.env.PORT || 5001;

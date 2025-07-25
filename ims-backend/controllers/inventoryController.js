@@ -1,8 +1,8 @@
 // ims-backend/controllers/inventoryController.js
-
-const { PrismaClient, ItemType, EventType, ItemOwner } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
+const { ItemType, EventType, ItemOwner } = require('@prisma/client'); // <-- Keep this line
 const inventoryController = {};
+
 
 const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
 
@@ -20,7 +20,7 @@ const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
 
 inventoryController.addInventoryItem = async (req, res, next) => {
     try {
-        const { serialNumber, macAddress, productModelId } = req.body;
+        const { serialNumber, macAddress, productModelId, supplierId } = req.body;
         const userId = req.user.id;
 
         if (typeof productModelId !== 'number') {
@@ -42,6 +42,7 @@ inventoryController.addInventoryItem = async (req, res, next) => {
                     serialNumber: serialNumber || null,
                     macAddress: macAddress || null,
                     productModelId,
+                    supplierId: supplierId ? parseInt(supplierId) : null,
                     addedById: userId,
                     status: 'IN_STOCK',
                 },
@@ -66,7 +67,7 @@ inventoryController.addInventoryItem = async (req, res, next) => {
 
 inventoryController.addBatchInventoryItems = async (req, res, next) => {
     try {
-        const { productModelId, items } = req.body;
+        const { productModelId, supplierId, items } = req.body;
         const userId = req.user.id;
 
         if (typeof productModelId !== 'number') {
@@ -83,7 +84,6 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
         const newItems = await prisma.$transaction(async (tx) => {
             const createdItems = [];
             for (const item of items) {
-                // Input validation for each item in the array
                 if (item.macAddress && (typeof item.macAddress !== 'string' || !macRegex.test(item.macAddress))) {
                     throw new Error(`Invalid MAC Address format for one of the items: ${item.macAddress}`);
                 }
@@ -95,6 +95,7 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
                         serialNumber: item.serialNumber || null,
                         macAddress: item.macAddress || null,
                         productModelId,
+                        supplierId: supplierId ? parseInt(supplierId) : null,
                         addedById: userId,
                         status: 'IN_STOCK',
                     },
@@ -119,7 +120,6 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
         });
 
     } catch (error) {
-        // หากเกิด Error (เช่น S/N ซ้ำ) transaction จะ rollback และส่ง Error กลับไป
         next(error);
     }
 };
@@ -160,12 +160,16 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
             where.productModel = { ...where.productModel, brandId: parseInt(brandIdFilter) };
         }
 
+        // --- START: แก้ไขส่วนนี้ ---
         let orderBy = {};
         if (sortBy === 'productModel') {
             orderBy = { productModel: { modelNumber: sortOrder } };
+        } else if (sortBy === 'brand') { // เพิ่มเงื่อนไขสำหรับ Brand
+            orderBy = { productModel: { brand: { name: sortOrder } } };
         } else {
             orderBy = { [sortBy]: sortOrder };
         }
+        // --- END ---
 
         const include = {
             productModel: { include: { category: true, brand: true } },
@@ -211,6 +215,9 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         next(error);
     }
 };
+
+// ... (ส่วนที่เหลือของไฟล์ไม่ต้องแก้ไข)
+// getInventoryItemById, updateInventoryItem, deleteInventoryItem, etc. remain the same
 
 inventoryController.getInventoryItemById = async (req, res, next) => {
     try {
@@ -303,7 +310,7 @@ inventoryController.deleteInventoryItem = async (req, res, next) => {
             where: { id: itemId, itemType: 'SALE' },
             include: { 
                 borrowingRecords: { where: { returnedAt: null } },
-                repairRecords: true // <-- เพิ่มการ include repairRecords
+                repairRecords: true
             }
         });
 
@@ -318,20 +325,16 @@ inventoryController.deleteInventoryItem = async (req, res, next) => {
             err.statusCode = 400;
             throw err;
         }
-        // --- START: เพิ่มเงื่อนไขการตรวจสอบ ---
         if (itemToDelete.repairRecords.length > 0) {
             const err = new Error('Cannot delete item. It has repair history and cannot be deleted.');
             err.statusCode = 400;
             throw err;
         }
-        // --- END ---
 
         await prisma.$transaction(async (tx) => {
-            // ลบ event logs, borrowing records, และ repair records ก่อน
             await tx.eventLog.deleteMany({ where: { inventoryItemId: itemId } });
             await tx.borrowingOnItems.deleteMany({ where: { inventoryItemId: itemId } });
-            await tx.repairOnItems.deleteMany({ where: { inventoryItemId: itemId }}); // <-- เพิ่มการลบ repair records
-            // จากนั้นจึงลบตัว item หลัก
+            await tx.repairOnItems.deleteMany({ where: { inventoryItemId: itemId }});
             await tx.inventoryItem.delete({ where: { id: itemId } });
         });
 

@@ -10,11 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductModelCombobox } from "@/components/ui/ProductModelCombobox";
+import { SupplierCombobox } from "@/components/ui/SupplierCombobox";
 import { toast } from 'sonner';
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { PlusCircle, XCircle } from "lucide-react";
 import { translateThaiToEnglish } from "@/lib/keyboardUtils";
+import { useTranslation } from "react-i18next";
 
 const MAX_ASSETS_MANUAL = 10;
 
@@ -25,17 +27,17 @@ const formatMacAddress = (value) => {
 };
 
 export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
+    const { t } = useTranslation();
     const [selectedModel, setSelectedModel] = useState(null);
+    const [selectedSupplierId, setSelectedSupplierId] = useState("");
     const [manualItems, setManualItems] = useState([{ assetCode: '', serialNumber: '', macAddress: '' }]);
     const [listText, setListText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const token = useAuthStore((state) => state.token);
 
-    // สร้าง Refs สำหรับจัดการ Focus
     const inputRefs = useRef([]);
     const firstInputRef = useRef(null);
 
-    // useEffect สำหรับ Auto-focus เมื่อ Dialog เปิด
     useEffect(() => {
         if (isOpen && selectedModel) {
             setTimeout(() => {
@@ -48,24 +50,35 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
         setSelectedModel(model);
     };
 
-    const handleManualItemChange = (index, field, value) => {
-        const newItems = [...manualItems];
-        let processedValue = translateThaiToEnglish(value);
+    const handleInputChange = (e, index, field) => {
+        const inputElement = e.currentTarget;
+        const rawValue = inputElement.value;
+        const selectionStart = inputElement.selectionStart;
 
+        let processedValue = translateThaiToEnglish(rawValue);
         if (field === 'macAddress') {
             processedValue = formatMacAddress(processedValue);
         } else {
             processedValue = processedValue.toUpperCase();
         }
-        
-        newItems[index][field] = processedValue;
-        setManualItems(newItems);
+
+        setManualItems(currentItems => {
+            const newItems = [...currentItems];
+            newItems[index][field] = processedValue;
+            return newItems;
+        });
+
+        requestAnimationFrame(() => {
+            if (inputElement.value !== processedValue) {
+                inputElement.value = processedValue;
+                inputElement.setSelectionRange(selectionStart, selectionStart);
+            }
+        });
     };
 
     const addManualItemRow = () => {
         if (manualItems.length < MAX_ASSETS_MANUAL) {
             setManualItems([...manualItems, { assetCode: '', serialNumber: '', macAddress: '' }]);
-            // Focus ที่ช่อง Asset Code ของแถวใหม่
             setTimeout(() => {
                 const nextIndex = manualItems.length * 3;
                 inputRefs.current[nextIndex]?.focus();
@@ -80,11 +93,9 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
         setManualItems(newItems);
     };
 
-    // ฟังก์ชันจัดการการกด Enter
     const handleKeyDown = (e, index, field) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const assetCodeIndex = index * 3;
             const snIndex = index * 3 + 1;
             const macIndex = index * 3 + 2;
 
@@ -104,7 +115,6 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
     };
 
     const handleSubmit = async (activeTab) => {
-        // ... (Logic การ Submit ไม่มีการเปลี่ยนแปลง) ...
         if (!selectedModel) {
             toast.error("Please select a Product Model first.");
             return;
@@ -156,6 +166,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
 
         const payload = {
             productModelId: selectedModel.id,
+            supplierId: selectedSupplierId ? parseInt(selectedSupplierId) : null,
             items: itemsPayload,
         };
 
@@ -176,9 +187,13 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
     const handleClose = () => {
         setIsOpen(false);
         setSelectedModel(null);
+        setSelectedSupplierId("");
         setManualItems([{ assetCode: '', serialNumber: '', macAddress: '' }]);
         setListText("");
     };
+
+    const manualItemCount = manualItems.filter(i => i.assetCode).length;
+    const listItemCount = listText.split('\n').filter(l => l.trim()).length;
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -188,9 +203,18 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                     <DialogDescription>Select a product model, then add assets using one of the methods below.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label>Product Model <span className="text-red-500">*</span></Label>
-                        <ProductModelCombobox onSelect={handleModelSelect} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Product Model <span className="text-red-500">*</span></Label>
+                            <ProductModelCombobox onSelect={handleModelSelect} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>{t('suppliers')}</Label>
+                            <SupplierCombobox
+                                selectedValue={selectedSupplierId}
+                                onSelect={(value) => setSelectedSupplierId(value)}
+                            />
+                        </div>
                     </div>
                     {selectedModel && (
                         <Tabs defaultValue="manual" className="w-full">
@@ -215,7 +239,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                                                 }}
                                                 placeholder="Asset Code"
                                                 value={item.assetCode}
-                                                onChange={(e) => handleManualItemChange(index, 'assetCode', e.target.value)}
+                                                onChange={(e) => handleInputChange(e, index, 'assetCode')}
                                                 onKeyDown={(e) => handleKeyDown(e, index, 'assetCode')}
                                                 required
                                             />
@@ -223,7 +247,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                                                 ref={el => inputRefs.current[index * 3 + 1] = el}
                                                 placeholder="Serial Number"
                                                 value={item.serialNumber}
-                                                onChange={(e) => handleManualItemChange(index, 'serialNumber', e.target.value)}
+                                                onChange={(e) => handleInputChange(e, index, 'serialNumber')}
                                                 onKeyDown={(e) => handleKeyDown(e, index, 'serialNumber')}
                                                 disabled={!selectedModel?.category.requiresSerialNumber}
                                             />
@@ -231,7 +255,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                                                 ref={el => inputRefs.current[index * 3 + 2] = el}
                                                 placeholder="MAC Address"
                                                 value={item.macAddress}
-                                                onChange={(e) => handleManualItemChange(index, 'macAddress', e.target.value)}
+                                                onChange={(e) => handleInputChange(e, index, 'macAddress')}
                                                 onKeyDown={(e) => handleKeyDown(e, index, 'macAddress')}
                                                 disabled={!selectedModel?.category.requiresMacAddress}
                                             />
@@ -247,7 +271,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                                 <DialogFooter className="mt-6">
                                     <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
                                     <Button onClick={() => handleSubmit('manual')} disabled={isLoading}>
-                                        {isLoading ? 'Saving...' : `Save ${manualItems.filter(i => i.assetCode).length} Assets`}
+                                        {isLoading ? 'Saving...' : `Save ${manualItemCount} Assets`}
                                     </Button>
                                 </DialogFooter>
                             </TabsContent>
@@ -274,7 +298,7 @@ ASSET-004,,EE:FF:AA:44:44:44`
                                  <DialogFooter className="mt-6">
                                     <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
                                     <Button onClick={() => handleSubmit('list')} disabled={isLoading}>
-                                        {isLoading ? 'Saving...' : `Save ${listText.split('\n').filter(l => l.trim()).length} Assets`}
+                                        {isLoading ? 'Saving...' : `Save ${listItemCount} Assets`}
                                     </Button>
                                 </DialogFooter>
                             </TabsContent>

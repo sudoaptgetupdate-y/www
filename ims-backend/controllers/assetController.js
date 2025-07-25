@@ -1,7 +1,6 @@
 // ims-backend/controllers/assetController.js
-
-const { PrismaClient, ItemType, EventType } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
+const { ItemType, EventType } = require('@prisma/client'); // <-- Keep this line
 const assetController = {};
 
 const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
@@ -20,7 +19,7 @@ const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
 
 assetController.createAsset = async (req, res, next) => {
     try {
-        const { serialNumber, macAddress, productModelId, assetCode } = req.body;
+        const { serialNumber, macAddress, productModelId, assetCode, supplierId } = req.body; // <-- เพิ่ม supplierId
         const userId = req.user.id;
 
         if (typeof assetCode !== 'string' || assetCode.trim() === '') {
@@ -47,6 +46,7 @@ assetController.createAsset = async (req, res, next) => {
                     serialNumber: serialNumber || null,
                     macAddress: macAddress || null,
                     productModelId,
+                    supplierId: supplierId ? parseInt(supplierId) : null, // <-- เพิ่ม supplierId
                     addedById: userId,
                     status: 'IN_WAREHOUSE',
                 },
@@ -71,7 +71,7 @@ assetController.createAsset = async (req, res, next) => {
 
 assetController.addBatchAssets = async (req, res, next) => {
     try {
-        const { productModelId, items } = req.body;
+        const { productModelId, supplierId, items } = req.body; // <-- เพิ่ม supplierId
         const userId = req.user.id;
 
         if (typeof productModelId !== 'number') {
@@ -103,6 +103,7 @@ assetController.addBatchAssets = async (req, res, next) => {
                         serialNumber: item.serialNumber || null,
                         macAddress: item.macAddress || null,
                         productModelId,
+                        supplierId: supplierId ? parseInt(supplierId) : null, // <-- เพิ่ม supplierId
                         addedById: userId,
                     },
                 });

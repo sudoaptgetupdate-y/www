@@ -1,7 +1,6 @@
 // ims-backend/controllers/assetAssignmentController.js
-
-const { PrismaClient, EventType, AssignmentStatus } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
+const { EventType, AssignmentStatus } = require('@prisma/client'); // <-- Keep this line
 const assetAssignmentController = {};
 
 // Helper function to create event logs consistently
