@@ -10,7 +10,8 @@ import { toast } from 'sonner';
 import axiosInstance from '@/api/axiosInstance';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from 'react-router-dom';
-import { StatusBadge } from "@/components/ui/StatusBadge"; // <-- Import
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useTranslation } from 'react-i18next'; // <-- 1. Import hook
 
 const SkeletonRow = () => (
     <tr className="border-b">
@@ -23,6 +24,7 @@ const SkeletonRow = () => (
 );
 
 const MyAssetsTab = () => {
+    const { t } = useTranslation(); // <-- 2. เรียกใช้ hook ใน Component ลูก
     const token = useAuthStore((state) => state.token);
     const [assets, setAssets] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -45,24 +47,22 @@ const MyAssetsTab = () => {
         fetchAssets();
     }, [token]);
 
-    // --- ลบ getStatusVariant ---
-
     return (
         <Card>
             <CardHeader>
-                <CardTitle>My Assets</CardTitle>
-                <CardDescription>List of company assets currently assigned to you.</CardDescription>
+                <CardTitle>{t('my_assets')}</CardTitle>
+                <CardDescription>{t('my_assets_description')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm whitespace-nowrap">
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left">Asset Code</th>
-                                <th className="p-2 text-left">Product</th>
-                                <th className="p-2 text-left">Serial Number</th>
-                                <th className="p-2 text-center">Status</th>
-                                <th className="p-2 text-center">Actions</th>
+                                <th className="p-2 text-left">{t('tableHeader_assetCode')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_product')}</th>
+                                <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_status')}</th>
+                                <th className="p-2 text-center">{t('tableHeader_actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -78,12 +78,12 @@ const MyAssetsTab = () => {
                                     </td>
                                     <td className="p-2 text-center">
                                         <Button variant="outline" size="sm" onClick={() => navigate(`/assets/${asset.id}/history`)}>
-                                            Details
+                                            {t('details')}
                                         </Button>
                                     </td>
                                 </tr>
                             )) : (
-                                <tr><td colSpan="5" className="p-4 text-center text-muted-foreground">You have no assets assigned.</td></tr>
+                                <tr><td colSpan="5" className="p-4 text-center text-muted-foreground">{t('no_assets_assigned')}</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -94,6 +94,7 @@ const MyAssetsTab = () => {
 };
 
 export default function ProfilePage() {
+    const { t } = useTranslation(); // <-- 3. เรียกใช้ hook ใน Component หลัก
     const { user, token, login } = useAuthStore();
     
     const [name, setName] = useState('');
@@ -162,25 +163,25 @@ export default function ProfilePage() {
     return (
         <Tabs defaultValue="profile" className="max-w-4xl mx-auto">
             <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="profile">Profile Details</TabsTrigger>
-                <TabsTrigger value="password">Change Password</TabsTrigger>
-                <TabsTrigger value="assets">My Assets</TabsTrigger>
+                <TabsTrigger value="profile">{t('profile_details')}</TabsTrigger>
+                <TabsTrigger value="password">{t('change_password')}</TabsTrigger>
+                <TabsTrigger value="assets">{t('my_assets')}</TabsTrigger>
             </TabsList>
             
             <TabsContent value="profile">
                 <Card>
                     <CardHeader>
-                        <CardTitle>My Profile</CardTitle>
-                        <CardDescription>View and update your personal information.</CardDescription>
+                        <CardTitle>{t('my_profile_title')}</CardTitle>
+                        <CardDescription>{t('my_profile_description')}</CardDescription>
                     </CardHeader>
                     <form onSubmit={handleProfileSubmit}>
                         <CardContent className="space-y-4">
-                            <div className="space-y-2"><Label htmlFor="username">Username</Label><Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} required /></div>
-                            <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-                            <div className="space-y-2"><Label htmlFor="name">Full Name</Label><Input id="name" value={name} onChange={(e) => setName(e.target.value)} required /></div>
-                            <div className="space-y-2"><Label htmlFor="role">Role</Label><Input id="role" value={user?.role || ''} disabled /></div>
+                            <div className="space-y-2"><Label htmlFor="username">{t('user_form_username')}</Label><Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} required /></div>
+                            <div className="space-y-2"><Label htmlFor="email">{t('tableHeader_email')}</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+                            <div className="space-y-2"><Label htmlFor="name">{t('user_form_fullname')}</Label><Input id="name" value={name} onChange={(e) => setName(e.target.value)} required /></div>
+                            <div className="space-y-2"><Label htmlFor="role">{t('tableHeader_role')}</Label><Input id="role" value={user?.role || ''} disabled /></div>
                         </CardContent>
-                        <CardFooter><Button type="submit" disabled={isProfileLoading}>{isProfileLoading ? 'Saving...' : 'Save Changes'}</Button></CardFooter>
+                        <CardFooter><Button type="submit" disabled={isProfileLoading}>{isProfileLoading ? t('profile_saving') : t('profile_save_changes')}</Button></CardFooter>
                     </form>
                 </Card>
             </TabsContent>
@@ -188,16 +189,16 @@ export default function ProfilePage() {
             <TabsContent value="password">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Change Password</CardTitle>
-                        <CardDescription>Enter your current password and a new password.</CardDescription>
+                        <CardTitle>{t('change_password')}</CardTitle>
+                        <CardDescription>{t('change_password_description')}</CardDescription>
                     </CardHeader>
                     <form onSubmit={handlePasswordSubmit}>
                         <CardContent className="space-y-4">
-                             <div className="space-y-2"><Label htmlFor="currentPassword">Current Password</Label><Input id="currentPassword" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required /></div>
-                             <div className="space-y-2"><Label htmlFor="newPassword">New Password</Label><Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required /></div>
-                             <div className="space-y-2"><Label htmlFor="confirmPassword">Confirm New Password</Label><Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required /></div>
+                             <div className="space-y-2"><Label htmlFor="currentPassword">{t('change_password_current')}</Label><Input id="currentPassword" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required /></div>
+                             <div className="space-y-2"><Label htmlFor="newPassword">{t('change_password_new')}</Label><Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required /></div>
+                             <div className="space-y-2"><Label htmlFor="confirmPassword">{t('change_password_confirm')}</Label><Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required /></div>
                         </CardContent>
-                        <CardFooter><Button type="submit" disabled={isPasswordLoading}>{isPasswordLoading ? 'Saving...' : 'Change Password'}</Button></CardFooter>
+                        <CardFooter><Button type="submit" disabled={isPasswordLoading}>{isPasswordLoading ? t('profile_saving') : t('change_password')}</Button></CardFooter>
                     </form>
                 </Card>
             </TabsContent>

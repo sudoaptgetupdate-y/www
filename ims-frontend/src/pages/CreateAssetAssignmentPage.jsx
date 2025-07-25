@@ -14,6 +14,14 @@ import { Label } from "@/components/ui/label";
 import { UserCombobox } from "@/components/ui/UserCombobox";
 import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -123,31 +131,33 @@ export default function CreateAssetAssignmentPage() {
                         onChange={(e) => setAssetSearch(e.target.value)}
                         className="mb-4"
                     />
-                    <div className="h-[500px] overflow-y-auto border rounded-md">
-                        <table className="w-full text-sm">
-                            <thead className="sticky top-0 bg-slate-100">
-                                <tr className="border-b">
-                                    <th className="p-2 text-left">{t('tableHeader_assetCode')}</th>
-                                    <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
-                                    <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
-                                    <th className="p-2 text-center">{t('tableHeader_actions')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <div className="border rounded-md">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>{t('tableHeader_assetCode')}</TableHead>
+                                    <TableHead>{t('tableHeader_brand')}</TableHead>
+                                    <TableHead>{t('tableHeader_productModel')}</TableHead>
+                                    <TableHead>{t('tableHeader_serialNumber')}</TableHead>
+                                    <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {isLoading ? (
-                                    <tr><td colSpan="4" className="text-center p-4">Searching...</td></tr>
+                                    <TableRow><TableCell colSpan="5" className="text-center p-4">Searching...</TableCell></TableRow>
                                 ) : availableAssets.map(asset => (
-                                    <tr key={asset.id} className="border-b">
-                                        <td className="p-2">{asset.assetCode}</td>
-                                        <td className="p-2">{asset.productModel.modelNumber}</td>
-                                        <td className="p-2">{asset.serialNumber || '-'}</td>
-                                        <td className="p-2 text-center">
-                                            <Button size="sm" onClick={() => handleAddItem(asset)}>{t('add')}</Button>
-                                        </td>
-                                    </tr>
+                                    <TableRow key={asset.id}>
+                                        <TableCell>{asset.assetCode}</TableCell>
+                                        <TableCell>{asset.productModel.brand.name}</TableCell>
+                                        <TableCell>{asset.productModel.modelNumber}</TableCell>
+                                        <TableCell>{asset.serialNumber || '-'}</TableCell>
+                                        <TableCell className="text-center">
+                                            <Button variant="primary-outline" size="sm" onClick={() => handleAddItem(asset)}>{t('add')}</Button>
+                                        </TableCell>
+                                    </TableRow>
                                 ))}
-                            </tbody>
-                        </table>
+                            </TableBody>
+                        </Table>
                     </div>
                 </CardContent>
             </Card>

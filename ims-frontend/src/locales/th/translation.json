@@ -302,5 +302,20 @@
   "supplier_form_name": "ชื่อผู้จัดจำหน่าย",
   "select_supplier": "เลือกผู้จัดจำหน่าย...",
   "supplier_search_placeholder": "ค้นหาจากชื่อผู้จัดจำหน่าย...",
-  "purchased_from": "สั่งซื้อจาก"
+  "purchased_from": "สั่งซื้อจาก",
+  "profile_details": "ข้อมูลส่วนตัว",
+  "change_password": "เปลี่ยนรหัสผ่าน",
+  "my_assets": "ทรัพย์สินของฉัน",
+  "my_profile_title": "ข้อมูลส่วนตัวของฉัน",
+  "my_profile_description": "ดูและอัปเดตข้อมูลส่วนตัวของคุณ",
+  "user_form_fullname": "ชื่อ-สกุล",
+  "profile_saving": "กำลังบันทึก...",
+  "profile_save_changes": "บันทึกการเปลี่ยนแปลง",
+  "change_password_description": "ป้อนรหัสผ่านปัจจุบันและรหัสผ่านใหม่ของคุณ",
+  "change_password_current": "รหัสผ่านปัจจุบัน",
+  "change_password_new": "รหัสผ่านใหม่",
+  "change_password_confirm": "ยืนยันรหัสผ่านใหม่",
+  "my_assets_description": "รายการทรัพย์สินของบริษัทที่อยู่ในความดูแลของคุณ",
+  "tableHeader_product": "สินค้า",
+  "no_assets_assigned": "คุณยังไม่มีทรัพย์สินที่ได้รับมอบหมาย"
 }

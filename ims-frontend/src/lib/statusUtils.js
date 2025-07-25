@@ -33,7 +33,8 @@ const STATUS_CONFIG = {
   // Transaction Types
   SALE: { label: "Sale", variant: "success" },
   BORROWING: { label: "Borrowing", variant: "warning" },
-  
+  ASSET: { label: "Asset", variant: "secondary" },
+
   // Sale Statuses
   COMPLETED: { label: "Completed", variant: "success" },
   VOIDED: { label: "Voided", variant: "destructive" },

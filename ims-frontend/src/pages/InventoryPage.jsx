@@ -284,8 +284,9 @@ export default function InventoryPage() {
                                                 if (item.status === 'SOLD' && item.saleId) navigate(`/sales/${item.saleId}`);
                                                 else if (item.status === 'BORROWED' && item.borrowingId) navigate(`/borrowings/${item.borrowingId}`);
                                                 else if ((item.status === 'REPAIRING' || item.status === 'RETURNED_TO_CUSTOMER') && item.repairId) navigate(`/repairs/${item.repairId}`);
+                                                else navigate(`/inventory/${item.id}/history`);
                                             }}
-                                            interactive={!!(item.saleId || item.borrowingId || item.repairId)}
+                                            interactive={true}
                                         />
                                     </TableCell>
                                     <TableCell>{item.addedBy.name}</TableCell>

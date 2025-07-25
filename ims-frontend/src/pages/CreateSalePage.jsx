@@ -10,9 +10,17 @@ import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { CustomerCombobox } from "@/components/ui/CustomerCombobox";
-import { Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react"; // --- 1. เอา PlusCircle ออกจากการ import ---
 import axiosInstance from "@/api/axiosInstance";
-import { useTranslation } from "react-i18next"; // --- 1. Import useTranslation ---
+import { useTranslation } from "react-i18next";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -24,7 +32,7 @@ function useDebounce(value, delay) {
 }
 
 export default function CreateSalePage() {
-    const { t } = useTranslation(); // --- 2. เรียกใช้ Hook ---
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
     const token = useAuthStore((state) => state.token);
@@ -110,7 +118,6 @@ export default function CreateSalePage() {
     const vat = subtotal * 0.07;
     const total = subtotal + vat;
 
-    // --- 3. เปลี่ยนข้อความเป็น t('...') ทั้งหมด ---
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2">
@@ -125,29 +132,35 @@ export default function CreateSalePage() {
                         onChange={(e) => setItemSearch(e.target.value)}
                         className="mb-4"
                     />
-                    <div className="h-[500px] overflow-y-auto border rounded-md">
-                        <table className="w-full text-sm">
-                            <thead className="sticky top-0 bg-slate-100">
-                                <tr className="border-b">
-                                    <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
-                                    <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
-                                    <th className="p-2 text-right">{t('tableHeader_price')}</th>
-                                    <th className="p-2 text-center">{t('tableHeader_actions')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <div className="border rounded-md">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>{t('tableHeader_productModel')}</TableHead>
+                                    <TableHead>{t('tableHeader_serialNumber')}</TableHead>
+                                    <TableHead className="text-right">{t('tableHeader_price')}</TableHead>
+                                    <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {isLoading ? (
-                                    <tr><td colSpan="4" className="text-center p-4">Searching...</td></tr>
+                                    <TableRow><TableCell colSpan="4" className="text-center p-4">Searching...</TableCell></TableRow>
                                 ) : availableItems.map(item => (
-                                    <tr key={item.id} className="border-b">
-                                        <td className="p-2">{item.productModel.modelNumber}</td>
-                                        <td className="p-2">{item.serialNumber || '-'}</td>
-                                        <td className="p-2 text-right">{item.productModel.sellingPrice.toLocaleString()}</td>
-                                        <td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>Add</Button></td>
-                                    </tr>
+                                    <TableRow key={item.id}>
+                                        <TableCell>{item.productModel.modelNumber}</TableCell>
+                                        <TableCell>{item.serialNumber || '-'}</TableCell>
+                                        <TableCell className="text-right">{item.productModel.sellingPrice.toLocaleString()}</TableCell>
+                                        {/* --- START: แก้ไขปุ่ม Add --- */}
+                                        <TableCell className="text-center">
+                                            <Button variant="primary-outline" size="sm" onClick={() => handleAddItem(item)}>
+                                                {t('add')}
+                                            </Button>
+                                        </TableCell>
+                                        {/* --- END: แก้ไขปุ่ม Add --- */}
+                                    </TableRow>
                                 ))}
-                            </tbody>
-                        </table>
+                            </TableBody>
+                        </Table>
                     </div>
                 </CardContent>
             </Card>

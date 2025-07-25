@@ -20,6 +20,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import CustomerFormDialog from "@/components/dialogs/CustomerFormDialog";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -120,7 +128,6 @@ export default function CreateRepairPage() {
         const fetchItems = async () => {
             const params = { search: debouncedItemSearch, limit: 100 };
             try {
-                // --- START: แก้ไข Logic การดึงข้อมูลทั้งหมด ---
                 const [invInStockRes, invDefectiveRes, assetWarehouseRes, assetDefectiveRes] = await Promise.all([
                     axiosInstance.get('/inventory', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'IN_STOCK' } }),
                     axiosInstance.get('/inventory', { headers: { Authorization: `Bearer ${token}` }, params: { ...params, status: 'DEFECTIVE' } }),
@@ -133,7 +140,6 @@ export default function CreateRepairPage() {
                     ...(assetWarehouseRes.data?.data || []),
                     ...(assetDefectiveRes.data?.data || [])
                 ];
-                // --- END ---
                 const selectedIds = new Set(selectedItems.map(i => i.id));
                 setInternalItems(combined.filter(item => !selectedIds.has(item.id)));
             } catch (error) {
@@ -233,31 +239,35 @@ export default function CreateRepairPage() {
                         <CardHeader><CardTitle>{t('createRepair_step2_internal_title')}</CardTitle></CardHeader>
                         <CardContent>
                             <Input placeholder={t('createRepair_search_asset_placeholder')} value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} />
-                             <div className="mt-4 h-96 overflow-y-auto border rounded-md">
-                                <table className="w-full text-sm">
-                                    <thead className="sticky top-0 bg-slate-100">
-                                        <tr className="border-b">
-                                            <th className="p-2 text-left">{t('tableHeader_brand')}</th>
-                                            <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
-                                            <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
-                                            <th className="p-2 text-left">{t('tableHeader_assetCode')}</th>
-                                            <th className="p-2 text-left">{t('tableHeader_status')}</th>
-                                            <th className="p-2 text-center">{t('tableHeader_actions')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                             <div className="mt-4 border rounded-md">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>{t('tableHeader_brand')}</TableHead>
+                                            <TableHead>{t('tableHeader_productModel')}</TableHead>
+                                            <TableHead>{t('tableHeader_serialNumber')}</TableHead>
+                                            <TableHead>{t('tableHeader_assetCode')}</TableHead>
+                                            <TableHead>{t('tableHeader_status')}</TableHead>
+                                            <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
                                         {internalItems.map(item => (
-                                            <tr key={item.id} className="border-b">
-                                                <td className="p-2">{item.productModel.brand.name}</td>
-                                                <td className="p-2">{item.productModel.modelNumber}</td>
-                                                <td className="p-2 font-semibold">{item.serialNumber || '-'}</td>
-                                                <td className="p-2 font-semibold">{item.assetCode || '-'}</td>
-                                                <td className="p-2"><StatusBadge status={item.itemType} /></td>
-                                                <td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>{t('add')}</Button></td>
-                                            </tr>
+                                            <TableRow key={item.id}>
+                                                <TableCell>{item.productModel.brand.name}</TableCell>
+                                                <TableCell>{item.productModel.modelNumber}</TableCell>
+                                                <TableCell>{item.serialNumber || '-'}</TableCell>
+                                                <TableCell>{item.assetCode || '-'}</TableCell>
+                                                <TableCell><StatusBadge status={item.itemType} /></TableCell>
+                                                <TableCell className="text-center">
+                                                    <Button variant="primary-outline" size="sm" onClick={() => handleAddItem(item)}>
+                                                        {t('add')}
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
                                         ))}
-                                    </tbody>
-                                </table>
+                                    </TableBody>
+                                </Table>
                             </div>
                         </CardContent>
                     </Card>
@@ -278,17 +288,33 @@ export default function CreateRepairPage() {
                                      <CustomerItemDialog onAddItem={handleAddItem} />
                                 </div>
                                  <p className="text-sm text-muted-foreground mb-2 text-center">{t('createRepair_select_from_history')}</p>
-                                <div className="h-80 overflow-y-auto border rounded-md">
-                                    <table className="w-full text-sm">
-                                        <thead className="sticky top-0 bg-slate-100">
-                                            <tr className="border-b"><th className="p-2 text-left">{t('tableHeader_productModel')}</th><th className="p-2 text-left">{t('tableHeader_serialNumber')}</th><th className="p-2 text-left">{t('tableHeader_purchaseDate')}</th><th className="p-2 text-center">{t('tableHeader_actions')}</th></tr>
-                                        </thead>
-                                        <tbody>
+                                <div className="border rounded-md">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>{t('tableHeader_brand')}</TableHead>
+                                                <TableHead>{t('tableHeader_productModel')}</TableHead>
+                                                <TableHead>{t('tableHeader_serialNumber')}</TableHead>
+                                                <TableHead>{t('tableHeader_purchaseDate')}</TableHead>
+                                                <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
                                             {purchaseHistory.map(item => (
-                                                <tr key={item.id} className="border-b"><td className="p-2">{item.productModel.modelNumber}</td><td className="p-2">{item.serialNumber}</td><td className="p-2">{new Date(item.purchaseDate).toLocaleDateString()}</td><td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>{t('add')}</Button></td></tr>
+                                                <TableRow key={item.id}>
+                                                    <TableCell>{item.productModel.brand.name}</TableCell>
+                                                    <TableCell>{item.productModel.modelNumber}</TableCell>
+                                                    <TableCell>{item.serialNumber}</TableCell>
+                                                    <TableCell>{new Date(item.purchaseDate).toLocaleDateString()}</TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Button variant="primary-outline" size="sm" onClick={() => handleAddItem(item)}>
+                                                            {t('add')}
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
                                             ))}
-                                        </tbody>
-                                    </table>
+                                        </TableBody>
+                                    </Table>
                                 </div>
                             </CardContent>
                         )}

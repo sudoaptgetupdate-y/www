@@ -366,7 +366,7 @@ customerController.getPurchaseHistory = async (req, res, next) => {
             err.statusCode = 400;
             throw err;
         }
-        // ... (rest of the function logic is fine)
+        // --- START: แก้ไขส่วนนี้ ---
         const sales = await prisma.sale.findMany({
             where: { customerId: customerId, status: 'COMPLETED' },
             include: {
@@ -376,11 +376,18 @@ customerController.getPurchaseHistory = async (req, res, next) => {
                             in: ['SOLD', 'RETURNED_TO_CUSTOMER']
                         }
                     },
-                    include: { productModel: true }
+                    include: { 
+                        productModel: {
+                            include: {
+                                brand: true // <-- เพิ่มการ include brand
+                            }
+                        } 
+                    }
                 }
             },
             orderBy: { saleDate: 'desc' }
         });
+        // --- END ---
 
         const purchasedItems = sales.flatMap(s => 
             s.itemsSold.map(item => ({

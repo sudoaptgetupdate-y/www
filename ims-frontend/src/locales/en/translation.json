@@ -302,6 +302,21 @@
   "supplier_form_name": "Supplier Name",
   "select_supplier": "Select supplier...",
   "supplier_search_placeholder": "Search by supplier name...",
-  "purchased_from": "Purchased from"
+  "purchased_from": "Purchased from",
+  "profile_details": "Profile Details",
+  "change_password": "Change Password",
+  "my_assets": "My Assets",
+  "my_profile_title": "My Profile",
+  "my_profile_description": "View and update your personal information.",
+  "user_form_fullname": "Full Name",
+  "profile_saving": "Saving...",
+  "profile_save_changes": "Save Changes",
+  "change_password_description": "Enter your current password and a new password.",
+  "change_password_current": "Current Password",
+  "change_password_new": "New Password",
+  "change_password_confirm": "Confirm New Password",
+  "my_assets_description": "List of company assets currently assigned to you.",
+  "tableHeader_product": "Product",
+  "no_assets_assigned": "You have no assets assigned."
   
 }
