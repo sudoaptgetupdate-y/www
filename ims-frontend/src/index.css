@@ -1,9 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&family=Noto+Sans:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&family=Noto+Sans:wght@400;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
 
 @layer base {
   :root {
@@ -40,30 +40,26 @@
   }
 }
 
-/* --- START: Final Print Styles --- */
+/* --- Final Print Styles --- */
 @media print {
-  /* ซ่อนทุกอย่างใน body ก่อน */
   body * {
     visibility: hidden;
   }
 
-  /* จากนั้นแสดงเฉพาะส่วนที่ต้องการพิมพ์และ element ลูกทั้งหมด */
   .printable-area, .printable-area * {
     visibility: visible;
   }
 
-  /* จัดตำแหน่งของส่วนที่พิมพ์ให้อยู่บนสุดซ้ายสุดของหน้ากระดาษ */
   .printable-area {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
-    padding: 0.75in 0.5in; /* ตั้งค่าขอบกระดาษ */
+    padding: 0.75in 0.5in;
     font-size: 10pt;
     font-family: 'Sarabun', sans-serif !important;
   }
 
-  /* ทำให้ส่วนหัวเอกสารแสดงผล */
   .print-header {
     display: block !important;
     text-align: center;
@@ -78,7 +74,6 @@
     margin: 0;
   }
   
-  /* จัดการส่วนท้ายและที่เซ็นชื่อ */
   .signature-section {
     display: flex !important;
     justify-content: space-between !important;
@@ -98,14 +93,44 @@
     height: 3rem;
   }
 
-  .print-footer {
-    display: block !important;
-    text-align: center;
-    font-size: 9pt !important;
-    margin-top: 2rem;
+  .shipping-label-page {
+    visibility: visible !important;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: space-between;
+    page-break-before: always;
+    width: 100%;
+    height: 95vh;
+    padding: 0.5in;
+    font-family: 'Sarabun', sans-serif !important;
+    font-size: 12pt;
+  }
+
+  .receiver-address {
+    visibility: visible !important;
+    align-self: flex-start;
+    text-align: left;
+    border: 2px solid black;
+    padding: 1.5rem;
+    width: 60%;
+  }
+
+  .sender-address {
+    visibility: visible !important;
+    align-self: flex-end;
+    text-align: right;
+    width: 60%;
+  }
+
+  .receiver-address p, .sender-address p {
+    visibility: visible !important;
+    margin: 0;
   }
   
-  /* ทำให้เส้นตารางยังแสดงผล */
+  .print-footer {
+    display: block !important;
+  }
+
   table, thead, tbody, tfoot, tr, th, td {
     border-color: #666 !important;
   }

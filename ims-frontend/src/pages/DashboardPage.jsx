@@ -10,9 +10,10 @@ import { useNavigate } from 'react-router-dom';
 import { DollarSign, Package, ArrowRightLeft, Wrench, ArrowUp, ArrowDown, ArrowRight } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next'; // --- 1. Import useTranslation ---
 
 // -- Reusable component for the main statistic cards with inline charts --
-const StatCard = ({ title, value, trendValue, trendDirection, icon: Icon, chartData, onClick }) => (
+const StatCard = ({ title, value, trendValue, trendDirection, icon: Icon, chartData, onClick, trendText }) => ( // --- 2. เพิ่ม props trendText ---
     <Card 
         className={cn("shadow-sm border-subtle", onClick && "cursor-pointer hover:bg-muted/50 transition-colors")}
         onClick={onClick}
@@ -32,7 +33,7 @@ const StatCard = ({ title, value, trendValue, trendDirection, icon: Icon, chartD
                             <ArrowDown className="h-3 w-3 mr-1 text-red-500" />
                         )}
                         <span className={trendDirection === 'up' ? 'text-emerald-500' : 'text-red-500'}>{trendValue}</span>
-                        <span>&nbsp;vs last week</span>
+                        <span>&nbsp;{trendText}</span>
                     </div>
                 </div>
                 <div className="h-12 w-24">
@@ -54,7 +55,7 @@ const StatCard = ({ title, value, trendValue, trendDirection, icon: Icon, chartD
 );
 
 // -- Reusable component for displaying recent activity tables --
-const RecentActivityTable = ({ title, description, data, columns, viewAllLink }) => {
+const RecentActivityTable = ({ title, description, data, columns, viewAllLink, viewAllText }) => { // --- 3. เพิ่ม props viewAllText ---
     const navigate = useNavigate();
 
     return (
@@ -91,7 +92,7 @@ const RecentActivityTable = ({ title, description, data, columns, viewAllLink })
             </CardContent>
             <CardFooter>
                 <Button variant="outline" size="sm" className="ml-auto" onClick={() => navigate(viewAllLink)}>
-                    View All <ArrowRight className="ml-2 h-4 w-4" />
+                    {viewAllText} <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
             </CardFooter>
         </Card>
@@ -100,13 +101,13 @@ const RecentActivityTable = ({ title, description, data, columns, viewAllLink })
 
 
 export default function DashboardPage() {
+    const { t } = useTranslation(); // --- 4. เรียกใช้ Hook ---
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const token = useAuthStore((state) => state.token);
     const currentUser = useAuthStore((state) => state.user);
     const navigate = useNavigate();
     
-    // Mockup trend data for StatCards
     const mockTrendData = {
         revenue: [{value: 3}, {value: 4}, {value: 2}, {value: 5}, {value: 8}, {value: 10}],
         stock: [{value: 10}, {value: 8}, {value: 9}, {value: 7}, {value: 6}, {value: 5}],
@@ -142,98 +143,103 @@ export default function DashboardPage() {
         return <p>Could not load dashboard data.</p>;
     }
 
-    // --- Column definitions for each table ---
+    // --- 5. เปลี่ยนข้อความเป็น t('...') ทั้งหมด ---
     const salesColumns = [
-        { key: 'customer', header: 'Customer', render: (row) => row.customer.name, className: "font-medium" },
-        { key: 'total', header: 'Total', render: (row) => new Intl.NumberFormat('th-TH').format(row.total), className: "text-right" },
-        { key: 'date', header: 'Date', render: (row) => new Date(row.saleDate).toLocaleDateString('en-GB'), className: "text-right text-muted-foreground" },
+        { key: 'customer', header: t('tableHeader_customer'), render: (row) => row.customer.name, className: "font-medium" },
+        { key: 'total', header: t('tableHeader_total'), render: (row) => new Intl.NumberFormat('th-TH').format(row.total), className: "text-right" },
+        { key: 'date', header: t('tableHeader_saleDate'), render: (row) => new Date(row.saleDate).toLocaleDateString('en-GB'), className: "text-right text-muted-foreground" },
     ];
     
     const borrowingColumns = [
-        { key: 'borrower', header: 'Borrower', render: (row) => row.borrower.name, className: "font-medium" },
-        { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} />, className: "text-center" },
-        { key: 'date', header: 'Date', render: (row) => new Date(row.borrowDate).toLocaleDateString('en-GB'), className: "text-right text-muted-foreground" },
+        { key: 'borrower', header: t('customers'), render: (row) => row.borrower.name, className: "font-medium" },
+        { key: 'status', header: t('tableHeader_status'), render: (row) => <StatusBadge status={row.status} />, className: "text-center" },
+        { key: 'date', header: t('tableHeader_borrowDate'), render: (row) => new Date(row.borrowDate).toLocaleDateString('en-GB'), className: "text-right text-muted-foreground" },
     ];
 
     const repairColumns = [
-        { key: 'receiver', header: 'Sent To', render: (row) => row.receiver.name, className: "font-medium" },
-        { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} />, className: "text-center" },
-        { key: 'date', header: 'Sent Date', render: (row) => new Date(row.repairDate).toLocaleDateString('en-GB'), className: "text-right text-muted-foreground" },
+        { key: 'receiver', header: t('tableHeader_sentTo'), render: (row) => row.receiver.name, className: "font-medium" },
+        { key: 'status', header: t('tableHeader_status'), render: (row) => <StatusBadge status={row.status} />, className: "text-center" },
+        { key: 'date', header: t('tableHeader_repairDate'), render: (row) => new Date(row.repairDate).toLocaleDateString('en-GB'), className: "text-right text-muted-foreground" },
     ];
 
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Welcome back, {currentUser?.name.split(' ')[0]}!</h1>
-                <p className="text-muted-foreground">Here is the latest snapshot of your business.</p>
+                <h1 className="text-3xl font-bold tracking-tight">{t('welcomeBack', { name: currentUser?.name.split(' ')[0] })}</h1>
+                <p className="text-muted-foreground">{t('dashboardDescription')}</p>
             </div>
 
-            {/* --- Main Stats Grid --- */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <StatCard 
-                    title="Total Revenue"
+                    title={t('totalRevenue')}
                     value={new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 0 }).format(stats.totalRevenue || 0)}
                     trendValue="+12.5%"
                     trendDirection="up"
                     icon={DollarSign}
                     chartData={mockTrendData.revenue}
+                    trendText={t('vsLastWeek')}
                 />
                 <StatCard 
-                    title="Items In Stock"
+                    title={t('itemsInStock')}
                     value={stats.itemsInStock || 0}
                     trendValue="-2.1%"
                     trendDirection="down"
                     icon={Package}
                     chartData={mockTrendData.stock}
                     onClick={() => navigate('/inventory')}
+                    trendText={t('vsLastWeek')}
                 />
                 <StatCard 
-                    title="Active Borrowings"
+                    title={t('activeBorrowings')}
                     value={stats.activeBorrowings || 0}
                     trendValue="+1 new"
                     trendDirection="up"
                     icon={ArrowRightLeft}
                     chartData={mockTrendData.borrowing}
                     onClick={() => navigateWithFilter('/borrowings', 'BORROWED')}
+                    trendText={t('vsLastWeek')}
                 />
                 <StatCard 
-                    title="Active Repairs"
+                    title={t('activeRepairs')}
                     value={stats.activeRepairs || 0}
                     trendValue="+2 new"
                     trendDirection="up"
                     icon={Wrench}
                     chartData={mockTrendData.repairs}
                     onClick={() => navigateWithFilter('/repairs', 'REPAIRING')}
+                    trendText={t('vsLastWeek')}
                 />
             </div>
 
-            {/* --- Main Content Grid --- */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1">
                     <RecentActivityTable
-                        title="Latest Sales"
-                        description="The 5 most recent sales."
+                        title={t('latestSales')}
+                        description={t('salesDescription')}
                         data={stats.recentSales}
                         columns={salesColumns}
                         viewAllLink="/sales"
+                        viewAllText={t('viewAll')}
                     />
                 </div>
                 <div className="lg:col-span-1">
                      <RecentActivityTable
-                        title="Latest Borrowings"
-                        description="Recent item borrowing records."
+                        title={t('latestBorrowings')}
+                        description={t('borrowingDescription')}
                         data={stats.recentBorrowings}
                         columns={borrowingColumns}
                         viewAllLink="/borrowings"
+                        viewAllText={t('viewAll')}
                     />
                 </div>
                 <div className="lg:col-span-1">
                      <RecentActivityTable
-                        title="Latest Repair Orders"
-                        description="Recent items sent for repair."
+                        title={t('latestRepairOrders')}
+                        description={t('repairDescription')}
                         data={stats.recentRepairs}
                         columns={repairColumns}
                         viewAllLink="/repairs"
+                        viewAllText={t('viewAll')}
                     />
                 </div>
             </div>

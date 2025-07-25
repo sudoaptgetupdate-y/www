@@ -20,6 +20,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useTranslation } from "react-i18next";
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -31,6 +32,7 @@ function useDebounce(value, delay) {
 }
 
 export function CustomerCombobox({ selectedValue, onSelect, initialCustomer }) {
+  const { t } = useTranslation();
   const token = useAuthStore((state) => state.token);
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,21 +94,18 @@ export function CustomerCombobox({ selectedValue, onSelect, initialCustomer }) {
           <span className="truncate">
             {selectedValue && selectedCustomerDisplay
               ? selectedCustomerDisplay.name
-              : "Select customer..."}
+              : t('select_customer')}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        {/* --- START: การแก้ไขที่สำคัญ --- */}
-        {/* เพิ่ม shouldFilter={false} เพื่อปิดการกรองอัตโนมัติ */}
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search customer by name, code..."
+            placeholder={t('customer_search_placeholder')}
             value={searchQuery}
             onValueChange={setSearchQuery}
           />
-        {/* --- END --- */}
           <CommandList>
             {isLoading && <div className="p-2 text-center text-sm">Loading...</div>}
             <CommandEmpty>No customer found.</CommandEmpty>

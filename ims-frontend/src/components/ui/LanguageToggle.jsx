@@ -2,6 +2,7 @@
 
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { Globe } from "lucide-react"; // --- 1. Import ไอคอน Globe ---
 
 export function LanguageToggle() {
   const { i18n } = useTranslation();
@@ -12,9 +13,11 @@ export function LanguageToggle() {
   };
 
   return (
-    <Button variant="ghost" size="icon" onClick={toggleLanguage} className="h-9 w-9">
-      <span className="text-lg">
-        {i18n.language === 'th' ? '🇹🇭' : '🇬🇧'}
+    // --- 2. แก้ไข Button ทั้งหมด ---
+    <Button variant="outline" size="sm" onClick={toggleLanguage}>
+      <Globe className="mr-2 h-4 w-4" />
+      <span className="font-semibold">
+        {i18n.language.toUpperCase()}
       </span>
       <span className="sr-only">Toggle language</span>
     </Button>

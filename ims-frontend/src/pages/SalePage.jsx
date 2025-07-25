@@ -9,10 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { PlusCircle, ArrowUpDown } from "lucide-react";
-import { StatusBadge } from "@/components/ui/StatusBadge"; 
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
+import { useTranslation } from "react-i18next"; // --- 1. Import useTranslation ---
 
 const SkeletonRow = () => (
     <TableRow>
@@ -37,6 +38,7 @@ const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort })
 
 export default function SalePage() {
     const navigate = useNavigate();
+    const { t } = useTranslation(); // --- 2. เรียกใช้ Hook ---
     const currentUser = useAuthStore((state) => state.user);
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
@@ -60,12 +62,12 @@ export default function SalePage() {
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>Sale Records</CardTitle>
-                        <CardDescription>View and manage all sale transactions.</CardDescription>
+                        <CardTitle>{t('sales_title')}</CardTitle>
+                        <CardDescription>{t('salesDescription')}</CardDescription>
                     </div>
                     {canManage && (
                         <Button onClick={() => navigate('/sales/new')}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Create New Sale
+                            <PlusCircle className="mr-2 h-4 w-4" /> {t('sales_create_new')}
                         </Button>
                     )}
                 </div>
@@ -73,19 +75,19 @@ export default function SalePage() {
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <Input
-                        placeholder="Search by Customer, Seller, or Sale ID..."
+                        placeholder={t('sales_search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="flex-grow"
                     />
                     <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
                         <SelectTrigger className="w-full sm:w-[180px]">
-                            <SelectValue placeholder="Filter by Status..." />
+                            <SelectValue placeholder={t('filter_by_status')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="All">All Statuses</SelectItem>
-                            <SelectItem value="COMPLETED">Completed</SelectItem>
-                            <SelectItem value="VOIDED">Voided</SelectItem>
+                            <SelectItem value="All">{t('status_all')}</SelectItem>
+                            <SelectItem value="COMPLETED">{t('status_completed')}</SelectItem>
+                            <SelectItem value="VOIDED">{t('status_voided')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -93,20 +95,20 @@ export default function SalePage() {
                     <TableHeader>
                         <TableRow>
                             <SortableHeader sortKey="id" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                Sale ID
+                                {t('tableHeader_saleId')}
                             </SortableHeader>
                             <SortableHeader sortKey="customer" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                Customer
+                                {t('tableHeader_customer')}
                             </SortableHeader>
                             <SortableHeader sortKey="saleDate" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                Sale Date
+                                {t('tableHeader_saleDate')}
                             </SortableHeader>
-                            <TableHead className="text-center">Status</TableHead>
-                            <TableHead className="text-center">Items</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_items')}</TableHead>
                             <SortableHeader sortKey="total" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                Total (inc. VAT)
+                                {t('tableHeader_total')}
                             </SortableHeader>
-                            <TableHead className="text-center">Actions</TableHead>
+                            <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -129,7 +131,7 @@ export default function SalePage() {
                                 <TableCell className="text-right">{sale.total.toLocaleString('en-US')} THB</TableCell>
                                 <TableCell className="text-center">
                                     <Button variant="outline" size="sm" onClick={() => navigate(`/sales/${sale.id}`)}>
-                                        Details
+                                        {t('details')}
                                     </Button>
                                 </TableCell>
                             </TableRow>
@@ -139,7 +141,7 @@ export default function SalePage() {
             </CardContent>
              <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Label htmlFor="rows-per-page">Rows per page:</Label>
+                    <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
                     <Select value={String(pagination.itemsPerPage)} onValueChange={handleItemsPerPageChange}>
                         <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -148,11 +150,11 @@ export default function SalePage() {
                     </Select>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                    Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
+                    {t('pagination_info', { currentPage: pagination.currentPage, totalPages: pagination.totalPages, totalItems: pagination.totalItems })}
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>Previous</Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>Next</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={!pagination || pagination.currentPage <= 1}>{t('previous')}</Button>
+                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
                 </div>
             </CardFooter>
         </Card>

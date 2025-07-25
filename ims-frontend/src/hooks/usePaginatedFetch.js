@@ -24,10 +24,24 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, defaultFilt
     const location = useLocation();
     const navigate = useNavigate();
 
-    const getInitialFilters = useCallback(() => {
-        const locationState = location.state || {};
+    // --- START: แก้ไขส่วนนี้ใหม่ทั้งหมดเพื่อป้องกัน Infinite Loop ---
+    const getInitialFilters = useCallback((locState) => {
+        const locationState = locState || {};
         return locationState.status ? { ...defaultFilters, status: locationState.status } : defaultFilters;
-    }, [location.state, JSON.stringify(defaultFilters)]);
+    }, [JSON.stringify(defaultFilters)]);
+
+    const [filters, setFilters] = useState(() => getInitialFilters(location.state));
+
+    // Effect นี้จะทำงานเฉพาะเมื่อ location.state เปลี่ยนแปลงเท่านั้น
+    useEffect(() => {
+        const newFilters = getInitialFilters(location.state);
+        // ตรวจสอบก่อน set state เพื่อไม่ให้ re-render โดยไม่จำเป็น
+        if (JSON.stringify(newFilters) !== JSON.stringify(filters)) {
+            setFilters(newFilters);
+            setPagination(p => ({ ...p, currentPage: 1 }));
+        }
+    }, [location.state, getInitialFilters, filters]);
+    // --- END: จบส่วนแก้ไข ---
 
     const [data, setData] = useState([]);
     const [pagination, setPagination] = useState({
@@ -38,16 +52,10 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, defaultFilt
     });
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filters, setFilters] = useState(getInitialFilters());
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
     const [sortBy, setSortBy] = useState('updatedAt');
     const [sortOrder, setSortOrder] = useState('desc');
-
-    useEffect(() => {
-        setFilters(getInitialFilters());
-        setPagination(p => ({ ...p, currentPage: 1 }));
-    }, [location.state, getInitialFilters]);
 
     const fetchData = useCallback(async () => {
         if (!token) return;
