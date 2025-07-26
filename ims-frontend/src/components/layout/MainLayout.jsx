@@ -1,12 +1,12 @@
 // src/components/layout/MainLayout.jsx
 
 import { useState } from 'react';
-import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
-    LogOut, Menu, X, UserCircle, User, ArrowRightLeft, Building2, 
+    LogOut, Menu, X, User, ArrowRightLeft, Building2, 
     ShoppingCart, Settings, Package, Boxes, Tag, Users as UsersIcon, 
-    HardDrive, Layers, Wrench, BookUser, Truck // <-- Import Truck icon
+    HardDrive, Layers, Wrench, BookUser, Truck 
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -19,7 +19,6 @@ import {
 import useAuthStore from "@/store/authStore";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -56,10 +55,37 @@ const NavItem = ({ to, icon, text, isCollapsed, handleclick }) => (
     </NavLink>
 );
 
+const LanguageToggle = () => {
+    const { i18n } = useTranslation();
+    const toggleLanguage = () => {
+        const newLang = i18n.language === 'th' ? 'en' : 'th';
+        i18n.changeLanguage(newLang);
+    };
+
+    return (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={toggleLanguage} className="w-20">
+                        <span className="mr-2 text-lg">
+                            {i18n.language === 'th' ? '🇹🇭' : '🇬🇧'}
+                        </span>
+                        <span>
+                            {i18n.language.toUpperCase()}
+                        </span>
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Change Language</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    );
+};
+
 const MainLayout = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const location = useLocation();
     const logout = useAuthStore((state) => state.logout);
     const currentUser = useAuthStore((state) => state.user);
     const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
@@ -122,9 +148,7 @@ const MainLayout = () => {
                         <NavItem to="/product-models" icon={<Boxes size={18}/>} text={t('models')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                         <NavItem to="/brands" icon={<Building2 size={18}/>} text={t('brands')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                         <NavItem to="/categories" icon={<Tag size={18}/>} text={t('categories')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        {/* --- START: Add new NavItem for Suppliers --- */}
                         <NavItem to="/suppliers" icon={<Truck size={18}/>} text={t('suppliers')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        {/* --- END --- */}
                     </div>
                 </div>
 
@@ -185,27 +209,31 @@ const MainLayout = () => {
                         </Button>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-4">
                         <LanguageToggle />
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="flex items-center gap-3 p-2 rounded-lg h-11">
-                                    <UserCircle className="h-8 w-8 text-slate-500" />
-                                    <div className="hidden sm:block text-left">
-                                        <p className="font-semibold text-sm text-slate-800">{currentUser?.name || 'User'}</p>
-                                        <p className="text-xs text-slate-500">{currentUser?.role}</p>
+                                <Button variant="ghost" className="flex items-center gap-2 h-10 px-3">
+                                    <User className="h-5 w-5 text-muted-foreground" />
+                                    <div className="text-left">
+                                        <p className="text-sm font-medium leading-none">{currentUser?.name}</p>
                                     </div>
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56" align="end">
-                                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                            <DropdownMenuContent className="w-56" align="end" forceMount>
+                                <DropdownMenuLabel className="font-normal">
+                                    <div className="flex flex-col space-y-1">
+                                        <p className="text-sm font-medium leading-none">{currentUser?.name}</p>
+                                        <p className="text-xs leading-none text-muted-foreground">{currentUser?.email}</p>
+                                    </div>
+                                </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => navigate('/profile')}>
                                     <User className="mr-2 h-4 w-4" />
-                                    <span>Profile</span>
+                                    <span>{t('profile_details')}</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                                <DropdownMenuItem onClick={handleLogout} className="text-red-500 focus:text-red-500">
                                     <LogOut className="mr-2 h-4 w-4" />
                                     <span>Logout</span>
                                 </DropdownMenuItem>

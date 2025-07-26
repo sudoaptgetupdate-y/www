@@ -173,22 +173,21 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
 
         where = { ...where, ...searchConditions };
 
-        // --- START: CORRECTED SORTING LOGIC ---
         let orderBy = {};
         if (sortBy === 'productModel') {
             orderBy = { productModel: { modelNumber: sortOrder } };
         } else if (sortBy === 'brand') {
             orderBy = { productModel: { brand: { name: sortOrder } } };
-        } else if (sortBy === 'category') { // Added this case
+        } else if (sortBy === 'category') {
             orderBy = { productModel: { category: { name: sortOrder } } };
         } else {
             orderBy = { [sortBy]: sortOrder };
         }
-        // --- END: CORRECTED SORTING LOGIC ---
 
         const include = {
             productModel: { include: { category: true, brand: true } },
             addedBy: { select: { name: true } },
+            supplier: true, // <-- ADDED THIS LINE
             borrowingRecords: {
                 where: { returnedAt: null },
                 select: { borrowingId: true }
@@ -263,7 +262,7 @@ inventoryController.updateInventoryItem = async (req, res, next) => {
     const { id } = req.params;
     const actorId = req.user.id;
     try {
-        const { serialNumber, macAddress, status, productModelId } = req.body;
+        const { serialNumber, macAddress, status, productModelId, supplierId } = req.body; // <-- ADDED supplierId
         
         const itemId = parseInt(id);
         if (isNaN(itemId)) {
@@ -291,7 +290,8 @@ inventoryController.updateInventoryItem = async (req, res, next) => {
                     serialNumber: serialNumber || null,
                     macAddress: macAddress || null,
                     status,
-                    productModelId: parsedModelId
+                    productModelId: parsedModelId,
+                    supplierId: supplierId ? parseInt(supplierId, 10) : null, // <-- ADDED THIS LINE
                 },
             }),
             createEventLog(
