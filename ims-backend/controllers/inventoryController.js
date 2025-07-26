@@ -257,15 +257,39 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
             prisma.inventoryItem.findMany({ where, skip, take: limit, orderBy, include }),
             prisma.inventoryItem.count({ where })
         ]);
+        
+        const itemIds = items.map(item => item.id);
+        let borrowingMap = new Map();
+        let repairMap = new Map();
+
+        if (itemIds.length > 0) {
+            const borrowingCounts = await prisma.borrowingOnItems.groupBy({
+                by: ['inventoryItemId'],
+                where: { inventoryItemId: { in: itemIds } },
+                _count: { _all: true }
+            });
+            borrowingMap = new Map(borrowingCounts.map(i => [i.inventoryItemId, i._count._all]));
+
+            const repairCounts = await prisma.repairOnItems.groupBy({
+                by: ['inventoryItemId'],
+                where: { inventoryItemId: { in: itemIds } },
+                _count: { _all: true }
+            });
+            repairMap = new Map(repairCounts.map(i => [i.inventoryItemId, i._count._all]));
+        }
 
         const formattedItems = items.map(item => {
             const activeBorrowing = item.borrowingRecords.length > 0 ? item.borrowingRecords[0] : null;
             const activeRepair = item.repairRecords.length > 0 ? item.repairRecords[0] : null;
             const { borrowingRecords, repairRecords, ...restOfItem } = item;
+            
+            const hasHistory = item.saleId !== null || (borrowingMap.get(item.id) || 0) > 0 || (repairMap.get(item.id) || 0) > 0;
+
             return { 
                 ...restOfItem, 
                 borrowingId: activeBorrowing ? activeBorrowing.borrowingId : null,
-                repairId: activeRepair ? activeRepair.repairId : null
+                repairId: activeRepair ? activeRepair.repairId : null,
+                isDeletable: !hasHistory
             };
         });
 
@@ -405,11 +429,7 @@ inventoryController.deleteInventoryItem = async (req, res, next) => {
              throw err;
         }
 
-        // --- START: MODIFIED DELETION LOGIC ---
-        const salesCount = await prisma.saleOnItems.count({
-            where: { inventoryItemId: itemId }
-        });
-        if (salesCount > 0) {
+        if (itemToDelete.saleId) {
             const err = new Error('Cannot delete item. It has sales history and must be decommissioned instead.');
             err.statusCode = 400;
             throw err;
@@ -432,7 +452,6 @@ inventoryController.deleteInventoryItem = async (req, res, next) => {
             err.statusCode = 400;
             throw err;
         }
-        // --- END: MODIFIED DELETION LOGIC ---
 
         await prisma.$transaction(async (tx) => {
             await tx.eventLog.deleteMany({ where: { inventoryItemId: itemId } });

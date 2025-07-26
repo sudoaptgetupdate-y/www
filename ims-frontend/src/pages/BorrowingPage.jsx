@@ -127,7 +127,7 @@ export default function BorrowingPage() {
                             ) : borrowings.map((b) => (
                                 <TableRow key={b.id}>
                                     <TableCell>#{b.id}</TableCell>
-                                    <TableCell>{b.customer?.name || 'N/A'}</TableCell> {/* <-- แก้ไข */}
+                                    <TableCell>{b.customer?.name || 'N/A'}</TableCell>
                                     <TableCell>{new Date(b.borrowDate).toLocaleDateString()}</TableCell>
                                     <TableCell>{b.dueDate ? new Date(b.dueDate).toLocaleDateString() : 'N/A'}</TableCell>
                                     <TableCell className="text-center">
