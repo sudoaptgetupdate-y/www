@@ -20,4 +20,9 @@ router.delete('/:id', authCheck, roleCheck(adminAccess), assetController.deleteA
 router.patch('/:id/decommission', authCheck, roleCheck(adminAccess), assetController.decommissionAsset);
 router.patch('/:id/reinstate', authCheck, roleCheck(adminAccess), assetController.reinstateAsset);
 
+// --- START: ADDED NEW ROUTES ---
+router.patch('/:id/defect', authCheck, roleCheck(adminAccess), assetController.markAsDefective);
+router.patch('/:id/in-warehouse', authCheck, roleCheck(adminAccess), assetController.markAsInWarehouse);
+// --- END: ADDED NEW ROUTES ---
+
 module.exports = router;

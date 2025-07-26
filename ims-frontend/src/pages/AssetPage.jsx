@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-import { PlusCircle, MoreHorizontal, History, Edit, ArrowRightLeft, Archive, ArrowUpDown, Layers } from "lucide-react";
+// --- START: MODIFIED IMPORT ---
+import { PlusCircle, MoreHorizontal, History, Edit, ArrowRightLeft, Archive, ArrowUpDown, Layers, ShieldCheck, ShieldAlert, Trash2, ArchiveRestore } from "lucide-react";
+// --- END: MODIFIED IMPORT ---
 import { toast } from "sonner";
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -55,6 +57,7 @@ export default function AssetPage() {
     const [isBatchAddOpen, setIsBatchAddOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [editingAsset, setEditingAsset] = useState(null);
+    const [assetToDelete, setAssetToDelete] = useState(null);
 
     const {
         data: assets,
@@ -81,32 +84,33 @@ export default function AssetPage() {
         setIsEditDialogOpen(true);
     };
 
-    const handleDecommission = async (assetId) => {
+    const handleStatusChange = async (assetId, action, successMessage) => {
         try {
-            await axiosInstance.patch(`/assets/${assetId}/decommission`, {}, {
+            await axiosInstance.patch(`/assets/${assetId}/${action}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            toast.success("Asset has been decommissioned.");
+            toast.success(successMessage);
             refreshData();
         } catch (error) {
-            toast.error(error.response?.data?.error || "Failed to decommission asset.");
-        }
-    };
-
-    const handleReinstate = async (assetId) => {
-        try {
-            await axiosInstance.patch(`/assets/${assetId}/reinstate`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            toast.success("Asset has been reinstated to the warehouse.");
-            refreshData();
-        } catch (error) {
-            toast.error(error.response?.data?.error || "Failed to reinstate asset.");
+            toast.error(error.response?.data?.error || `Failed to update asset status.`);
         }
     };
     
     const handleAssignItem = (assetToAssign) => {
         navigate('/asset-assignments/new', { state: { initialItems: [assetToAssign] } });
+    };
+
+    const confirmDelete = async () => {
+        if (!assetToDelete) return;
+        try {
+            await axiosInstance.delete(`/assets/${assetToDelete.id}`, { headers: { Authorization: `Bearer ${token}` } });
+            toast.success("Asset deleted successfully!");
+            refreshData();
+        } catch (error) {
+            toast.error(error.response?.data?.error || "Failed to delete asset.");
+        } finally {
+            setAssetToDelete(null);
+        }
     };
 
     return (
@@ -241,29 +245,42 @@ export default function AssetPage() {
                                                 >
                                                     <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('action_assign_asset')}
                                                 </DropdownMenuItem>
-
+                                                
                                                 {asset.status === 'IN_WAREHOUSE' && (
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                             <DropdownMenuItem
-                                                                className="text-red-600 focus:text-red-500"
-                                                                onSelect={(e) => e.preventDefault()}
-                                                            >
-                                                                <Archive className="mr-2 h-4 w-4" /> {t('action_decommission')}
-                                                            </DropdownMenuItem>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader><AlertDialogTitle>{t('asset_alert_decommission_title')}</AlertDialogTitle><AlertDialogDescription>{t('asset_alert_decommission_description')} <strong>{asset.assetCode}</strong>.</AlertDialogDescription></AlertDialogHeader>
-                                                            <AlertDialogFooter><AlertDialogCancel>{t('cancel')}</AlertDialogCancel><AlertDialogAction onClick={() => handleDecommission(asset.id)}>{t('confirm')}</AlertDialogAction></AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                )}
-
-                                                {asset.status === 'DECOMMISSIONED' && (
-                                                    <DropdownMenuItem onClick={() => handleReinstate(asset.id)}>
-                                                        <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('action_reinstate')}
+                                                    <DropdownMenuItem className="text-orange-600 focus:text-orange-500" onClick={() => handleStatusChange(asset.id, 'defect', 'Asset marked as DEFECTIVE.')}>
+                                                        <ShieldAlert className="mr-2 h-4 w-4" /> {t('action_mark_defective')}
                                                     </DropdownMenuItem>
                                                 )}
+
+                                                {asset.status === 'DEFECTIVE' && (
+                                                    <DropdownMenuItem className="text-green-600 focus:text-green-500" onClick={() => handleStatusChange(asset.id, 'in-warehouse', 'Asset is now IN WAREHOUSE.')}>
+                                                        <ShieldCheck className="mr-2 h-4 w-4" /> Mark as In Warehouse
+                                                    </DropdownMenuItem>
+                                                )}
+
+                                                {asset.status === 'DECOMMISSIONED' ? (
+                                                    <DropdownMenuItem className="text-green-600 focus:text-green-500" onClick={() => handleStatusChange(asset.id, 'reinstate', 'Asset has been reinstated.')}>
+                                                        <ArchiveRestore className="mr-2 h-4 w-4" /> {t('action_reinstate')}
+                                                    </DropdownMenuItem>
+                                                ) : (
+                                                    <DropdownMenuItem
+                                                        className="text-red-600 focus:text-red-500"
+                                                        onSelect={(e) => e.preventDefault()}
+                                                        disabled={!['IN_WAREHOUSE', 'DEFECTIVE'].includes(asset.status)}
+                                                        onClick={() => handleStatusChange(asset.id, 'decommission', 'Asset has been decommissioned.')}
+                                                    >
+                                                        <Archive className="mr-2 h-4 w-4" /> {t('action_decommission')}
+                                                    </DropdownMenuItem>
+                                                )}
+
+                                                <DropdownMenuItem
+                                                    className="text-red-600 focus:text-red-500"
+                                                    onSelect={(e) => e.preventDefault()}
+                                                    disabled={asset.status === 'ASSIGNED' || asset.status === 'REPAIRING'}
+                                                    onClick={() => setAssetToDelete(asset)}
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
@@ -308,6 +325,21 @@ export default function AssetPage() {
                     onSave={refreshData}
                 />
             )}
+
+            <AlertDialog open={!!assetToDelete} onOpenChange={(isOpen) => !isOpen && setAssetToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t('user_alert_delete_title')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the asset: <strong>{assetToDelete?.assetCode}</strong>. This action cannot be undone and should only be used if the asset was created by mistake.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete}>{t('confirm')}</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Card>
     );
 }

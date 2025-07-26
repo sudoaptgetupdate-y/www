@@ -277,10 +277,6 @@ assetController.deleteAsset = async (req, res, next) => {
 
         const assetToDelete = await prisma.inventoryItem.findFirst({
             where: { id: assetId, itemType: 'ASSET' },
-            include: { 
-                assignmentRecords: { where: { returnedAt: null } },
-                repairRecords: true
-            }
         });
 
         if (!assetToDelete) {
@@ -288,21 +284,31 @@ assetController.deleteAsset = async (req, res, next) => {
             err.statusCode = 404;
             throw err;
         }
-        if (assetToDelete.assignmentRecords.length > 0) {
-            const err = new Error('Cannot delete asset. It is currently ASSIGNED.');
-            err.statusCode = 400;
-            throw err;
-        }
-        
-        if (assetToDelete.repairRecords.length > 0) {
-            const err = new Error('Cannot delete asset. It has repair history and cannot be deleted.');
+
+        // --- START: MODIFIED DELETION LOGIC ---
+        const assignmentHistoryCount = await prisma.assetAssignmentOnItems.count({
+            where: { inventoryItemId: assetId }
+        });
+
+        if (assignmentHistoryCount > 0) {
+            const err = new Error('Cannot delete asset. It has assignment history and must be archived instead.');
             err.statusCode = 400;
             throw err;
         }
 
+        const repairHistoryCount = await prisma.repairOnItems.count({
+            where: { inventoryItemId: assetId }
+        });
+
+        if (repairHistoryCount > 0) {
+            const err = new Error('Cannot delete asset. It has repair history and must be archived instead.');
+            err.statusCode = 400;
+            throw err;
+        }
+        // --- END: MODIFIED DELETION LOGIC ---
+
         await prisma.$transaction(async (tx) => {
             await tx.eventLog.deleteMany({ where: { inventoryItemId: assetId } });
-            await tx.assetAssignmentOnItems.deleteMany({ where: { inventoryItemId: assetId } });
             await tx.inventoryItem.delete({ where: { id: assetId } });
         });
 
@@ -356,7 +362,6 @@ assetController.getAllAssets = async (req, res, next) => {
             orderBy = { [sortBy]: sortOrder };
         }
 
-        // --- START: ADDED `supplier: true` ---
         const include = {
             productModel: { include: { category: true, brand: true } },
             addedBy: { select: { name: true } },
@@ -370,7 +375,6 @@ assetController.getAllAssets = async (req, res, next) => {
                 select: { repairId: true }
             }
         };
-        // --- END: ADDED `supplier: true` ---
 
         const [items, totalItems] = await Promise.all([
             prisma.inventoryItem.findMany({ where, skip, take: limit, orderBy, include }),
@@ -421,7 +425,7 @@ assetController.getAssetById = async (req, res, next) => {
             include: { 
                 productModel: { include: { category: true, brand: true } },
                 addedBy: { select: { name: true } },
-                supplier: true, // <-- Also add here for consistency
+                supplier: true,
                 assignmentRecords: {
                      where: { returnedAt: null },
                       include: {
@@ -447,95 +451,65 @@ assetController.getAssetById = async (req, res, next) => {
     }
 };
 
-assetController.decommissionAsset = async (req, res, next) => {
+// --- START: NEW HELPER FUNCTION & NEW CONTROLLERS ---
+const updateAssetStatus = async (res, req, next, expectedStatus, newStatus, eventType, details) => {
     const { id } = req.params;
     const actorId = req.user.id;
-
     try {
         const assetId = parseInt(id);
         if (isNaN(assetId)) {
             const err = new Error('Invalid Asset ID.');
             err.statusCode = 400;
-            return next(err);
+            throw err;
         }
 
-        const asset = await prisma.inventoryItem.findFirst({ where: { id: assetId, itemType: 'ASSET' } });
-
-        if (!asset) {
+        const item = await prisma.inventoryItem.findFirst({ where: { id: assetId, itemType: 'ASSET' } });
+        if (!item) {
             const err = new Error('Asset not found.');
             err.statusCode = 404;
-            return next(err);
+            throw err;
         }
-        
-        if (!['IN_WAREHOUSE', 'DEFECTIVE'].includes(asset.status)) {
-            const err = new Error('Only assets in the warehouse or marked as defective can be decommissioned.');
+        if (Array.isArray(expectedStatus) ? !expectedStatus.includes(item.status) : item.status !== expectedStatus) {
+            const err = new Error(`Only assets with status [${Array.isArray(expectedStatus) ? expectedStatus.join(', ') : expectedStatus}] can perform this action.`);
             err.statusCode = 400;
-            return next(err);
+            throw err;
         }
 
-        await prisma.$transaction(async (tx) => {
-            await tx.inventoryItem.update({
+        const [updatedItem] = await prisma.$transaction([
+            prisma.inventoryItem.update({
                 where: { id: assetId },
-                data: { status: 'DECOMMISSIONED' },
-            });
-            await createEventLog(
-                tx,
+                data: { status: newStatus },
+            }),
+            createEventLog(
+                prisma,
                 assetId,
                 actorId,
-                EventType.DECOMMISSION,
-                { details: `Asset status changed from ${asset.status} to DECOMMISSIONED.` }
-            );
-        });
-        
-        res.status(200).json({ message: 'Asset decommissioned successfully.' });
+                eventType,
+                { details: details || `Status changed from ${item.status} to ${newStatus}.` }
+            )
+        ]);
+
+        res.status(200).json(updatedItem);
     } catch (error) {
         next(error);
     }
 };
 
-assetController.reinstateAsset = async (req, res, next) => {
-    const { id } = req.params;
-    const actorId = req.user.id;
-
-    try {
-        const assetId = parseInt(id);
-        if (isNaN(assetId)) {
-            const err = new Error('Invalid Asset ID.');
-            err.statusCode = 400;
-            return next(err);
-        }
-
-        const asset = await prisma.inventoryItem.findFirst({ where: { id: assetId, itemType: 'ASSET' } });
-
-        if (!asset) {
-            const err = new Error('Asset not found.');
-            err.statusCode = 404;
-            return next(err);
-        }
-        if (asset.status !== 'DECOMMISSIONED') {
-            const err = new Error('Only decommissioned assets can be reinstated.');
-            err.statusCode = 400;
-            return next(err);
-        }
-
-        await prisma.$transaction(async (tx) => {
-            await tx.inventoryItem.update({
-                where: { id: assetId },
-                data: { status: 'IN_WAREHOUSE' },
-            });
-            await createEventLog(
-                tx,
-                assetId,
-                actorId,
-                EventType.REINSTATE,
-                { details: 'Asset was reinstated to warehouse.' }
-            );
-        });
-        
-        res.status(200).json({ message: 'Asset reinstated successfully.' });
-    } catch (error) {
-        next(error);
-    }
+assetController.decommissionAsset = (req, res, next) => {
+    updateAssetStatus(res, req, next, ['IN_WAREHOUSE', 'DEFECTIVE'], 'DECOMMISSIONED', EventType.DECOMMISSION, 'Asset decommissioned.');
 };
+
+assetController.reinstateAsset = (req, res, next) => {
+    updateAssetStatus(res, req, next, 'DECOMMISSIONED', 'IN_WAREHOUSE', EventType.REINSTATE, 'Asset reinstated to warehouse.');
+};
+
+assetController.markAsDefective = (req, res, next) => {
+    updateAssetStatus(res, req, next, 'IN_WAREHOUSE', 'DEFECTIVE', EventType.UPDATE, 'Asset marked as defective.');
+};
+
+assetController.markAsInWarehouse = (req, res, next) => {
+    updateAssetStatus(res, req, next, 'DEFECTIVE', 'IN_WAREHOUSE', EventType.UPDATE, 'Asset returned to warehouse from defective status.');
+};
+// --- END: NEW HELPER FUNCTION & NEW CONTROLLERS ---
 
 module.exports = assetController;
