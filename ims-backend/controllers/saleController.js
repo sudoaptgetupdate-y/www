@@ -1,17 +1,11 @@
 // controllers/saleController.js
 const prisma = require('../prisma/client');
-const { EventType } = require('@prisma/client'); // <-- Keep this line
+const { EventType } = require('@prisma/client');
 const saleController = {};
 
-// Helper function to create event logs consistently
 const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
     return tx.eventLog.create({
-        data: {
-            inventoryItemId,
-            userId,
-            eventType,
-            details,
-        },
+        data: { inventoryItemId, userId, eventType, details },
     });
 };
 
@@ -19,11 +13,14 @@ saleController.createSale = async (req, res, next) => {
     const { customerId, inventoryItemIds } = req.body;
     const soldById = req.user.id; 
 
-    if (typeof customerId !== 'number') {
-        const err = new Error('Customer ID must be a number.');
+    const parsedCustomerId = parseInt(customerId, 10);
+    if (isNaN(parsedCustomerId)) {
+        const err = new Error('Customer ID must be a valid number.');
         err.statusCode = 400;
         return next(err);
     }
+    
+    // ... (the rest of the function)
     if (!Array.isArray(inventoryItemIds) || inventoryItemIds.length === 0 || inventoryItemIds.some(id => typeof id !== 'number')) {
         const err = new Error('inventoryItemIds must be a non-empty array of numbers.');
         err.statusCode = 400;
@@ -46,7 +43,7 @@ saleController.createSale = async (req, res, next) => {
                 throw err;
             }
 
-            const customer = await tx.customer.findUnique({ where: { id: customerId } });
+            const customer = await tx.customer.findUnique({ where: { id: parsedCustomerId } });
             if (!customer) {
                 const err = new Error('Customer not found.');
                 err.statusCode = 404;
@@ -59,7 +56,7 @@ saleController.createSale = async (req, res, next) => {
 
             const newSale = await tx.sale.create({
                 data: {
-                    customerId,
+                    customerId: parsedCustomerId,
                     soldById,
                     subtotal,
                     vatAmount,
@@ -72,7 +69,6 @@ saleController.createSale = async (req, res, next) => {
                 data: { status: 'SOLD', saleId: newSale.id },
             });
 
-            // --- START: แก้ไขส่วนการบันทึกประวัติ ---
             for (const itemId of inventoryItemIds) {
                 await createEventLog(
                     tx,
@@ -86,7 +82,6 @@ saleController.createSale = async (req, res, next) => {
                     }
                 );
             }
-            // --- END ---
 
             return tx.sale.findUnique({
                 where: { id: newSale.id },
@@ -105,6 +100,7 @@ saleController.createSale = async (req, res, next) => {
     }
 };
 
+// ... (rest of the file is correct)
 saleController.getAllSales = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -243,7 +239,6 @@ saleController.voidSale = async (req, res, next) => {
                     },
                 });
 
-                // --- START: แก้ไขส่วนการบันทึกประวัติ ---
                 for (const itemId of itemIdsToUpdate) {
                     await createEventLog(
                         tx,
@@ -256,7 +251,6 @@ saleController.voidSale = async (req, res, next) => {
                         }
                     );
                 }
-                // --- END ---
             }
 
             return await tx.sale.update({
@@ -289,8 +283,9 @@ saleController.updateSale = async (req, res, next) => {
             throw err;
         }
         
-        if (typeof customerId !== 'number') {
-            const err = new Error('Customer ID must be a number.');
+        const parsedCustomerId = parseInt(customerId, 10);
+        if (isNaN(parsedCustomerId)) {
+            const err = new Error('Customer ID must be a valid number.');
             err.statusCode = 400;
             return next(err);
         }
@@ -340,11 +335,9 @@ saleController.updateSale = async (req, res, next) => {
                 });
             }
 
-            // Note: For simplicity, we are not creating detailed event logs for each item change in an update.
-            // A single 'UPDATE' event for the sale could be logged if needed.
             await createEventLog(
                 tx,
-                -1, // Or a specific item if applicable, using -1 for a general sale event
+                -1,
                 actorId,
                 EventType.UPDATE,
                 { details: `Sale ID: ${saleId} was updated.` }
@@ -353,7 +346,7 @@ saleController.updateSale = async (req, res, next) => {
             return await tx.sale.update({
                 where: { id: saleId },
                 data: {
-                    customerId: customerId,
+                    customerId: parsedCustomerId,
                     subtotal: subtotal,
                     vatAmount: vatAmount,
                     total: total,

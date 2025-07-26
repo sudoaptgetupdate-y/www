@@ -1,17 +1,11 @@
 // ims-backend/controllers/assetAssignmentController.js
 const prisma = require('../prisma/client');
-const { EventType, AssignmentStatus } = require('@prisma/client'); // <-- Keep this line
+const { EventType, AssignmentStatus } = require('@prisma/client');
 const assetAssignmentController = {};
 
-// Helper function to create event logs consistently
 const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
     return tx.eventLog.create({
-        data: {
-            inventoryItemId,
-            userId,
-            eventType,
-            details,
-        },
+        data: { inventoryItemId, userId, eventType, details },
     });
 };
 
@@ -19,11 +13,13 @@ assetAssignmentController.createAssignment = async (req, res, next) => {
     const { assigneeId, inventoryItemIds, notes } = req.body;
     const approvedById = req.user.id;
 
-    if (typeof assigneeId !== 'number') {
-        const err = new Error('Assignee ID must be a number.');
+    const parsedAssigneeId = parseInt(assigneeId, 10);
+    if (isNaN(parsedAssigneeId)) {
+        const err = new Error('Assignee ID must be a valid number.');
         err.statusCode = 400;
         return next(err);
     }
+
     if (!Array.isArray(inventoryItemIds) || inventoryItemIds.length === 0 || inventoryItemIds.some(id => typeof id !== 'number')) {
         const err = new Error('inventoryItemIds must be a non-empty array of numbers.');
         err.statusCode = 400;
@@ -39,7 +35,7 @@ assetAssignmentController.createAssignment = async (req, res, next) => {
                     itemType: 'ASSET'
                 }
             });
-            const assignee = await tx.user.findUnique({ where: { id: assigneeId } });
+            const assignee = await tx.user.findUnique({ where: { id: parsedAssigneeId } });
 
             if (!assignee) {
                 const err = new Error('Assignee not found.');
@@ -54,7 +50,7 @@ assetAssignmentController.createAssignment = async (req, res, next) => {
 
             const createdAssignment = await tx.assetAssignment.create({
                 data: {
-                    assigneeId,
+                    assigneeId: parsedAssigneeId,
                     approvedById,
                     notes,
                     status: 'ASSIGNED',
@@ -73,7 +69,6 @@ assetAssignmentController.createAssignment = async (req, res, next) => {
                 data: { status: 'ASSIGNED' },
             });
 
-            // --- START: แก้ไขส่วนการบันทึกประวัติ ---
             for (const itemId of inventoryItemIds) {
                  await createEventLog(
                     tx,
@@ -87,7 +82,6 @@ assetAssignmentController.createAssignment = async (req, res, next) => {
                     }
                 );
             }
-            // --- END ---
 
             return createdAssignment;
         });
@@ -99,6 +93,7 @@ assetAssignmentController.createAssignment = async (req, res, next) => {
     }
 };
 
+// ... (rest of the file remains the same)
 assetAssignmentController.returnItems = async (req, res, next) => {
     const { assignmentId } = req.params;
     const { itemIdsToReturn } = req.body;
@@ -138,7 +133,6 @@ assetAssignmentController.returnItems = async (req, res, next) => {
                 data: { status: 'IN_WAREHOUSE' },
             });
 
-            // --- START: แก้ไขส่วนการบันทึกประวัติ ---
             for (const itemId of itemIdsToReturn) {
                 await createEventLog(
                     tx,
@@ -152,7 +146,6 @@ assetAssignmentController.returnItems = async (req, res, next) => {
                     }
                 );
             }
-            // --- END ---
 
             const remainingItems = await tx.assetAssignmentOnItems.count({
                 where: {

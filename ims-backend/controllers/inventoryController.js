@@ -1,20 +1,13 @@
 // ims-backend/controllers/inventoryController.js
-
 const prisma = require('../prisma/client');
 const { ItemType, EventType, ItemOwner } = require('@prisma/client');
 const inventoryController = {};
 
 const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
 
-// Helper function to create event logs consistently
 const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
     return tx.eventLog.create({
-        data: {
-            inventoryItemId,
-            userId,
-            eventType,
-            details,
-        },
+        data: { inventoryItemId, userId, eventType, details },
     });
 };
 
@@ -23,11 +16,15 @@ inventoryController.addInventoryItem = async (req, res, next) => {
         const { serialNumber, macAddress, productModelId, supplierId } = req.body;
         const userId = req.user.id;
 
-        if (typeof productModelId !== 'number') {
-            const err = new Error('Product Model ID is required and must be a number.');
+        // --- START: FIX ---
+        const parsedModelId = parseInt(productModelId, 10);
+        if (isNaN(parsedModelId)) {
+            const err = new Error('Product Model ID is required and must be a valid number.');
             err.statusCode = 400;
             return next(err);
         }
+        // --- END: FIX ---
+
         if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
             const err = new Error('Invalid MAC Address format.');
             err.statusCode = 400;
@@ -41,7 +38,7 @@ inventoryController.addInventoryItem = async (req, res, next) => {
                     ownerType: ItemOwner.COMPANY,
                     serialNumber: serialNumber || null,
                     macAddress: macAddress || null,
-                    productModelId,
+                    productModelId: parsedModelId, // Use parsed ID
                     supplierId: supplierId ? parseInt(supplierId) : null,
                     addedById: userId,
                     status: 'IN_STOCK',
@@ -70,11 +67,15 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
         const { productModelId, supplierId, items } = req.body;
         const userId = req.user.id;
 
-        if (typeof productModelId !== 'number') {
-            const err = new Error('Product Model ID is required and must be a number.');
+        // --- START: FIX ---
+        const parsedModelId = parseInt(productModelId, 10);
+        if (isNaN(parsedModelId)) {
+            const err = new Error('Product Model ID is required and must be a valid number.');
             err.statusCode = 400;
             return next(err);
         }
+        // --- END: FIX ---
+
         if (!Array.isArray(items) || items.length === 0) {
             const err = new Error('Items list cannot be empty.');
             err.statusCode = 400;
@@ -94,7 +95,7 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
                         ownerType: ItemOwner.COMPANY,
                         serialNumber: item.serialNumber || null,
                         macAddress: item.macAddress || null,
-                        productModelId,
+                        productModelId: parsedModelId, // Use parsed ID
                         supplierId: supplierId ? parseInt(supplierId) : null,
                         addedById: userId,
                         status: 'IN_STOCK',
@@ -124,6 +125,8 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
     }
 };
 
+// ... (rest of the file remains the same)
+
 inventoryController.getAllInventoryItems = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -137,7 +140,6 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         const sortBy = req.query.sortBy || 'updatedAt';
         const sortOrder = req.query.sortOrder || 'desc';
         
-        // --- START: แก้ไข Logic การสร้าง Where Clause ---
         let where = { 
             itemType: ItemType.SALE
         };
@@ -169,7 +171,6 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         }
 
         where = { ...where, ...searchConditions };
-        // --- END ---
 
         let orderBy = {};
         if (sortBy === 'productModel') {
@@ -225,9 +226,6 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
     }
 };
 
-// ... (ส่วนที่เหลือของไฟล์ไม่ต้องแก้ไข)
-// getInventoryItemById, updateInventoryItem, deleteInventoryItem, etc. remain the same
-
 inventoryController.getInventoryItemById = async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -269,8 +267,9 @@ inventoryController.updateInventoryItem = async (req, res, next) => {
             return next(err);
         }
         
-        if (typeof productModelId !== 'number') {
-            const err = new Error('Product Model ID is required and must be a number.');
+        const parsedModelId = parseInt(productModelId, 10);
+        if (isNaN(parsedModelId)) {
+            const err = new Error('Product Model ID is required and must be a valid number.');
             err.statusCode = 400;
             return next(err);
         }
@@ -287,7 +286,7 @@ inventoryController.updateInventoryItem = async (req, res, next) => {
                     serialNumber: serialNumber || null,
                     macAddress: macAddress || null,
                     status,
-                    productModelId
+                    productModelId: parsedModelId
                 },
             }),
             createEventLog(

@@ -1,6 +1,6 @@
 // ims-backend/controllers/borrowingController.js
 const prisma = require('../prisma/client');
-const { EventType } = require('@prisma/client'); // <-- Keep this line
+const { EventType } = require('@prisma/client');
 const borrowingController = {};
 
 // Helper function to create event logs consistently
@@ -16,14 +16,18 @@ const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
 };
 
 borrowingController.createBorrowing = async (req, res, next) => {
-    const { customerId, inventoryItemIds, dueDate, notes } = req.body;
+    // --- START: CORRECTED FIX ---
+    const { borrowerId, inventoryItemIds, dueDate, notes } = req.body; // Changed customerId to borrowerId
     const approvedById = req.user.id;
 
-    if (typeof customerId !== 'number') {
-        const err = new Error('Customer ID must be a number.');
+    const parsedBorrowerId = parseInt(borrowerId, 10);
+    if (isNaN(parsedBorrowerId)) {
+        const err = new Error('Borrower ID must be a valid number.'); // Updated error message
         err.statusCode = 400;
         return next(err);
     }
+    // --- END: CORRECTED FIX ---
+
     if (!Array.isArray(inventoryItemIds) || inventoryItemIds.length === 0 || inventoryItemIds.some(id => typeof id !== 'number')) {
         const err = new Error('inventoryItemIds must be a non-empty array of numbers.');
         err.statusCode = 400;
@@ -47,7 +51,7 @@ borrowingController.createBorrowing = async (req, res, next) => {
                 throw err;
             }
 
-            const customer = await tx.customer.findUnique({ where: { id: customerId } });
+            const customer = await tx.customer.findUnique({ where: { id: parsedBorrowerId } });
              if (!customer) {
                 const err = new Error('Customer not found.');
                 err.statusCode = 404;
@@ -56,7 +60,7 @@ borrowingController.createBorrowing = async (req, res, next) => {
 
             const createdBorrowing = await tx.borrowing.create({
                 data: {
-                    borrowerId: customerId,
+                    borrowerId: parsedBorrowerId,
                     approvedById,
                     dueDate: dueDate ? new Date(dueDate) : null,
                     notes,
@@ -106,6 +110,8 @@ borrowingController.createBorrowing = async (req, res, next) => {
         next(error);
     }
 };
+
+// ... ส่วนที่เหลือของไฟล์ไม่ต้องแก้ไข ...
 
 borrowingController.returnItems = async (req, res, next) => {
     const { borrowingId } = req.params;
@@ -196,7 +202,6 @@ borrowingController.getAllBorrowings = async (req, res, next) => {
         const sortBy = req.query.sortBy || 'borrowDate';
         const sortOrder = req.query.sortOrder || 'desc';
         
-        // --- START: เพิ่มการรับค่า Filter และ Search ---
         const searchTerm = req.query.search || '';
         const statusFilter = req.query.status || 'All';
 
@@ -220,7 +225,6 @@ borrowingController.getAllBorrowings = async (req, res, next) => {
         if(whereConditions.length > 0) {
             where.AND = whereConditions;
         }
-        // --- END ---
 
         let orderBy = {};
         if (sortBy === 'customer') {
@@ -231,7 +235,7 @@ borrowingController.getAllBorrowings = async (req, res, next) => {
 
         const [borrowings, totalItems] = await Promise.all([
             prisma.borrowing.findMany({
-                where, // <-- เพิ่ม where clause
+                where,
                 skip,
                 take: limit,
                 orderBy,
@@ -245,7 +249,7 @@ borrowingController.getAllBorrowings = async (req, res, next) => {
                     }
                 }
             }),
-            prisma.borrowing.count({ where }) // <-- เพิ่ม where clause
+            prisma.borrowing.count({ where })
         ]);
         
         const formattedBorrowings = borrowings.map(b => {

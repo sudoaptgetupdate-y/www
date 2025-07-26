@@ -5,7 +5,6 @@ exports.createCategory = async (req, res, next) => {
     try {
         const { name, requiresMacAddress, requiresSerialNumber } = req.body;
 
-        // --- START: Input Validation ---
         if (typeof name !== 'string' || name.trim() === "") {
             const err = new Error('Name is required and cannot be empty');
             err.statusCode = 400;
@@ -16,7 +15,6 @@ exports.createCategory = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: Input Validation ---
 
         const newCategory = await prisma.category.create({
             data: {
@@ -74,7 +72,7 @@ exports.getCategoryById = async (req, res, next) => {
         if (isNaN(categoryId)) {
             const err = new Error('Invalid Category ID.');
             err.statusCode = 400;
-            throw err;
+            return next(err); // Changed from throw to next(err)
         }
 
         const category = await prisma.category.findUnique({
@@ -84,7 +82,7 @@ exports.getCategoryById = async (req, res, next) => {
         if (!category) {
             const err = new Error('Category not found');
             err.statusCode = 404;
-            throw err;
+            return next(err); // Changed from throw to next(err)
         }
         res.status(200).json(category);
     } catch (error) {
@@ -101,10 +99,9 @@ exports.updateCategory = async (req, res, next) => {
         if (isNaN(categoryId)) {
             const err = new Error('Invalid Category ID.');
             err.statusCode = 400;
-            throw err;
+            return next(err); // Changed from throw to next(err)
         }
 
-        // --- START: Input Validation ---
         if (typeof name !== 'string' || name.trim() === "") {
             const err = new Error('Name is required and cannot be empty');
             err.statusCode = 400;
@@ -115,7 +112,6 @@ exports.updateCategory = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: Input Validation ---
 
         const updatedCategory = await prisma.category.update({
             where: { id: categoryId },
@@ -138,7 +134,7 @@ exports.deleteCategory = async (req, res, next) => {
         if (isNaN(categoryId)) {
             const err = new Error('Invalid Category ID.');
             err.statusCode = 400;
-            throw err;
+            return next(err); // Changed from throw to next(err)
         }
         await prisma.category.delete({
             where: { id: categoryId },

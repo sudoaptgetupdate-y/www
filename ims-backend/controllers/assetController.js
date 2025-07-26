@@ -1,25 +1,19 @@
 // ims-backend/controllers/assetController.js
 const prisma = require('../prisma/client');
-const { ItemType, EventType } = require('@prisma/client'); // <-- Keep this line
+const { ItemType, EventType } = require('@prisma/client');
 const assetController = {};
 
 const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
 
-// Helper function to create event logs consistently
 const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
     return tx.eventLog.create({
-        data: {
-            inventoryItemId,
-            userId,
-            eventType,
-            details,
-        },
+        data: { inventoryItemId, userId, eventType, details },
     });
 };
 
 assetController.createAsset = async (req, res, next) => {
     try {
-        const { serialNumber, macAddress, productModelId, assetCode, supplierId } = req.body; // <-- เพิ่ม supplierId
+        const { serialNumber, macAddress, productModelId, assetCode, supplierId } = req.body;
         const userId = req.user.id;
 
         if (typeof assetCode !== 'string' || assetCode.trim() === '') {
@@ -27,11 +21,16 @@ assetController.createAsset = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-        if (typeof productModelId !== 'number') {
-            const err = new Error('Product Model ID is required and must be a number.');
+
+        // --- START: FIX ---
+        const parsedModelId = parseInt(productModelId, 10);
+        if (isNaN(parsedModelId)) {
+            const err = new Error('Product Model ID is required and must be a valid number.');
             err.statusCode = 400;
             return next(err);
         }
+        // --- END: FIX ---
+
         if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
             const err = new Error('Invalid MAC Address format.');
             err.statusCode = 400;
@@ -45,8 +44,8 @@ assetController.createAsset = async (req, res, next) => {
                     assetCode: assetCode,
                     serialNumber: serialNumber || null,
                     macAddress: macAddress || null,
-                    productModelId,
-                    supplierId: supplierId ? parseInt(supplierId) : null, // <-- เพิ่ม supplierId
+                    productModelId: parsedModelId, // Use parsed ID
+                    supplierId: supplierId ? parseInt(supplierId) : null,
                     addedById: userId,
                     status: 'IN_WAREHOUSE',
                 },
@@ -71,14 +70,18 @@ assetController.createAsset = async (req, res, next) => {
 
 assetController.addBatchAssets = async (req, res, next) => {
     try {
-        const { productModelId, supplierId, items } = req.body; // <-- เพิ่ม supplierId
+        const { productModelId, supplierId, items } = req.body;
         const userId = req.user.id;
 
-        if (typeof productModelId !== 'number') {
-            const err = new Error('Product Model ID is required and must be a number.');
+        // --- START: FIX ---
+        const parsedModelId = parseInt(productModelId, 10);
+        if (isNaN(parsedModelId)) {
+            const err = new Error('Product Model ID is required and must be a valid number.');
             err.statusCode = 400;
             return next(err);
         }
+        // --- END: FIX ---
+
         if (!Array.isArray(items) || items.length === 0) {
             const err = new Error('Items list cannot be empty.');
             err.statusCode = 400;
@@ -102,8 +105,8 @@ assetController.addBatchAssets = async (req, res, next) => {
                         assetCode: item.assetCode,
                         serialNumber: item.serialNumber || null,
                         macAddress: item.macAddress || null,
-                        productModelId,
-                        supplierId: supplierId ? parseInt(supplierId) : null, // <-- เพิ่ม supplierId
+                        productModelId: parsedModelId, // Use parsed ID
+                        supplierId: supplierId ? parseInt(supplierId) : null,
                         addedById: userId,
                     },
                 });
@@ -131,6 +134,7 @@ assetController.addBatchAssets = async (req, res, next) => {
     }
 };
 
+// ... (rest of the file remains the same)
 assetController.updateAsset = async (req, res, next) => {
     const { id } = req.params;
     const actorId = req.user.id;
@@ -148,8 +152,10 @@ assetController.updateAsset = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-        if (typeof productModelId !== 'number') {
-            const err = new Error('Product Model ID is required and must be a number.');
+
+        const parsedModelId = parseInt(productModelId, 10);
+        if (isNaN(parsedModelId)) {
+            const err = new Error('Product Model ID is required and must be a valid number.');
             err.statusCode = 400;
             return next(err);
         }
@@ -174,7 +180,7 @@ assetController.updateAsset = async (req, res, next) => {
                     serialNumber: serialNumber || null,
                     macAddress: macAddress || null,
                     status,
-                    productModelId
+                    productModelId: parsedModelId
                 },
             });
 
@@ -209,7 +215,7 @@ assetController.deleteAsset = async (req, res, next) => {
             where: { id: assetId, itemType: 'ASSET' },
             include: { 
                 assignmentRecords: { where: { returnedAt: null } },
-                repairRecords: true // <-- เพิ่มการ include repairRecords
+                repairRecords: true
             }
         });
 
@@ -223,19 +229,15 @@ assetController.deleteAsset = async (req, res, next) => {
             err.statusCode = 400;
             throw err;
         }
-        // --- START: เพิ่มเงื่อนไขการตรวจสอบ ---
         if (assetToDelete.repairRecords.length > 0) {
             const err = new Error('Cannot delete asset. It has repair history and cannot be deleted.');
             err.statusCode = 400;
             throw err;
         }
-        // --- END ---
 
         await prisma.$transaction(async (tx) => {
-            // ลบ event logs และ assignment records ก่อน
             await tx.eventLog.deleteMany({ where: { inventoryItemId: assetId } });
             await tx.assetAssignmentOnItems.deleteMany({ where: { inventoryItemId: assetId } });
-            // จากนั้นจึงลบตัว asset หลัก
             await tx.inventoryItem.delete({ where: { id: assetId } });
         });
 

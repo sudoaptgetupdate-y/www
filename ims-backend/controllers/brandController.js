@@ -5,7 +5,6 @@ const prisma = require('../prisma/client');
 exports.createBrand = async (req, res, next) => {
     try {
         const { name } = req.body;
-        // --- Input Validation ---
         if (typeof name !== 'string' || name.trim() === "") {
             const err = new Error('Name is required and cannot be empty');
             err.statusCode = 400;
@@ -56,8 +55,6 @@ exports.getAllBrands = async (req, res, next) => {
     }
 };
 
-// --- ฟังก์ชันอื่นๆ ---
-
 exports.getBrandById = async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -65,7 +62,7 @@ exports.getBrandById = async (req, res, next) => {
         if (isNaN(brandId)) {
             const err = new Error('Invalid Brand ID.');
             err.statusCode = 400;
-            throw err;
+            return next(err); // Changed from throw to next(err)
         }
 
         const brand = await prisma.brand.findUnique({
@@ -75,7 +72,7 @@ exports.getBrandById = async (req, res, next) => {
         if (!brand) {
             const err = new Error('Brand not found');
             err.statusCode = 404;
-            throw err;
+            return next(err); // Changed from throw to next(err)
         }
         res.status(200).json(brand);
     } catch (error) {
@@ -92,7 +89,7 @@ exports.updateBrand = async (req, res, next) => {
         if (isNaN(brandId)) {
             const err = new Error('Invalid Brand ID.');
             err.statusCode = 400;
-            throw err;
+            return next(err); // Changed from throw to next(err)
         }
 
         if (typeof name !== 'string' || name.trim() === "") {
@@ -117,7 +114,7 @@ exports.deleteBrand = async (req, res, next) => {
         if (isNaN(brandId)) {
             const err = new Error('Invalid Brand ID.');
             err.statusCode = 400;
-            throw err;
+            return next(err); // Changed from throw to next(err)
         }
         await prisma.brand.delete({
             where: { id: brandId },

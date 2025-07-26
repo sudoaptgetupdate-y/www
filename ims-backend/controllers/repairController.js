@@ -1,6 +1,6 @@
 // ims-backend/controllers/repairController.js
 const prisma = require('../prisma/client');
-const { ItemStatus, ItemOwner, RepairStatus, RepairOutcome, ItemType, EventType } = require('@prisma/client'); // <-- Keep this line
+const { ItemStatus, ItemOwner, RepairStatus, RepairOutcome, ItemType, EventType } = require('@prisma/client');
 const repairController = {};
 
 // Helper function to create event logs consistently
@@ -19,11 +19,16 @@ repairController.createRepairOrder = async (req, res, next) => {
     const { senderId, receiverId, notes, items } = req.body;
     const createdById = req.user.id;
 
-    if (typeof senderId !== 'number' || typeof receiverId !== 'number') {
-        const err = new Error('Sender ID and Receiver ID must be numbers.');
+    // --- START: FIX ---
+    const parsedSenderId = parseInt(senderId, 10);
+    const parsedReceiverId = parseInt(receiverId, 10);
+    if (isNaN(parsedSenderId) || isNaN(parsedReceiverId)) {
+        const err = new Error('Sender ID and Receiver ID must be valid numbers.');
         err.statusCode = 400;
         return next(err);
     }
+    // --- END: FIX ---
+
     if (!Array.isArray(items) || items.length === 0) {
         const err = new Error('Items must be a non-empty array.');
         err.statusCode = 400;
@@ -62,8 +67,8 @@ repairController.createRepairOrder = async (req, res, next) => {
 
             const repairOrder = await tx.repair.create({
                 data: {
-                    senderId,
-                    receiverId,
+                    senderId: parsedSenderId, // Use parsed ID
+                    receiverId: parsedReceiverId, // Use parsed ID
                     notes,
                     createdById,
                     items: {
@@ -98,6 +103,7 @@ repairController.createRepairOrder = async (req, res, next) => {
     }
 };
 
+// ... (ส่วนที่เหลือของไฟล์ไม่ต้องแก้ไข)
 repairController.getAllRepairOrders = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;

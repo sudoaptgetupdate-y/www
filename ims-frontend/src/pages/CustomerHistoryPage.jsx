@@ -4,16 +4,15 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
-// --- START: 1. Import CardFooter และส่วนประกอบสำหรับ Pagination ---
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// --- END ---
 import { toast } from "sonner";
 import { ArrowLeft, ShoppingCart, PackageOpen, Package, Users } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useTranslation } from "react-i18next";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const StatCard = ({ title, value, icon, description, onClick }) => (
     <Card onClick={onClick} className={onClick ? "cursor-pointer hover:border-primary transition-colors" : ""}>
@@ -39,10 +38,8 @@ export default function CustomerHistoryPage() {
     const [customer, setCustomer] = useState(null);
     const [loading, setLoading] = useState(true);
     
-    // --- START: 2. เพิ่ม State สำหรับจัดการ Pagination ---
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-    // --- END ---
     
     useEffect(() => {
         const fetchData = async () => {
@@ -69,7 +66,6 @@ export default function CustomerHistoryPage() {
 
     if (loading || !summary) return <p>Loading customer data...</p>;
 
-    // --- START: 3. เพิ่ม Logic สำหรับคำนวณและแบ่งหน้าข้อมูล ---
     const totalPages = Math.ceil(history.length / itemsPerPage);
     const paginatedHistory = history.slice(
         (currentPage - 1) * itemsPerPage,
@@ -86,7 +82,6 @@ export default function CustomerHistoryPage() {
         setItemsPerPage(parseInt(newSize, 10));
         setCurrentPage(1);
     };
-    // --- END ---
 
     return (
         <div className="space-y-6">
@@ -134,25 +129,24 @@ export default function CustomerHistoryPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="border rounded-lg overflow-x-auto">
-                        <table className="w-full text-sm whitespace-nowrap">
+                        <table className="w-full text-sm">
                             <colgroup>
                                 <col className="w-[120px]" />
-                                <col className="w-[30%]" />
-                                <col className="w-[10%]" />
-                                <col className="w-[30%]" />
+                                <col className="w-[180px]" />
                                 <col className="w-[120px]" />
+                                <col className="w-auto" />
+                                <col className="w-[140px]" />
                             </colgroup>
                             <thead>
                                 <tr className="border-b bg-muted/50 hover:bg-muted/50">
                                     <th className="p-2 text-center">Type</th>
                                     <th className="p-2 text-left">Date</th>
                                     <th className="p-2 text-center">Items</th>
-                                    <th className="p-2 text-right">Total / Status</th>
+                                    <th className="p-2 text-right">Details</th>
                                     <th className="p-2 text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {/* --- START: 4. เปลี่ยนไปใช้ข้อมูลที่แบ่งหน้าแล้ว --- */}
                                 {history.length === 0 ? (
                                      <tr><td colSpan="5" className="text-center p-4 text-muted-foreground">No transaction history found.</td></tr>
                                 ) : paginatedHistory.map((item) => {
@@ -161,12 +155,14 @@ export default function CustomerHistoryPage() {
                                             <td className="p-2 text-center">
                                                 <StatusBadge status={item.type} className="w-20" />
                                             </td>
-                                            <td className="p-2 text-left">{new Date(item.date).toLocaleString()}</td>
+                                            <td className="p-2 text-left whitespace-nowrap">{new Date(item.date).toLocaleString()}</td>
                                             <td className="p-2 text-center">{item.itemCount}</td>
                                             <td className="p-2 text-right">
                                                 {item.type === 'SALE' 
-                                                    ? `${item.details.total.toLocaleString('en-US')} THB`
-                                                    : <StatusBadge status={item.details.status} className="w-24" />
+                                                    ? `Total: ${item.details.total.toLocaleString('en-US')} THB`
+                                                    : item.details.status === 'RETURNED' 
+                                                        ? `Returned: ${new Date(item.details.returnDate).toLocaleDateString()}`
+                                                        : `Due: ${item.details.dueDate ? new Date(item.details.dueDate).toLocaleDateString() : '-'}`
                                                 }
                                             </td>
                                             <td className="p-2 text-center">
@@ -181,12 +177,10 @@ export default function CustomerHistoryPage() {
                                         </tr>
                                     );
                                 })}
-                                {/* --- END --- */}
                             </tbody>
                         </table>
                     </div>
                 </CardContent>
-                {/* --- START: 5. เพิ่ม CardFooter พร้อมส่วนควบคุม Pagination --- */}
                 {history.length > 0 && (
                     <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -207,7 +201,6 @@ export default function CustomerHistoryPage() {
                         </div>
                     </CardFooter>
                 )}
-                {/* --- END --- */}
             </Card>
         </div>
     );

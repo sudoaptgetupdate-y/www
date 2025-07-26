@@ -45,7 +45,7 @@ const UserAssetHistoryPage = lazy(() => import('./pages/UserAssetHistoryPage.jsx
 const UserActiveAssetsPage = lazy(() => import('./pages/UserActiveAssetsPage.jsx'));
 const InventoryHistoryPage = lazy(() => import('./pages/InventoryHistoryPage.jsx'));
 const AddressPage = lazy(() => import('./pages/AddressPage.jsx'));
-const RepairListPage = lazy(() => import('./pages/RepairListPage.jsx'));
+const RepairPage = lazy(() => import('./pages/RepairPage.jsx'));
 const CreateRepairPage = lazy(() => import('./pages/CreateRepairPage.jsx'));
 const RepairDetailPage = lazy(() => import('./pages/RepairDetailPage.jsx'));
 const SupplierPage = lazy(() => import('./pages/SupplierPage.jsx')); // <-- Import the new page
@@ -88,7 +88,7 @@ const routes = [
   { path: 'categories', Page: CategoryPage },
   { path: 'suppliers', Page: SupplierPage }, // <-- Add the new route
   // System & Repair
-  { path: 'repairs', Page: RepairListPage },
+  { path: 'repairs', Page: RepairPage },
   { path: 'repairs/new', Page: CreateRepairPage },
   { path: 'repairs/:repairId', Page: RepairDetailPage },
   { path: 'addresses', Page: AddressPage },

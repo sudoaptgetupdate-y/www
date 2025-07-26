@@ -8,7 +8,6 @@ addressController.createAddress = async (req, res, next) => {
     try {
         const { name, contactPerson, phone, address } = req.body;
         
-        // --- Input Validation ---
         if (typeof name !== 'string' || name.trim() === '') {
             const err = new Error('Name is required and cannot be empty.');
             err.statusCode = 400;
@@ -67,14 +66,14 @@ addressController.getAddressById = async (req, res, next) => {
         if (isNaN(addressId)) {
             const err = new Error('Invalid Address ID.');
             err.statusCode = 400;
-            throw err;
+            return next(err); // Changed from throw to next(err)
         }
 
         const address = await prisma.address.findUnique({ where: { id: addressId } });
         if (!address) {
             const err = new Error('Address not found.');
             err.statusCode = 404;
-            throw err;
+            return next(err); // Changed from throw to next(err)
         }
         res.status(200).json(address);
     } catch (error) {
@@ -92,10 +91,9 @@ addressController.updateAddress = async (req, res, next) => {
         if (isNaN(addressId)) {
             const err = new Error('Invalid Address ID.');
             err.statusCode = 400;
-            throw err;
+            return next(err); // Changed from throw to next(err)
         }
         
-        // --- Input Validation ---
         if (typeof name !== 'string' || name.trim() === '') {
             const err = new Error('Name is required and cannot be empty.');
             err.statusCode = 400;
@@ -120,7 +118,7 @@ addressController.deleteAddress = async (req, res, next) => {
         if (isNaN(addressId)) {
             const err = new Error('Invalid Address ID.');
             err.statusCode = 400;
-            throw err;
+            return next(err); // Changed from throw to next(err)
         }
         await prisma.address.delete({ where: { id: addressId } });
         res.status(204).send();
