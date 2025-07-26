@@ -14,9 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { ProductModelCombobox } from "@/components/ui/ProductModelCombobox";
-// --- START: 1. Import ไอคอน ---
 import { MoreHorizontal, View, ShoppingCart, ArrowRightLeft, Edit, Trash2, PlusCircle, Archive, History, ShieldAlert, ArchiveRestore, ShieldCheck, ArrowUpDown, Package } from "lucide-react";
-// --- END ---
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -202,7 +200,6 @@ export default function InventoryPage() {
     return (
         <Card className="shadow-sm border-subtle">
             <CardHeader>
-                {/* --- START: 2. ปรับปรุง CardHeader --- */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <CardTitle className="flex items-center gap-2">
@@ -217,7 +214,6 @@ export default function InventoryPage() {
                         </Button>
                     }
                 </div>
-                {/* --- END --- */}
             </CardHeader>
 
             <CardContent>
@@ -242,21 +238,21 @@ export default function InventoryPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="All">{t('status_all')}</SelectItem>
-                            <SelectItem value="IN_STOCK">In Stock</SelectItem>
-                            <SelectItem value="SOLD">Sold</SelectItem>
-                            <SelectItem value="BORROWED">Borrowed</SelectItem>
-                            <SelectItem value="RESERVED">Reserved</SelectItem>
-                            <SelectItem value="DEFECTIVE">Defective</SelectItem>
-                            <SelectItem value="DECOMMISSIONED">Archived</SelectItem>
-                            <SelectItem value="RETURNED_TO_CUSTOMER">Serviced (Customer)</SelectItem>
+                            <SelectItem value="IN_STOCK">{t('status_in_stock')}</SelectItem>
+                            <SelectItem value="SOLD">{t('status_sold')}</SelectItem>
+                            <SelectItem value="BORROWED">{t('status_borrowed')}</SelectItem>
+                            <SelectItem value="RESERVED">{t('status_reserved')}</SelectItem>
+                            <SelectItem value="DEFECTIVE">{t('status_defective')}</SelectItem>
+                            <SelectItem value="DECOMMISSIONED">{t('status_decommissioned')}</SelectItem>
+                            <SelectItem value="RETURNED_TO_CUSTOMER">{t('status_serviced_customer')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
-                {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
                 <div className="border rounded-md">
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                <SortableHeader sortKey="category" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_category')}</SortableHeader>
                                 <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_brand')}</SortableHeader>
                                 <SortableHeader sortKey="productModel" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_productModel')}</SortableHeader>
                                 <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>{t('tableHeader_serialNumber')}</SortableHeader>
@@ -270,12 +266,13 @@ export default function InventoryPage() {
                             {isLoading ? (
                                 [...Array(pagination.itemsPerPage)].map((_, i) => (
                                     <TableRow key={i}>
-                                        <TableCell colSpan={7}><div className="h-8 bg-muted rounded animate-pulse"></div></TableCell>
+                                        <TableCell colSpan={8}><div className="h-8 bg-muted rounded animate-pulse"></div></TableCell>
                                     </TableRow>
                                 ))
                             ) : inventoryItems.length > 0 ? (
                                 inventoryItems.map((item) => (
                                     <TableRow key={item.id}>
+                                        <TableCell>{item.productModel.category.name}</TableCell>
                                         <TableCell>{item.productModel.brand.name}</TableCell>
                                         <TableCell className="font-medium">{item.productModel.modelNumber}</TableCell>
                                         <TableCell>{item.serialNumber || '-'}</TableCell>
@@ -388,12 +385,11 @@ export default function InventoryPage() {
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow><TableCell colSpan={7} className="text-center h-24">No items found.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={8} className="text-center h-24">No items found.</TableCell></TableRow>
                             )}
                         </TableBody>
                     </Table>
                 </div>
-                {/* --- END --- */}
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">

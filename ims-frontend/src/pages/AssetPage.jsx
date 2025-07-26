@@ -9,13 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-// --- START: 1. Import ไอคอน ---
 import { PlusCircle, MoreHorizontal, History, Edit, ArrowRightLeft, Archive, ArrowUpDown, Layers } from "lucide-react";
-// --- END ---
 import { toast } from "sonner";
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-    AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+    AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -33,6 +31,7 @@ import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <TableRow>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
@@ -112,7 +111,6 @@ export default function AssetPage() {
     return (
         <Card>
             <CardHeader>
-                {/* --- START: 2. ปรับปรุง CardHeader --- */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <CardTitle className="flex items-center gap-2">
@@ -132,7 +130,6 @@ export default function AssetPage() {
                         </div>
                     }
                 </div>
-                {/* --- END --- */}
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -164,7 +161,6 @@ export default function AssetPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
                 <div className="border rounded-md">
                     <Table>
                         <TableHeader>
@@ -172,6 +168,11 @@ export default function AssetPage() {
                                 <SortableHeader sortKey="assetCode" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
                                     {t('tableHeader_assetCode')}
                                 </SortableHeader>
+                                {/* --- START: ADDED CATEGORY HEADER --- */}
+                                <SortableHeader sortKey="category" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_category')}
+                                </SortableHeader>
+                                {/* --- END: ADDED CATEGORY HEADER --- */}
                                 <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
                                     {t('tableHeader_brand')}
                                 </SortableHeader>
@@ -192,6 +193,9 @@ export default function AssetPage() {
                             ) : assets.map((asset) => (
                                 <TableRow key={asset.id}>
                                     <TableCell>{asset.assetCode}</TableCell>
+                                    {/* --- START: ADDED CATEGORY CELL --- */}
+                                    <TableCell>{asset.productModel.category.name}</TableCell>
+                                    {/* --- END: ADDED CATEGORY CELL --- */}
                                     <TableCell>{asset.productModel.brand.name}</TableCell>
                                     <TableCell>{asset.productModel?.modelNumber || 'N/A'}</TableCell>
                                     <TableCell>{asset.serialNumber || 'N/A'}</TableCell>
@@ -267,7 +271,6 @@ export default function AssetPage() {
                         </TableBody>
                     </Table>
                 </div>
-                {/* --- END --- */}
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">

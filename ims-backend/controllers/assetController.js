@@ -5,9 +5,15 @@ const assetController = {};
 
 const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
 
+// Helper function to create event logs consistently
 const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
     return tx.eventLog.create({
-        data: { inventoryItemId, userId, eventType, details },
+        data: {
+            inventoryItemId,
+            userId,
+            eventType,
+            details,
+        },
     });
 };
 
@@ -21,16 +27,13 @@ assetController.createAsset = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-
-        // --- START: FIX ---
+        
         const parsedModelId = parseInt(productModelId, 10);
         if (isNaN(parsedModelId)) {
             const err = new Error('Product Model ID is required and must be a valid number.');
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: FIX ---
-
         if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
             const err = new Error('Invalid MAC Address format.');
             err.statusCode = 400;
@@ -44,7 +47,7 @@ assetController.createAsset = async (req, res, next) => {
                     assetCode: assetCode,
                     serialNumber: serialNumber || null,
                     macAddress: macAddress || null,
-                    productModelId: parsedModelId, // Use parsed ID
+                    productModelId: parsedModelId,
                     supplierId: supplierId ? parseInt(supplierId) : null,
                     addedById: userId,
                     status: 'IN_WAREHOUSE',
@@ -72,15 +75,13 @@ assetController.addBatchAssets = async (req, res, next) => {
     try {
         const { productModelId, supplierId, items } = req.body;
         const userId = req.user.id;
-
-        // --- START: FIX ---
+        
         const parsedModelId = parseInt(productModelId, 10);
         if (isNaN(parsedModelId)) {
             const err = new Error('Product Model ID is required and must be a valid number.');
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: FIX ---
 
         if (!Array.isArray(items) || items.length === 0) {
             const err = new Error('Items list cannot be empty.');
@@ -105,7 +106,7 @@ assetController.addBatchAssets = async (req, res, next) => {
                         assetCode: item.assetCode,
                         serialNumber: item.serialNumber || null,
                         macAddress: item.macAddress || null,
-                        productModelId: parsedModelId, // Use parsed ID
+                        productModelId: parsedModelId,
                         supplierId: supplierId ? parseInt(supplierId) : null,
                         addedById: userId,
                     },
@@ -134,7 +135,6 @@ assetController.addBatchAssets = async (req, res, next) => {
     }
 };
 
-// ... (rest of the file remains the same)
 assetController.updateAsset = async (req, res, next) => {
     const { id } = req.params;
     const actorId = req.user.id;
@@ -152,13 +152,14 @@ assetController.updateAsset = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-
+        
         const parsedModelId = parseInt(productModelId, 10);
         if (isNaN(parsedModelId)) {
             const err = new Error('Product Model ID is required and must be a valid number.');
             err.statusCode = 400;
             return next(err);
         }
+
         if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
             const err = new Error('Invalid MAC Address format.');
             err.statusCode = 400;
@@ -229,6 +230,7 @@ assetController.deleteAsset = async (req, res, next) => {
             err.statusCode = 400;
             throw err;
         }
+        
         if (assetToDelete.repairRecords.length > 0) {
             const err = new Error('Cannot delete asset. It has repair history and cannot be deleted.');
             err.statusCode = 400;
@@ -282,12 +284,16 @@ assetController.getAllAssets = async (req, res, next) => {
             where.productModel = { ...where.productModel, brandId: parseInt(brandIdFilter) };
         }
 
+        // --- START: CORRECTED SORTING LOGIC ---
         let orderBy = {};
         if (sortBy === 'productModel') {
             orderBy = { productModel: { modelNumber: sortOrder } };
+        } else if (sortBy === 'category') { // Added this case
+            orderBy = { productModel: { category: { name: sortOrder } } };
         } else {
             orderBy = { [sortBy]: sortOrder };
         }
+        // --- END: CORRECTED SORTING LOGIC ---
 
         const include = {
             productModel: { include: { category: true, brand: true } },
@@ -343,7 +349,7 @@ assetController.getAssetById = async (req, res, next) => {
         if (isNaN(assetId)) {
             const err = new Error('Invalid Asset ID.');
             err.statusCode = 400;
-            throw err;
+            return next(err);
         }
 
         const item = await prisma.inventoryItem.findFirst({
@@ -364,7 +370,7 @@ assetController.getAssetById = async (req, res, next) => {
         if (!item) {
             const err = new Error('Asset not found');
             err.statusCode = 404;
-            throw err;
+            return next(err);
         }
         
         const currentHolder = item.assignmentRecords[0]?.assignment.assignee.name || null;
@@ -385,7 +391,7 @@ assetController.decommissionAsset = async (req, res, next) => {
         if (isNaN(assetId)) {
             const err = new Error('Invalid Asset ID.');
             err.statusCode = 400;
-            throw err;
+            return next(err);
         }
 
         const asset = await prisma.inventoryItem.findFirst({ where: { id: assetId, itemType: 'ASSET' } });
@@ -393,13 +399,13 @@ assetController.decommissionAsset = async (req, res, next) => {
         if (!asset) {
             const err = new Error('Asset not found.');
             err.statusCode = 404;
-            throw err;
+            return next(err);
         }
         
         if (!['IN_WAREHOUSE', 'DEFECTIVE'].includes(asset.status)) {
             const err = new Error('Only assets in the warehouse or marked as defective can be decommissioned.');
             err.statusCode = 400;
-            throw err;
+            return next(err);
         }
 
         await prisma.$transaction(async (tx) => {
@@ -431,7 +437,7 @@ assetController.reinstateAsset = async (req, res, next) => {
         if (isNaN(assetId)) {
             const err = new Error('Invalid Asset ID.');
             err.statusCode = 400;
-            throw err;
+            return next(err);
         }
 
         const asset = await prisma.inventoryItem.findFirst({ where: { id: assetId, itemType: 'ASSET' } });
@@ -439,12 +445,12 @@ assetController.reinstateAsset = async (req, res, next) => {
         if (!asset) {
             const err = new Error('Asset not found.');
             err.statusCode = 404;
-            throw err;
+            return next(err);
         }
         if (asset.status !== 'DECOMMISSIONED') {
             const err = new Error('Only decommissioned assets can be reinstated.');
             err.statusCode = 400;
-            throw err;
+            return next(err);
         }
 
         await prisma.$transaction(async (tx) => {

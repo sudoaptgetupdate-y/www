@@ -96,12 +96,11 @@ export default function CustomerPurchaseHistoryPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {/* --- START: CORRECTED FIX for Frontend --- */}
                                 {paginatedItems.map(item => (
                                     <tr key={item.id} className="border-b">
-                                        <td className="p-2">{item.productModel.category.name}</td>
-                                        <td className="p-2">{item.productModel.brand.name}</td>
-                                        <td className="p-2">{item.productModel.modelNumber}</td>
+                                        <td className="p-2">{item.productModel?.category?.name || 'N/A'}</td>
+                                        <td className="p-2">{item.productModel?.brand?.name || 'N/A'}</td>
+                                        <td className="p-2">{item.productModel?.modelNumber || 'N/A'}</td>
                                         <td className="p-2">{item.serialNumber || 'N/A'}</td>
                                         <td className="p-2">{item.purchaseDate ? new Date(item.purchaseDate).toLocaleDateString() : 'N/A'}</td>
                                         <td className="p-2">
@@ -113,7 +112,6 @@ export default function CustomerPurchaseHistoryPage() {
                                         </td>
                                     </tr>
                                 ))}
-                                {/* --- END: CORRECTED FIX --- */}
                             </tbody>
                         </table>
                     </div>

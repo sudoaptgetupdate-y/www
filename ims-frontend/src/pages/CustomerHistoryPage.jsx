@@ -88,44 +88,44 @@ export default function CustomerHistoryPage() {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <Users className="h-6 w-6" /> Customer Details
+                        <Users className="h-6 w-6" /> {t('customer_history_details_title')}
                     </h1>
-                    <p className="text-muted-foreground mt-1">For Customer: {customer?.name || '...'}</p>
+                    <p className="text-muted-foreground mt-1">{t('customer_history_for_customer', { name: customer?.name || '...' })}</p>
                 </div>
                 <Button variant="outline" onClick={() => navigate('/customers')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Customers
+                    {t('customer_history_back_list')}
                 </Button>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <StatCard 
-                    title="Items Purchased"
+                    title={t('customer_summary_purchased')}
                     value={summary.purchaseHistory.length}
                     icon={<ShoppingCart className="h-4 w-4 text-muted-foreground" />}
-                    description="Total items bought by this customer."
+                    description={t('customer_summary_purchased_desc')}
                     onClick={() => navigate(`/customers/${customerId}/purchase-history`)}
                 />
                 <StatCard 
-                    title="Currently Borrowed"
+                    title={t('customer_summary_borrowed')}
                     value={summary.currentlyBorrowedItems.length}
                     icon={<PackageOpen className="h-4 w-4 text-muted-foreground" />}
-                    description="Items that have not been returned yet."
+                    description={t('customer_summary_borrowed_desc')}
                      onClick={() => navigate(`/customers/${customerId}/active-borrowings`)}
                 />
                 <StatCard 
-                    title="Total Items Returned"
+                    title={t('customer_summary_returned')}
                     value={summary.returnedItemsHistory.length}
                     icon={<Package className="h-4 w-4 text-muted-foreground" />}
-                    description="History of all returned items."
+                    description={t('customer_summary_returned_desc')}
                     onClick={() => navigate(`/customers/${customerId}/returned-history`)}
                 />
             </div>
             
             <Card>
                 <CardHeader>
-                    <CardTitle>Transaction Log</CardTitle>
-                    <CardDescription>A complete history of all sales and borrowings for this customer.</CardDescription>
+                    <CardTitle>{t('customer_log_title')}</CardTitle>
+                    <CardDescription>{t('customer_log_description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="border rounded-lg overflow-x-auto">
@@ -139,16 +139,16 @@ export default function CustomerHistoryPage() {
                             </colgroup>
                             <thead>
                                 <tr className="border-b bg-muted/50 hover:bg-muted/50">
-                                    <th className="p-2 text-center">Type</th>
-                                    <th className="p-2 text-left">Date</th>
-                                    <th className="p-2 text-center">Items</th>
-                                    <th className="p-2 text-right">Details</th>
-                                    <th className="p-2 text-center">Actions</th>
+                                    <th className="p-2 text-center">{t('tableHeader_type')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_date')}</th>
+                                    <th className="p-2 text-center">{t('tableHeader_items')}</th>
+                                    <th className="p-2 text-right">{t('tableHeader_total_status')}</th>
+                                    <th className="p-2 text-center">{t('tableHeader_actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {history.length === 0 ? (
-                                     <tr><td colSpan="5" className="text-center p-4 text-muted-foreground">No transaction history found.</td></tr>
+                                     <tr><td colSpan="5" className="text-center p-4 text-muted-foreground">{t('customer_log_no_transactions')}</td></tr>
                                 ) : paginatedHistory.map((item) => {
                                     return (
                                         <tr key={item.id} className="border-b">
@@ -159,10 +159,10 @@ export default function CustomerHistoryPage() {
                                             <td className="p-2 text-center">{item.itemCount}</td>
                                             <td className="p-2 text-right">
                                                 {item.type === 'SALE' 
-                                                    ? `Total: ${item.details.total.toLocaleString('en-US')} THB`
+                                                    ? `${t('tableHeader_total')}: ${item.details.total.toLocaleString('en-US')} THB`
                                                     : item.details.status === 'RETURNED' 
-                                                        ? `Returned: ${new Date(item.details.returnDate).toLocaleDateString()}`
-                                                        : `Due: ${item.details.dueDate ? new Date(item.details.dueDate).toLocaleDateString() : '-'}`
+                                                        ? `${t('status_returned')}: ${new Date(item.details.returnDate).toLocaleDateString()}`
+                                                        : `${t('tableHeader_dueDate')}: ${item.details.dueDate ? new Date(item.details.dueDate).toLocaleDateString() : '-'}`
                                                 }
                                             </td>
                                             <td className="p-2 text-center">
@@ -171,7 +171,7 @@ export default function CustomerHistoryPage() {
                                                     size="sm"
                                                     onClick={() => navigate(item.type === 'SALE' ? `/sales/${item.details.id}` : `/borrowings/${item.details.id}`)}
                                                 >
-                                                    View Details
+                                                    {t('details')}
                                                 </Button>
                                             </td>
                                         </tr>

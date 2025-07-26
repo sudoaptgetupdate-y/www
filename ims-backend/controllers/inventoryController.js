@@ -1,13 +1,20 @@
 // ims-backend/controllers/inventoryController.js
+
 const prisma = require('../prisma/client');
 const { ItemType, EventType, ItemOwner } = require('@prisma/client');
 const inventoryController = {};
 
 const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
 
+// Helper function to create event logs consistently
 const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
     return tx.eventLog.create({
-        data: { inventoryItemId, userId, eventType, details },
+        data: {
+            inventoryItemId,
+            userId,
+            eventType,
+            details,
+        },
     });
 };
 
@@ -16,14 +23,12 @@ inventoryController.addInventoryItem = async (req, res, next) => {
         const { serialNumber, macAddress, productModelId, supplierId } = req.body;
         const userId = req.user.id;
 
-        // --- START: FIX ---
         const parsedModelId = parseInt(productModelId, 10);
         if (isNaN(parsedModelId)) {
             const err = new Error('Product Model ID is required and must be a valid number.');
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: FIX ---
 
         if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
             const err = new Error('Invalid MAC Address format.');
@@ -38,7 +43,7 @@ inventoryController.addInventoryItem = async (req, res, next) => {
                     ownerType: ItemOwner.COMPANY,
                     serialNumber: serialNumber || null,
                     macAddress: macAddress || null,
-                    productModelId: parsedModelId, // Use parsed ID
+                    productModelId: parsedModelId,
                     supplierId: supplierId ? parseInt(supplierId) : null,
                     addedById: userId,
                     status: 'IN_STOCK',
@@ -66,15 +71,13 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
     try {
         const { productModelId, supplierId, items } = req.body;
         const userId = req.user.id;
-
-        // --- START: FIX ---
+        
         const parsedModelId = parseInt(productModelId, 10);
         if (isNaN(parsedModelId)) {
             const err = new Error('Product Model ID is required and must be a valid number.');
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: FIX ---
 
         if (!Array.isArray(items) || items.length === 0) {
             const err = new Error('Items list cannot be empty.');
@@ -95,7 +98,7 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
                         ownerType: ItemOwner.COMPANY,
                         serialNumber: item.serialNumber || null,
                         macAddress: item.macAddress || null,
-                        productModelId: parsedModelId, // Use parsed ID
+                        productModelId: parsedModelId,
                         supplierId: supplierId ? parseInt(supplierId) : null,
                         addedById: userId,
                         status: 'IN_STOCK',
@@ -124,8 +127,6 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
         next(error);
     }
 };
-
-// ... (rest of the file remains the same)
 
 inventoryController.getAllInventoryItems = async (req, res, next) => {
     try {
@@ -172,14 +173,18 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
 
         where = { ...where, ...searchConditions };
 
+        // --- START: CORRECTED SORTING LOGIC ---
         let orderBy = {};
         if (sortBy === 'productModel') {
             orderBy = { productModel: { modelNumber: sortOrder } };
         } else if (sortBy === 'brand') {
             orderBy = { productModel: { brand: { name: sortOrder } } };
+        } else if (sortBy === 'category') { // Added this case
+            orderBy = { productModel: { category: { name: sortOrder } } };
         } else {
             orderBy = { [sortBy]: sortOrder };
         }
+        // --- END: CORRECTED SORTING LOGIC ---
 
         const include = {
             productModel: { include: { category: true, brand: true } },
