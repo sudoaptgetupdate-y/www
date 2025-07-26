@@ -13,7 +13,7 @@ import { PlusCircle, MoreHorizontal, History, Edit, ArrowRightLeft, Archive, Arr
 import { toast } from "sonner";
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-    AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+    AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -31,14 +31,7 @@ import { useTranslation } from "react-i18next";
 
 const SkeletonRow = () => (
     <TableRow>
-        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
-        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
-        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
-        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
-        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
-        <TableCell className="text-center"><div className="h-6 w-28 bg-gray-200 rounded-md animate-pulse mx-auto"></div></TableCell>
-        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
-        <TableCell className="text-center"><div className="h-8 w-14 bg-gray-200 rounded-md animate-pulse mx-auto"></div></TableCell>
+        <TableCell colSpan="8"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
     </TableRow>
 );
 
@@ -168,11 +161,9 @@ export default function AssetPage() {
                                 <SortableHeader sortKey="assetCode" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
                                     {t('tableHeader_assetCode')}
                                 </SortableHeader>
-                                {/* --- START: ADDED CATEGORY HEADER --- */}
                                 <SortableHeader sortKey="category" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
                                     {t('tableHeader_category')}
                                 </SortableHeader>
-                                {/* --- END: ADDED CATEGORY HEADER --- */}
                                 <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
                                     {t('tableHeader_brand')}
                                 </SortableHeader>
@@ -190,12 +181,14 @@ export default function AssetPage() {
                         <TableBody>
                             {isLoading ? (
                                 [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
+                            ) : assets.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan="8" className="text-center h-24">No assets found.</TableCell>
+                                </TableRow>
                             ) : assets.map((asset) => (
                                 <TableRow key={asset.id}>
                                     <TableCell>{asset.assetCode}</TableCell>
-                                    {/* --- START: ADDED CATEGORY CELL --- */}
                                     <TableCell>{asset.productModel.category.name}</TableCell>
-                                    {/* --- END: ADDED CATEGORY CELL --- */}
                                     <TableCell>{asset.productModel.brand.name}</TableCell>
                                     <TableCell>{asset.productModel?.modelNumber || 'N/A'}</TableCell>
                                     <TableCell>{asset.serialNumber || 'N/A'}</TableCell>

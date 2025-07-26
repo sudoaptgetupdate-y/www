@@ -21,12 +21,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-// --- START: 1. Import สิ่งที่จำเป็นเข้ามา ---
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// --- END ---
 
 
 export default function CreateSalePage() {
@@ -38,7 +36,6 @@ export default function CreateSalePage() {
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
     const [selectedItems, setSelectedItems] = useState([]);
 
-    // --- START: 2. ใช้ usePaginatedFetch Hook ---
     const {
         data: availableItems,
         pagination,
@@ -50,11 +47,10 @@ export default function CreateSalePage() {
         handleItemsPerPageChange,
         handleFilterChange
     } = usePaginatedFetch("/inventory", 10, {
-        status: "IN_STOCK", // Hardcode status เป็น IN_STOCK เสมอ
+        status: "IN_STOCK", 
         categoryId: "All",
         brandId: "All"
     });
-    // --- END ---
 
     useEffect(() => {
         const initialItems = location.state?.initialItems || [];
@@ -64,7 +60,6 @@ export default function CreateSalePage() {
     }, [location.state]);
 
     const handleAddItem = (itemToAdd) => {
-        // ป้องกันการเพิ่มของซ้ำ
         if (!selectedItems.some(item => item.id === itemToAdd.id)) {
             setSelectedItems(prev => [...prev, itemToAdd]);
         }
@@ -104,7 +99,6 @@ export default function CreateSalePage() {
     const vat = subtotal * 0.07;
     const total = subtotal + vat;
 
-    // กรองรายการสินค้าที่แสดงผล ไม่ให้แสดงรายการที่ถูกเลือกไปแล้ว
     const displayedAvailableItems = availableItems.filter(
         item => !selectedItems.some(selected => selected.id === item.id)
     );
@@ -117,7 +111,6 @@ export default function CreateSalePage() {
                     <CardDescription>{t('createSale_description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {/* --- START: 3. เพิ่ม UI สำหรับ Filter --- */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                         <Input
                             placeholder={t('createSale_search_placeholder')}
@@ -134,11 +127,13 @@ export default function CreateSalePage() {
                             onSelect={(value) => handleFilterChange('brandId', value)}
                         />
                     </div>
-                    {/* --- END --- */}
                     <div className="border rounded-md">
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    {/* --- START: ADDED CATEGORY HEADER --- */}
+                                    <TableHead>{t('tableHeader_category')}</TableHead>
+                                    {/* --- END: ADDED CATEGORY HEADER --- */}
                                     <TableHead>{t('tableHeader_brand')}</TableHead>
                                     <TableHead>{t('tableHeader_productModel')}</TableHead>
                                     <TableHead>{t('tableHeader_serialNumber')}</TableHead>
@@ -148,10 +143,13 @@ export default function CreateSalePage() {
                             </TableHeader>
                             <TableBody>
                                 {isLoading ? (
-                                    <TableRow><TableCell colSpan="5" className="text-center h-24">Searching...</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan="6" className="text-center h-24">Searching...</TableCell></TableRow>
                                 ) : displayedAvailableItems.length > 0 ? (
                                     displayedAvailableItems.map(item => (
                                     <TableRow key={item.id}>
+                                        {/* --- START: ADDED CATEGORY CELL --- */}
+                                        <TableCell>{item.productModel.category.name}</TableCell>
+                                        {/* --- END: ADDED CATEGORY CELL --- */}
                                         <TableCell>{item.productModel.brand.name}</TableCell>
                                         <TableCell>{item.productModel.modelNumber}</TableCell>
                                         <TableCell>{item.serialNumber || '-'}</TableCell>
@@ -163,14 +161,13 @@ export default function CreateSalePage() {
                                         </TableCell>
                                     </TableRow>
                                 ))) : (
-                                     <TableRow><TableCell colSpan="5" className="text-center h-24">No available items found.</TableCell></TableRow>
+                                     <TableRow><TableCell colSpan="6" className="text-center h-24">No available items found.</TableCell></TableRow>
                                 )
                                 }
                             </TableBody>
                         </Table>
                     </div>
                 </CardContent>
-                 {/* --- START: 4. เพิ่ม UI สำหรับ Pagination --- */}
                 <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
@@ -189,7 +186,6 @@ export default function CreateSalePage() {
                         <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
                     </div>
                 </CardFooter>
-                 {/* --- END --- */}
             </Card>
             <Card>
                 <CardHeader><CardTitle>{t('createSale_summary_title')}</CardTitle></CardHeader>
