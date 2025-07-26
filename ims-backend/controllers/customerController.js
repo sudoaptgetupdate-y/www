@@ -2,7 +2,7 @@
 const prisma = require('../prisma/client');
 const customerController = {};
 
-// ... (functions from createCustomer to getActiveBorrowings remain the same)
+// ... (functions from createCustomer to deleteCustomer remain the same)
 customerController.createCustomer = async (req, res, next) => {
     try {
         const { customerCode, name, phone, address } = req.body;
@@ -169,7 +169,7 @@ customerController.getCustomerHistory = async (req, res, next) => {
                 orderBy: { saleDate: 'desc' }
             }),
             prisma.borrowing.findMany({
-                where: { borrowerId: customerId },
+                where: { customerId: customerId }, // <-- แก้ไขจาก borrowerId
                 include: { 
                     items: {
                         include: { inventoryItem: { include: { productModel: true } } }
@@ -221,7 +221,7 @@ customerController.getCustomerSummary = async (req, res, next) => {
                 orderBy: { saleDate: 'desc' }
             }),
             prisma.borrowing.findMany({
-                where: { borrowerId: customerId },
+                where: { customerId: customerId }, // <-- แก้ไขจาก borrowerId
                 include: {
                     items: { 
                         include: {
@@ -275,7 +275,7 @@ customerController.getActiveBorrowings = async (req, res, next) => {
         
         const activeBorrowings = await prisma.borrowing.findMany({
             where: {
-                borrowerId: customerId,
+                customerId: customerId, // <-- แก้ไขจาก borrowerId
                 status: 'BORROWED',
             },
             include: {
@@ -316,7 +316,7 @@ customerController.getReturnedHistory = async (req, res, next) => {
         const returnedRecords = await prisma.borrowingOnItems.findMany({
             where: {
                 borrowing: {
-                    borrowerId: customerId,
+                    customerId: customerId, // <-- แก้ไขจาก borrowerId
                 },
                 returnedAt: {
                     not: null,

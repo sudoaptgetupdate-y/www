@@ -8,9 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-// --- START: 1. Import ไอคอน ---
 import { PlusCircle, ArrowUpDown, ArrowRightLeft } from "lucide-react";
-// --- END ---
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
@@ -66,7 +64,6 @@ export default function BorrowingPage() {
     return (
         <Card>
             <CardHeader>
-                {/* --- START: 2. ปรับปรุง CardHeader --- */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <CardTitle className="flex items-center gap-2">
@@ -81,7 +78,6 @@ export default function BorrowingPage() {
                         </Button>
                     )}
                 </div>
-                {/* --- END --- */}
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -103,7 +99,6 @@ export default function BorrowingPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
                 <div className="border rounded-md">
                     <Table>
                         <TableHeader>
@@ -132,7 +127,7 @@ export default function BorrowingPage() {
                             ) : borrowings.map((b) => (
                                 <TableRow key={b.id}>
                                     <TableCell>#{b.id}</TableCell>
-                                    <TableCell>{b.borrower?.name || 'N/A'}</TableCell>
+                                    <TableCell>{b.customer?.name || 'N/A'}</TableCell> {/* <-- แก้ไข */}
                                     <TableCell>{new Date(b.borrowDate).toLocaleDateString()}</TableCell>
                                     <TableCell>{b.dueDate ? new Date(b.dueDate).toLocaleDateString() : 'N/A'}</TableCell>
                                     <TableCell className="text-center">
@@ -155,7 +150,6 @@ export default function BorrowingPage() {
                         </TableBody>
                     </Table>
                 </div>
-                {/* --- END --- */}
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">

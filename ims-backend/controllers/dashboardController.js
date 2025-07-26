@@ -1,6 +1,6 @@
 // controllers/dashboardController.js
 const prisma = require('../prisma/client');
-const { ItemType } = require('@prisma/client'); // <-- Keep this line
+const { ItemType } = require('@prisma/client');
 
 exports.getDashboardStats = async (req, res, next) => {
     try {
@@ -15,12 +15,10 @@ exports.getDashboardStats = async (req, res, next) => {
             dailySales,
             recentSales,
             stockStatus,
-            // --- START: เพิ่มการดึงข้อมูลใหม่ ---
             recentBorrowings,
             recentRepairs,
             activeBorrowings,
             activeRepairs
-            // --- END ---
         ] = await Promise.all([
             prisma.inventoryItem.findMany({
                 where: { status: 'SOLD', itemType: ItemType.SALE },
@@ -54,12 +52,13 @@ exports.getDashboardStats = async (req, res, next) => {
                 by: ['status'],
                 _count: { id: true },
             }),
-            // --- START: เพิ่ม Query สำหรับดึงข้อมูลใหม่ ---
+            // --- START: แก้ไขส่วนนี้ ---
             prisma.borrowing.findMany({
                 take: 5,
                 orderBy: { borrowDate: 'desc' },
-                include: { borrower: { select: { name: true } } }
+                include: { customer: { select: { name: true } } } // แก้จาก borrower เป็น customer
             }),
+            // --- END ---
             prisma.repair.findMany({
                 take: 5,
                 orderBy: { repairDate: 'desc' },
@@ -71,7 +70,6 @@ exports.getDashboardStats = async (req, res, next) => {
             prisma.repair.count({
                 where: { status: 'REPAIRING' }
             })
-            // --- END ---
         ]);
         
         const totalRevenue = soldItems.reduce((sum, item) => {
@@ -91,12 +89,10 @@ exports.getDashboardStats = async (req, res, next) => {
             salesChartData,
             recentSales,
             stockStatus,
-            // --- START: เพิ่มข้อมูลใหม่ใน Response ---
             recentBorrowings,
             recentRepairs,
             activeBorrowings,
             activeRepairs
-            // --- END ---
         });
 
     } catch (error) {

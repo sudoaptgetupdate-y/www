@@ -17,12 +17,12 @@ const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
 
 borrowingController.createBorrowing = async (req, res, next) => {
     // --- START: CORRECTED FIX ---
-    const { borrowerId, inventoryItemIds, dueDate, notes } = req.body; // Changed customerId to borrowerId
+    const { customerId, inventoryItemIds, dueDate, notes } = req.body; // Changed customerId to borrowerId
     const approvedById = req.user.id;
 
-    const parsedBorrowerId = parseInt(borrowerId, 10);
-    if (isNaN(parsedBorrowerId)) {
-        const err = new Error('Borrower ID must be a valid number.'); // Updated error message
+    const parsedCustomerId = parseInt(customerId, 10);
+    if (isNaN(parsedCustomerId)) {
+        const err = new Error('Customer ID must be a valid number.'); // Updated error message
         err.statusCode = 400;
         return next(err);
     }
@@ -51,7 +51,7 @@ borrowingController.createBorrowing = async (req, res, next) => {
                 throw err;
             }
 
-            const customer = await tx.customer.findUnique({ where: { id: parsedBorrowerId } });
+            const customer = await tx.customer.findUnique({ where: { id: parsedCustomerId } });
              if (!customer) {
                 const err = new Error('Customer not found.');
                 err.statusCode = 404;
@@ -60,7 +60,7 @@ borrowingController.createBorrowing = async (req, res, next) => {
 
             const createdBorrowing = await tx.borrowing.create({
                 data: {
-                    borrowerId: parsedBorrowerId,
+                    customerId: parsedCustomerId,
                     approvedById,
                     dueDate: dueDate ? new Date(dueDate) : null,
                     notes,
@@ -87,7 +87,7 @@ borrowingController.createBorrowing = async (req, res, next) => {
                     approvedById,
                     EventType.BORROW,
                     {
-                        borrowerName: customer.name,
+                        customerName: customer.name,
                         borrowingId: createdBorrowing.id,
                         details: `Item borrowed by ${customer.name}.`
                     }
@@ -97,7 +97,7 @@ borrowingController.createBorrowing = async (req, res, next) => {
             return tx.borrowing.findUnique({
                 where: { id: createdBorrowing.id },
                 include: {
-                    borrower: true,
+                    customer: true,
                     approvedBy: { select: { id: true, name: true } },
                     items: { include: { inventoryItem: { include: { productModel: true } } } }
                 }
@@ -134,7 +134,7 @@ borrowingController.returnItems = async (req, res, next) => {
         await prisma.$transaction(async (tx) => {
              const borrowing = await tx.borrowing.findUnique({
                 where: { id: id },
-                include: { borrower: true }
+                include: { customer: true }
             });
             if (!borrowing) {
                 const err = new Error('Borrowing record not found.');
@@ -162,9 +162,9 @@ borrowingController.returnItems = async (req, res, next) => {
                     actorId,
                     EventType.RETURN_FROM_BORROW,
                     {
-                        borrowerName: borrowing.borrower.name,
+                        customerName: borrowing.customer.name,
                         borrowingId: id,
-                        details: `Item returned from ${borrowing.borrower.name}.`
+                        details: `Item returned from ${borrowing.customer.name}.`
                     }
                 );
             }
@@ -215,7 +215,7 @@ borrowingController.getAllBorrowings = async (req, res, next) => {
         if (searchTerm) {
             whereConditions.push({
                 OR: [
-                    { borrower: { name: { contains: searchTerm } } },
+                    { customer: { name: { contains: searchTerm } } },
                     { approvedBy: { name: { contains: searchTerm } } },
                     { items: { some: { inventoryItem: { serialNumber: { contains: searchTerm } } } } }
                 ]
@@ -228,7 +228,7 @@ borrowingController.getAllBorrowings = async (req, res, next) => {
 
         let orderBy = {};
         if (sortBy === 'customer') {
-            orderBy = { borrower: { name: sortOrder } };
+            orderBy = { customer: { name: sortOrder } };
         } else {
             orderBy = { [sortBy]: sortOrder };
         }
@@ -240,7 +240,7 @@ borrowingController.getAllBorrowings = async (req, res, next) => {
                 take: limit,
                 orderBy,
                 include: {
-                    borrower: { select: { id: true, name: true } },
+                    customer: { select: { id: true, name: true } },
                     approvedBy: { select: { id: true, name: true } },
                     items: {
                         select: {
@@ -291,7 +291,7 @@ borrowingController.getBorrowingById = async (req, res, next) => {
         const borrowing = await prisma.borrowing.findUnique({
             where: { id: id },
             include: {
-                borrower: true,
+                customer: true,
                 approvedBy: { select: { id: true, name: true, email: true } },
                 items: {
                     include: {

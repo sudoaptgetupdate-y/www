@@ -187,8 +187,8 @@ model InventoryItem {
 
 model Borrowing {
   id           Int       @id @default(autoincrement())
-  borrowerId   Int
-  borrower     Customer  @relation(fields: [borrowerId], references: [id])
+  customerId   Int
+  customer     Customer  @relation(fields: [customerId], references: [id])
   approvedById Int
   approvedBy   User      @relation("ApprovedBorrowings", fields: [approvedById], references: [id])
   borrowDate   DateTime  @default(now())

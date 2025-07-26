@@ -10,10 +10,10 @@ import { useNavigate } from 'react-router-dom';
 import { DollarSign, Package, ArrowRightLeft, Wrench, ArrowUp, ArrowDown, ArrowRight } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
-import { useTranslation } from 'react-i18next'; // --- 1. Import useTranslation ---
+import { useTranslation } from 'react-i18next';
 
 // -- Reusable component for the main statistic cards with inline charts --
-const StatCard = ({ title, value, trendValue, trendDirection, icon: Icon, chartData, onClick, trendText }) => ( // --- 2. เพิ่ม props trendText ---
+const StatCard = ({ title, value, trendValue, trendDirection, icon: Icon, chartData, onClick, trendText }) => (
     <Card 
         className={cn("shadow-sm border-subtle", onClick && "cursor-pointer hover:bg-muted/50 transition-colors")}
         onClick={onClick}
@@ -55,7 +55,7 @@ const StatCard = ({ title, value, trendValue, trendDirection, icon: Icon, chartD
 );
 
 // -- Reusable component for displaying recent activity tables --
-const RecentActivityTable = ({ title, description, data, columns, viewAllLink, viewAllText }) => { // --- 3. เพิ่ม props viewAllText ---
+const RecentActivityTable = ({ title, description, data, columns, viewAllLink, viewAllText }) => {
     const navigate = useNavigate();
 
     return (
@@ -101,7 +101,7 @@ const RecentActivityTable = ({ title, description, data, columns, viewAllLink, v
 
 
 export default function DashboardPage() {
-    const { t } = useTranslation(); // --- 4. เรียกใช้ Hook ---
+    const { t } = useTranslation();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const token = useAuthStore((state) => state.token);
@@ -143,7 +143,6 @@ export default function DashboardPage() {
         return <p>Could not load dashboard data.</p>;
     }
 
-    // --- 5. เปลี่ยนข้อความเป็น t('...') ทั้งหมด ---
     const salesColumns = [
         { key: 'customer', header: t('tableHeader_customer'), render: (row) => row.customer.name, className: "font-medium" },
         { key: 'total', header: t('tableHeader_total'), render: (row) => new Intl.NumberFormat('th-TH').format(row.total), className: "text-right" },
@@ -151,7 +150,7 @@ export default function DashboardPage() {
     ];
     
     const borrowingColumns = [
-        { key: 'borrower', header: t('customers'), render: (row) => row.borrower.name, className: "font-medium" },
+        { key: 'borrower', header: t('customers'), render: (row) => row.customer.name, className: "font-medium" }, // <-- แก้ไข
         { key: 'status', header: t('tableHeader_status'), render: (row) => <StatusBadge status={row.status} />, className: "text-center" },
         { key: 'date', header: t('tableHeader_borrowDate'), render: (row) => new Date(row.borrowDate).toLocaleDateString('en-GB'), className: "text-right text-muted-foreground" },
     ];

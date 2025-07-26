@@ -33,7 +33,7 @@ export default function CreateBorrowingPage() {
     const location = useLocation();
     const token = useAuthStore((state) => state.token);
 
-    const [selectedBorrowerId, setSelectedBorrowerId] = useState("");
+    const [selectedCustomerId, setSelectedCustomerId] = useState(""); // <-- แก้ไข
     const [selectedItems, setSelectedItems] = useState([]);
     const [dueDate, setDueDate] = useState("");
     const [notes, setNotes] = useState("");
@@ -72,7 +72,7 @@ export default function CreateBorrowingPage() {
     };
 
     const handleSubmit = async () => {
-        if (!selectedBorrowerId) {
+        if (!selectedCustomerId) { // <-- แก้ไข
             toast.error("Please select a borrower.");
             return;
         }
@@ -82,7 +82,7 @@ export default function CreateBorrowingPage() {
         }
 
         const payload = {
-            borrowerId: parseInt(selectedBorrowerId),
+            customerId: parseInt(selectedCustomerId), // <-- แก้ไข
             inventoryItemIds: selectedItems.map(item => item.id),
             dueDate: dueDate || null,
             notes: notes || null,
@@ -131,9 +131,7 @@ export default function CreateBorrowingPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    {/* --- START: ADDED CATEGORY HEADER --- */}
                                     <TableHead>{t('tableHeader_category')}</TableHead>
-                                    {/* --- END: ADDED CATEGORY HEADER --- */}
                                     <TableHead>{t('tableHeader_brand')}</TableHead>
                                     <TableHead>{t('tableHeader_productModel')}</TableHead>
                                     <TableHead>{t('tableHeader_serialNumber')}</TableHead>
@@ -146,9 +144,7 @@ export default function CreateBorrowingPage() {
                                 ) : displayedAvailableItems.length > 0 ? (
                                     displayedAvailableItems.map(item => (
                                     <TableRow key={item.id}>
-                                        {/* --- START: ADDED CATEGORY CELL --- */}
                                         <TableCell>{item.productModel.category.name}</TableCell>
-                                        {/* --- END: ADDED CATEGORY CELL --- */}
                                         <TableCell>{item.productModel.brand.name}</TableCell>
                                         <TableCell>{item.productModel.modelNumber}</TableCell>
                                         <TableCell>{item.serialNumber || '-'}</TableCell>
@@ -190,7 +186,7 @@ export default function CreateBorrowingPage() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label>{t('createBorrowing_borrower_label')}</Label>
-                        <CustomerCombobox selectedValue={selectedBorrowerId} onSelect={setSelectedBorrowerId} />
+                        <CustomerCombobox selectedValue={selectedCustomerId} onSelect={setSelectedCustomerId} /> {/* <-- แก้ไข */}
                     </div>
                     <div className="space-y-2">
                         <Label>{t('createBorrowing_dueDate_label')}</Label>
@@ -219,7 +215,7 @@ export default function CreateBorrowingPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button className="w-full" size="lg" onClick={handleSubmit} disabled={!selectedBorrowerId || selectedItems.length === 0}>
+                    <Button className="w-full" size="lg" onClick={handleSubmit} disabled={!selectedCustomerId || selectedItems.length === 0}> {/* <-- แก้ไข */}
                         {t('createBorrowing_confirm_button')}
                     </Button>
                 </CardFooter>

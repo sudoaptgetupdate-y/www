@@ -7,9 +7,7 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-// --- START: 1. Import ไอคอน ---
 import { ArrowLeft, CheckSquare, Square, Printer, CornerDownLeft, ArrowRightLeft } from "lucide-react";
-// --- END ---
 import {
     AlertDialog,
     AlertDialogAction,
@@ -88,7 +86,6 @@ export default function BorrowingDetailPage() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
-                 {/* --- START: 2. ปรับปรุง Header --- */}
                  <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <ArrowRightLeft className="h-6 w-6" />
@@ -96,7 +93,6 @@ export default function BorrowingDetailPage() {
                     </h1>
                     <p className="text-muted-foreground">Viewing details for Borrowing ID #{formattedBorrowingId}</p>
                 </div>
-                {/* --- END --- */}
                 <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={() => navigate(-1)}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
@@ -123,9 +119,9 @@ export default function BorrowingDetailPage() {
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-1">
                             <p className="text-sm text-muted-foreground">ผู้ยืม (Borrower)</p>
-                            <p className="font-semibold">{borrowing.borrower?.name || 'N/A'}</p>
-                            <p className="text-sm text-muted-foreground">{borrowing.borrower?.address || "No address provided"}</p>
-                            <p className="text-sm text-muted-foreground">โทร. {borrowing.borrower?.phone || 'N/A'}</p>
+                            <p className="font-semibold">{borrowing.customer?.name || 'N/A'}</p> {/* <-- แก้ไข */}
+                            <p className="text-sm text-muted-foreground">{borrowing.customer?.address || "No address provided"}</p> {/* <-- แก้ไข */}
+                            <p className="text-sm text-muted-foreground">โทร. {borrowing.customer?.phone || 'N/A'}</p> {/* <-- แก้ไข */}
                         </div>
                         <div className="space-y-1 text-right">
                              <p className="text-sm text-muted-foreground">เลขที่ (Record ID)</p>
@@ -190,7 +186,7 @@ export default function BorrowingDetailPage() {
                     </div>
                     <div className="signature-box">
                         <div className="signature-line"></div>
-                        <p>( {borrowing.borrower?.name || '.....................................................'} )</p>
+                        <p>( {borrowing.customer?.name || '.....................................................'} )</p> {/* <-- แก้ไข */}
                         <p>ผู้ยืมสินค้า</p>
                     </div>
                 </div>
