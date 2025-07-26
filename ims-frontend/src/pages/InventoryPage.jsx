@@ -355,18 +355,22 @@ export default function InventoryPage() {
                                                             </DropdownMenuItem>
                                                             {item.status === 'IN_STOCK' && (
                                                                 <>
-                                                                    <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'reserve', 'Item marked as RESERVED.')}>
+                                                                    {/* --- START: MODIFIED MENU ITEM --- */}
+                                                                    <DropdownMenuItem className="text-blue-600 focus:text-blue-500" onClick={() => handleStatusChange(item.id, 'reserve', 'Item marked as RESERVED.')}>
                                                                         <ArchiveRestore className="mr-2 h-4 w-4" /> {t('action_mark_reserved')}
                                                                     </DropdownMenuItem>
+                                                                    {/* --- END: MODIFIED MENU ITEM --- */}
                                                                     <DropdownMenuItem className="text-orange-600 focus:text-orange-500" onClick={() => handleStatusChange(item.id, 'defect', 'Item marked as DEFECTIVE.')}>
                                                                         <ShieldAlert className="mr-2 h-4 w-4" /> {t('action_mark_defective')}
                                                                     </DropdownMenuItem>
                                                                 </>
                                                             )}
                                                             {item.status === 'RESERVED' && (
-                                                                <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'unreserve', 'Item is now IN STOCK.')}>
+                                                                // --- START: MODIFIED MENU ITEM ---
+                                                                <DropdownMenuItem className="text-green-600 focus:text-green-500" onClick={() => handleStatusChange(item.id, 'unreserve', 'Item is now IN STOCK.')}>
                                                                     <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('action_unreserve')}
                                                                 </DropdownMenuItem>
+                                                                // --- END: MODIFIED MENU ITEM ---
                                                             )}
                                                              {item.status === 'DEFECTIVE' && (
                                                                 <DropdownMenuItem className="text-green-600 focus:text-green-500" onClick={() => handleStatusChange(item.id, 'in-stock', 'Item marked as IN STOCK.')}>
@@ -374,9 +378,11 @@ export default function InventoryPage() {
                                                                 </DropdownMenuItem>
                                                             )}
                                                             {item.status === 'DECOMMISSIONED' ? (
-                                                                <DropdownMenuItem onClick={() => handleReinstateItem(item.id)}>
+                                                                // --- START: MODIFIED MENU ITEM ---
+                                                                <DropdownMenuItem className="text-green-600 focus:text-green-500" onClick={() => handleReinstateItem(item.id)}>
                                                                     <ArrowRightLeft className="mr-2 h-4 w-4" /> {t('action_reinstate')}
                                                                 </DropdownMenuItem>
+                                                                // --- END: MODIFIED MENU ITEM ---
                                                             ) : (
                                                                 <DropdownMenuItem
                                                                     className="text-red-600 focus:text-red-500"

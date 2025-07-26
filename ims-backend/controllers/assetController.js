@@ -35,7 +35,6 @@ assetController.createAsset = async (req, res, next) => {
             return next(err);
         }
 
-        // --- START: ADDED VALIDATION ---
         const productModel = await prisma.productModel.findUnique({
             where: { id: parsedModelId },
             include: { category: true },
@@ -58,7 +57,6 @@ assetController.createAsset = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: ADDED VALIDATION ---
 
         if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
             const err = new Error('Invalid MAC Address format.');
@@ -115,7 +113,6 @@ assetController.addBatchAssets = async (req, res, next) => {
             return next(err);
         }
         
-        // --- START: ADDED VALIDATION ---
         const productModel = await prisma.productModel.findUnique({
             where: { id: parsedModelId },
             include: { category: true },
@@ -126,7 +123,6 @@ assetController.addBatchAssets = async (req, res, next) => {
             return next(err);
         }
         const { category } = productModel;
-        // --- END: ADDED VALIDATION ---
 
         const newAssets = await prisma.$transaction(async (tx) => {
             const createdAssets = [];
@@ -205,7 +201,6 @@ assetController.updateAsset = async (req, res, next) => {
             return next(err);
         }
 
-        // --- START: ADDED VALIDATION ---
         const productModel = await prisma.productModel.findUnique({
             where: { id: parsedModelId },
             include: { category: true },
@@ -226,7 +221,6 @@ assetController.updateAsset = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: ADDED VALIDATION ---
 
         if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
             const err = new Error('Invalid MAC Address format.');
@@ -362,9 +356,11 @@ assetController.getAllAssets = async (req, res, next) => {
             orderBy = { [sortBy]: sortOrder };
         }
 
+        // --- START: ADDED `supplier: true` ---
         const include = {
             productModel: { include: { category: true, brand: true } },
             addedBy: { select: { name: true } },
+            supplier: true,
             assignmentRecords: {
                 where: { returnedAt: null },
                 include: { assignment: { include: { assignee: { select: { name: true } } } } }
@@ -374,6 +370,7 @@ assetController.getAllAssets = async (req, res, next) => {
                 select: { repairId: true }
             }
         };
+        // --- END: ADDED `supplier: true` ---
 
         const [items, totalItems] = await Promise.all([
             prisma.inventoryItem.findMany({ where, skip, take: limit, orderBy, include }),
@@ -424,6 +421,7 @@ assetController.getAssetById = async (req, res, next) => {
             include: { 
                 productModel: { include: { category: true, brand: true } },
                 addedBy: { select: { name: true } },
+                supplier: true, // <-- Also add here for consistency
                 assignmentRecords: {
                      where: { returnedAt: null },
                       include: {

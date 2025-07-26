@@ -35,7 +35,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
 const AssetPage = lazy(() => import('./pages/AssetPage.jsx'));
 const CreateAssetPage = lazy(() => import('./pages/CreateAssetPage.jsx'));
 const AssetDetailPage = lazy(() => import('./pages/AssetDetailPage.jsx'));
-const EditAssetPage = lazy(() => import('./pages/EditAssetPage.jsx'));
+// --- REMOVED EditAssetPage IMPORT ---
 const AssetAssignmentPage = lazy(() => import('./pages/AssetAssignmentPage.jsx'));
 const CreateAssetAssignmentPage = lazy(() => import('./pages/CreateAssetAssignmentPage.jsx'));
 const AssetAssignmentDetailPage = lazy(() => import('./pages/AssetAssignmentDetailPage.jsx'));
@@ -44,9 +44,7 @@ const UserAssetHistoryPage = lazy(() => import('./pages/UserAssetHistoryPage.jsx
 const UserActiveAssetsPage = lazy(() => import('./pages/UserActiveAssetsPage.jsx'));
 const InventoryHistoryPage = lazy(() => import('./pages/InventoryHistoryPage.jsx'));
 const AddressPage = lazy(() => import('./pages/AddressPage.jsx'));
-// --- START: CORRECTED IMPORT ---
-const RepairPage = lazy(() => import('./pages/RepairPage.jsx')); // Changed from RepairListPage to RepairPage
-// --- END: CORRECTED IMPORT ---
+const RepairPage = lazy(() => import('./pages/RepairPage.jsx'));
 const CreateRepairPage = lazy(() => import('./pages/CreateRepairPage.jsx'));
 const RepairDetailPage = lazy(() => import('./pages/RepairDetailPage.jsx'));
 const SupplierPage = lazy(() => import('./pages/SupplierPage.jsx'));
@@ -84,15 +82,13 @@ const routes = [
   { path: 'assets', Page: AssetPage },
   { path: 'assets/new', Page: CreateAssetPage },
   { path: 'assets/:assetId/history', Page: AssetHistoryPage },
-  { path: 'assets/edit/:assetId', Page: EditAssetPage },
+  // --- REMOVED EditAssetPage ROUTE ---
   { path: 'product-models', Page: ProductModelPage },
   { path: 'brands', Page: BrandPage },
   { path: 'categories', Page: CategoryPage },
   { path: 'suppliers', Page: SupplierPage },
   // System & Repair
-  // --- START: CORRECTED ROUTE ---
-  { path: 'repairs', Page: RepairPage }, // Changed from RepairListPage to RepairPage
-  // --- END: CORRECTED ROUTE ---
+  { path: 'repairs', Page: RepairPage },
   { path: 'repairs/new', Page: CreateRepairPage },
   { path: 'repairs/:repairId', Page: RepairDetailPage },
   { path: 'addresses', Page: AddressPage },

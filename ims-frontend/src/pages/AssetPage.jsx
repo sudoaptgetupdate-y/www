@@ -28,6 +28,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 import { useTranslation } from "react-i18next";
+import EditAssetDialog from "@/components/dialogs/EditAssetDialog";
 
 const SkeletonRow = () => (
     <TableRow>
@@ -52,6 +53,8 @@ export default function AssetPage() {
     const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
     
     const [isBatchAddOpen, setIsBatchAddOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [editingAsset, setEditingAsset] = useState(null);
 
     const {
         data: assets,
@@ -72,6 +75,11 @@ export default function AssetPage() {
         categoryId: "All",
         brandId: "All"
     });
+
+    const openEditDialog = (asset) => {
+        setEditingAsset(asset);
+        setIsEditDialogOpen(true);
+    };
 
     const handleDecommission = async (assetId) => {
         try {
@@ -223,7 +231,7 @@ export default function AssetPage() {
                                                 <DropdownMenuItem onClick={() => navigate(`/assets/${asset.id}/history`)}>
                                                     <History className="mr-2 h-4 w-4" /> {t('action_view_history')}
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => navigate(`/assets/edit/${asset.id}`)}>
+                                                <DropdownMenuItem onClick={() => openEditDialog(asset)}>
                                                     <Edit className="mr-2 h-4 w-4" /> {t('action_edit_asset')}
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
@@ -292,6 +300,14 @@ export default function AssetPage() {
                 />
             )}
             
+            {isEditDialogOpen && (
+                <EditAssetDialog
+                    isOpen={isEditDialogOpen}
+                    setIsOpen={setIsEditDialogOpen}
+                    asset={editingAsset}
+                    onSave={refreshData}
+                />
+            )}
         </Card>
     );
 }
