@@ -1,12 +1,14 @@
 // src/components/layout/MainLayout.jsx
 
 import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+// --- START: 1. Import Link ---
+import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
+// --- END: 1. Import Link ---
 import { motion } from "framer-motion";
 import { 
     LogOut, Menu, X, User, ArrowRightLeft, Building2, 
     ShoppingCart, Settings, Package, Boxes, Tag, Users as UsersIcon, 
-    HardDrive, Layers, Wrench, BookUser, Truck, Globe, Building // Added Building
+    HardDrive, Layers, Wrench, BookUser, Truck, Building
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -21,6 +23,21 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const Footer = () => {
+    const currentYear = new Date().getFullYear();
+    return (
+        <footer className="bg-white border-t mt-auto no-print">
+            <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-center items-center text-sm text-muted-foreground">
+                    <p>
+                        &copy; {currentYear} IMS Project. All Rights Reserved.
+                    </p>
+                </div>
+            </div>
+        </footer>
+    );
+};
 
 const NavItem = ({ to, icon, text, isCollapsed, handleclick }) => (
     <NavLink
@@ -106,15 +123,16 @@ const MainLayout = () => {
 
     const SidebarContent = () => (
         <div className="flex flex-col h-full relative">
-            <div className="p-4 border-b flex items-center gap-3 h-[65px]">
+            {/* --- START: 2. แก้ไข Header ของ Sidebar --- */}
+            <Link to="/dashboard" className="p-4 border-b flex items-center gap-3 h-[65px] hover:bg-muted/50 transition-colors">
                 <div className="bg-primary p-2 rounded-lg">
                     <Layers className="text-primary-foreground" size={24}/>
                 </div>
-                <h1 className={cn("text-xl font-bold text-slate-800 transition-all", isSidebarCollapsed && "opacity-0 hidden")}>IMS</h1>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-slate-500 hover:text-slate-800 ml-auto">
-                    <X size={24} />
-                </button>
-            </div>
+                <h1 className={cn("text-lg font-bold text-slate-800 transition-all whitespace-nowrap", isSidebarCollapsed && "opacity-0 hidden")}>
+                    Engineer IMS
+                </h1>
+            </Link>
+            {/* --- END: 2. แก้ไข Header ของ Sidebar --- */}
             
             <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
                  <NavItem to="/dashboard" icon={<Boxes size={18} />} text={t('dashboard')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
@@ -251,6 +269,9 @@ const MainLayout = () => {
                         <Outlet />
                     </motion.div>
                 </main>
+                
+                <Footer />
+
             </div>
         </div>
     );
