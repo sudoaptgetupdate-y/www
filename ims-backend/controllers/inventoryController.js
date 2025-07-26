@@ -29,8 +29,7 @@ inventoryController.addInventoryItem = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-
-        // --- START: MODIFIED VALIDATION ---
+        
         const parsedSupplierId = parseInt(supplierId, 10);
         if (isNaN(parsedSupplierId)) {
             const err = new Error('Supplier ID is required and must be a valid number.');
@@ -60,7 +59,6 @@ inventoryController.addInventoryItem = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: MODIFIED VALIDATION ---
 
         if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
             const err = new Error('Invalid MAC Address format.');
@@ -111,14 +109,12 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
             return next(err);
         }
 
-        // --- START: MODIFIED VALIDATION ---
         const parsedSupplierId = parseInt(supplierId, 10);
         if (isNaN(parsedSupplierId)) {
             const err = new Error('Supplier ID is required and must be a valid number.');
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: MODIFIED VALIDATION ---
 
         if (!Array.isArray(items) || items.length === 0) {
             const err = new Error('Items list cannot be empty.');
@@ -185,7 +181,6 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
         next(error);
     }
 };
-
 
 inventoryController.getAllInventoryItems = async (req, res, next) => {
     try {
@@ -337,7 +332,6 @@ inventoryController.updateInventoryItem = async (req, res, next) => {
             return next(err);
         }
 
-        // --- START: MODIFIED VALIDATION ---
         const productModel = await prisma.productModel.findUnique({
             where: { id: parsedModelId },
             include: { category: true },
@@ -358,7 +352,6 @@ inventoryController.updateInventoryItem = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
-        // --- END: MODIFIED VALIDATION ---
 
         if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
             const err = new Error('Invalid MAC Address format.');
@@ -404,10 +397,6 @@ inventoryController.deleteInventoryItem = async (req, res, next) => {
 
         const itemToDelete = await prisma.inventoryItem.findFirst({
             where: { id: itemId, itemType: 'SALE' },
-            include: { 
-                borrowingRecords: { where: { returnedAt: null } },
-                repairRecords: true
-            }
         });
 
         if (!itemToDelete) {
@@ -415,22 +404,38 @@ inventoryController.deleteInventoryItem = async (req, res, next) => {
              err.statusCode = 404;
              throw err;
         }
-        if (itemToDelete.status === 'SOLD' || itemToDelete.borrowingRecords.length > 0) {
-            let reason = itemToDelete.status === 'SOLD' ? 'SOLD' : 'actively BORROWED';
-            const err = new Error(`Cannot delete item. It is currently ${reason}.`);
-            err.statusCode = 400;
-            throw err;
-        }
-        if (itemToDelete.repairRecords.length > 0) {
-            const err = new Error('Cannot delete item. It has repair history and cannot be deleted.');
+
+        // --- START: MODIFIED DELETION LOGIC ---
+        const salesCount = await prisma.saleOnItems.count({
+            where: { inventoryItemId: itemId }
+        });
+        if (salesCount > 0) {
+            const err = new Error('Cannot delete item. It has sales history and must be decommissioned instead.');
             err.statusCode = 400;
             throw err;
         }
 
+        const borrowingCount = await prisma.borrowingOnItems.count({
+            where: { inventoryItemId: itemId }
+        });
+        if (borrowingCount > 0) {
+            const err = new Error('Cannot delete item. It has borrowing history and must be decommissioned instead.');
+            err.statusCode = 400;
+            throw err;
+        }
+
+        const repairCount = await prisma.repairOnItems.count({
+            where: { inventoryItemId: itemId }
+        });
+        if (repairCount > 0) {
+            const err = new Error('Cannot delete item. It has repair history and must be decommissioned instead.');
+            err.statusCode = 400;
+            throw err;
+        }
+        // --- END: MODIFIED DELETION LOGIC ---
+
         await prisma.$transaction(async (tx) => {
             await tx.eventLog.deleteMany({ where: { inventoryItemId: itemId } });
-            await tx.borrowingOnItems.deleteMany({ where: { inventoryItemId: itemId } });
-            await tx.repairOnItems.deleteMany({ where: { inventoryItemId: itemId }});
             await tx.inventoryItem.delete({ where: { id: itemId } });
         });
 
