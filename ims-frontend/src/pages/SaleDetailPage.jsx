@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowLeft, FileText, AlertTriangle, Printer } from "lucide-react";
@@ -13,6 +13,22 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
+
+const PrintableHeader = ({ profile }) => (
+    <div className="print-header hidden">
+        <div className="text-center mb-4">
+            <h1 className="text-2xl font-bold">{profile.name}</h1>
+            <p className="text-sm">{profile.addressLine1}</p>
+            <p className="text-sm">{profile.addressLine2}</p>
+            <p className="text-sm">โทรศัพท์ (Tel): {profile.phone} เลขประจำตัวผู้เสียภาษี (Tax ID): {profile.taxId}</p>
+        </div>
+        <Separator className="my-4 border-black" />
+        <h2 className="text-xl font-bold text-center tracking-widest">ใบกำกับภาษีอย่างย่อ / RECEIPT (TAX INVOICE)</h2>
+        <Separator className="my-4 border-black" />
+    </div>
+);
+
 
 export default function SaleDetailPage() {
     const { saleId } = useParams();
@@ -20,26 +36,33 @@ export default function SaleDetailPage() {
     const token = useAuthStore((state) => state.token);
     const currentUser = useAuthStore((state) => state.user);
     const [sale, setSale] = useState(null);
+    const [companyProfile, setCompanyProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isAlertOpen, setIsAlertOpen] = useState(false);
 
     const canVoid = currentUser?.role === 'SUPER_ADMIN';
 
     useEffect(() => {
-        const fetchSale = async () => {
+        const fetchAllData = async () => {
             if (!saleId || !token) return;
             try {
-                const response = await axiosInstance.get(`/sales/${saleId}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setSale(response.data);
+                const [saleRes, profileRes] = await Promise.all([
+                    axiosInstance.get(`/sales/${saleId}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }),
+                    axiosInstance.get('/company-profile', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    })
+                ]);
+                setSale(saleRes.data);
+                setCompanyProfile(profileRes.data);
             } catch (error) {
-                toast.error("Failed to fetch sale details.");
+                toast.error("Failed to fetch page details.");
             } finally {
                 setLoading(false);
             }
         };
-        fetchSale();
+        fetchAllData();
     }, [saleId, token]);
 
     const handleVoidSale = async () => {
@@ -63,8 +86,7 @@ export default function SaleDetailPage() {
         window.print();
     };
 
-    if (loading) return <p>Loading sale details...</p>;
-    if (!sale) return <p>Sale not found.</p>;
+    if (loading || !sale || !companyProfile) return <p>Loading sale details...</p>;
     
     const formattedSaleId = sale.id.toString().padStart(6, '0');
 
@@ -72,7 +94,6 @@ export default function SaleDetailPage() {
         <div className="space-y-6">
              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
                 <div>
-                    {/* --- START: ปรับปรุง Header --- */}
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <FileText className="h-6 w-6" /> 
                         Sale Details
@@ -80,7 +101,6 @@ export default function SaleDetailPage() {
                     <p className="text-muted-foreground mt-1">
                         Viewing details for Sale ID #{formattedSaleId}
                     </p>
-                    {/* --- END --- */}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                     <Button variant="outline" onClick={() => navigate('/sales')}>
@@ -101,12 +121,7 @@ export default function SaleDetailPage() {
             </div>
 
             <Card className="printable-area p-4 sm:p-6 md:p-8 font-sarabun">
-                <div className="print-header hidden">
-                    <h1 className="text-xl font-bold">ใบกำกับภาษีอย่างย่อ / ใบเสร็จรับเงิน</h1>
-                    <p className="text-sm">ศูนย์การขายและวิศวกรรมบริการ</p>
-                    <p className="text-sm">บริษัทโทรคมนาคมแห่งชาติ จำกัด(มหาชน)</p>
-                    <p className="text-xs">เลขที่2 ซอยพิพิธภัณฑ์ ตำบลในเมือง อำเภอเมือง นครศรีธรรมราช 80000 โทรศัพท์ 075-345456</p>
-                </div>
+                <PrintableHeader profile={companyProfile} />
                 
                 <CardHeader className="p-0 mb-6">
                     <div className="grid grid-cols-2 gap-6">

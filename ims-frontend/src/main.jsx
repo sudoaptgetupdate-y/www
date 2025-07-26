@@ -11,7 +11,6 @@ import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 import MainLayout from './components/layout/MainLayout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
-import './i18n';
 
 // Lazy load all the pages
 const DashboardRedirect = lazy(() => import('./components/auth/DashboardRedirect.jsx'));
@@ -45,10 +44,13 @@ const UserAssetHistoryPage = lazy(() => import('./pages/UserAssetHistoryPage.jsx
 const UserActiveAssetsPage = lazy(() => import('./pages/UserActiveAssetsPage.jsx'));
 const InventoryHistoryPage = lazy(() => import('./pages/InventoryHistoryPage.jsx'));
 const AddressPage = lazy(() => import('./pages/AddressPage.jsx'));
-const RepairPage = lazy(() => import('./pages/RepairPage.jsx'));
+// --- START: CORRECTED IMPORT ---
+const RepairPage = lazy(() => import('./pages/RepairPage.jsx')); // Changed from RepairListPage to RepairPage
+// --- END: CORRECTED IMPORT ---
 const CreateRepairPage = lazy(() => import('./pages/CreateRepairPage.jsx'));
 const RepairDetailPage = lazy(() => import('./pages/RepairDetailPage.jsx'));
-const SupplierPage = lazy(() => import('./pages/SupplierPage.jsx')); // <-- Import the new page
+const SupplierPage = lazy(() => import('./pages/SupplierPage.jsx'));
+const CompanyProfilePage = lazy(() => import('./pages/CompanyProfilePage.jsx'));
 
 // Fallback component to show while lazy components are loading
 const Loading = () => (
@@ -86,9 +88,11 @@ const routes = [
   { path: 'product-models', Page: ProductModelPage },
   { path: 'brands', Page: BrandPage },
   { path: 'categories', Page: CategoryPage },
-  { path: 'suppliers', Page: SupplierPage }, // <-- Add the new route
+  { path: 'suppliers', Page: SupplierPage },
   // System & Repair
-  { path: 'repairs', Page: RepairPage },
+  // --- START: CORRECTED ROUTE ---
+  { path: 'repairs', Page: RepairPage }, // Changed from RepairListPage to RepairPage
+  // --- END: CORRECTED ROUTE ---
   { path: 'repairs/new', Page: CreateRepairPage },
   { path: 'repairs/:repairId', Page: RepairDetailPage },
   { path: 'addresses', Page: AddressPage },
@@ -96,6 +100,7 @@ const routes = [
   { path: 'users/:userId/assets', Page: UserAssetHistoryPage },
   { path: 'users/:userId/active-assets', Page: UserActiveAssetsPage },
   { path: 'profile', Page: ProfilePage },
+  { path: 'company-profile', Page: CompanyProfilePage },
 ];
 
 const router = createBrowserRouter([

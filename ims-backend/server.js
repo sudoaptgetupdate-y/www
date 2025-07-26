@@ -28,6 +28,7 @@ const dashboardRoute = require('./routes/dashboardRoute');
 const userRoute = require('./routes/userRoute');
 const borrowingRoute = require('./routes/borrowingRoute');
 const supplierRoute = require('./routes/supplierRoute');
+const companyProfileRoute = require('./routes/companyProfileRoute');
 
 
 const app = express();
@@ -54,6 +55,7 @@ app.use('/api/borrowings', borrowingRoute);
 app.use('/api/addresses', addressRoute);
 app.use('/api/repairs', repairRoute);
 app.use('/api/suppliers', supplierRoute);
+app.use('/api/company-profile', companyProfileRoute);
 
 app.use(errorHandler);
 

@@ -364,5 +364,19 @@
   "status_reserved": "จองแล้ว",
   "status_decommissioned": "ตัดออกจากคลัง",
   "status_serviced_customer": "ซ่อมให้ลูกค้า",
-  "status_in_warehouse": "ในคลัง (ทรัพย์สิน)"
+  "status_in_warehouse": "ในคลัง (ทรัพย์สิน)",
+  "company_profile_title": "ข้อมูลบริษัท",
+  "company_profile_description": "จัดการข้อมูลบริษัทที่จะแสดงบนเอกสารที่พิมพ์ได้ เช่น ใบแจ้งหนี้และใบเสร็จรับเงิน",
+  "company_profile_name_label": "ชื่อบริษัท",
+  "company_profile_name_placeholder": "บริษัท ตัวอย่าง จำกัด (มหาชน)",
+  "company_profile_address_info": "ข้อมูลการติดต่อ",
+  "company_profile_address1_label": "ที่อยู่",
+  "company_profile_address1_placeholder": "123 ถนนสายหลัก, อาคาร A",
+  "company_profile_address2_label": "อำเภอ, จังหวัด, รหัสไปรษณีย์",
+  "company_profile_address2_placeholder": "กรุงเทพมหานคร, 10110",
+  "company_profile_phone_label": "เบอร์โทรศัพท์",
+  "company_profile_phone_placeholder": "02-123-4567",
+  "company_profile_tax_id_label": "เลขประจำตัวผู้เสียภาษี",
+  "company_profile_tax_id_placeholder": "0-1234-56789-01-2",
+  "company_profile_save_button": "บันทึกการเปลี่ยนแปลง"
 }

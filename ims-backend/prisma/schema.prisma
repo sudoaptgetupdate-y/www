@@ -358,3 +358,14 @@ model EventLog {
   @@index([inventoryItemId])
   @@index([eventType])
 }
+
+// --- START: ADD NEW MODEL FOR COMPANY PROFILE ---
+model CompanyProfile {
+  id           Int     @id @default(1) // Use a fixed ID to ensure only one row
+  name         String?
+  addressLine1 String? @db.Text
+  addressLine2 String?
+  phone        String?
+  taxId        String?
+  updatedAt    DateTime @updatedAt
+}

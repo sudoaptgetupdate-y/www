@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { 
     LogOut, Menu, X, User, ArrowRightLeft, Building2, 
     ShoppingCart, Settings, Package, Boxes, Tag, Users as UsersIcon, 
-    HardDrive, Layers, Wrench, BookUser, Truck 
+    HardDrive, Layers, Wrench, BookUser, Truck, Globe, Building // Added Building
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -56,7 +56,7 @@ const NavItem = ({ to, icon, text, isCollapsed, handleclick }) => (
 );
 
 const LanguageToggle = () => {
-    const { i18n } = useTranslation();
+    const { i18n, t } = useTranslation();
     const toggleLanguage = () => {
         const newLang = i18n.language === 'th' ? 'en' : 'th';
         i18n.changeLanguage(newLang);
@@ -66,11 +66,11 @@ const LanguageToggle = () => {
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={toggleLanguage} className="w-20">
+                    <Button variant="outline" size="sm" onClick={toggleLanguage} className="w-[88px]">
                         <span className="mr-2 text-lg">
                             {i18n.language === 'th' ? '🇹🇭' : '🇬🇧'}
                         </span>
-                        <span>
+                        <span className="font-semibold">
                             {i18n.language.toUpperCase()}
                         </span>
                     </Button>
@@ -82,6 +82,7 @@ const LanguageToggle = () => {
         </TooltipProvider>
     );
 };
+
 
 const MainLayout = () => {
     const { t } = useTranslation();
@@ -168,6 +169,7 @@ const MainLayout = () => {
                             {isSidebarCollapsed ? t('system').charAt(0) : t('system')}
                         </p>
                         <div className="space-y-1">
+                            <NavItem to="/company-profile" icon={<Building size={18}/>} text="Company Profile" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                             <NavItem to="/users" icon={<Settings size={18}/>} text={t('userManagement')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                         </div>
                     </div>
@@ -215,9 +217,7 @@ const MainLayout = () => {
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="flex items-center gap-2 h-10 px-3">
                                     <User className="h-5 w-5 text-muted-foreground" />
-                                    <div className="text-left">
-                                        <p className="text-sm font-medium leading-none">{currentUser?.name}</p>
-                                    </div>
+                                    <span className="hidden sm:inline-block font-medium">{currentUser?.name}</span>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -244,7 +244,6 @@ const MainLayout = () => {
 
                 <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
                     <motion.div
-                        key={location.pathname}
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.35, ease: "easeOut" }}

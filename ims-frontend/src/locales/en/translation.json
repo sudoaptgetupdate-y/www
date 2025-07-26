@@ -364,5 +364,19 @@
   "status_reserved": "Reserved",
   "status_decommissioned": "Archived",
   "status_serviced_customer": "Serviced (Customer)",
-  "status_in_warehouse": "In Warehouse (Asset)"
+  "status_in_warehouse": "In Warehouse (Asset)",
+  "company_profile_title": "Company Profile",
+  "company_profile_description": "Manage the company information that appears on printable documents like invoices and receipts.",
+  "company_profile_name_label": "Company Name",
+  "company_profile_name_placeholder": "Your Company Co., Ltd.",
+  "company_profile_address_info": "Contact Information",
+  "company_profile_address1_label": "Address",
+  "company_profile_address1_placeholder": "123 Main Street, Building A",
+  "company_profile_address2_label": "City, Province, Postal Code",
+  "company_profile_address2_placeholder": "Bangkok, 10110",
+  "company_profile_phone_label": "Phone Number",
+  "company_profile_phone_placeholder": "02-123-4567",
+  "company_profile_tax_id_label": "Tax ID",
+  "company_profile_tax_id_placeholder": "0-1234-56789-01-2",
+  "company_profile_save_button": "Save Changes"
 }
