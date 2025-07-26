@@ -119,16 +119,23 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
             toast.error("Please select a Product Model first.");
             return;
         }
+        if (!selectedSupplierId) {
+            toast.error("Please select a Supplier.");
+            return;
+        }
         setIsLoading(true);
 
         let itemsPayload = [];
         let hasError = false;
+        const { requiresSerialNumber, requiresMacAddress } = selectedModel.category;
 
         if (activeTab === 'manual') {
             itemsPayload = manualItems
-                .filter(item => item.assetCode)
+                .filter(item => item.assetCode || item.serialNumber || item.macAddress)
                 .map(item => {
                     if (!item.assetCode.trim()) hasError = true;
+                    if (requiresSerialNumber && !item.serialNumber?.trim()) hasError = true;
+                    if (requiresMacAddress && !item.macAddress?.trim()) hasError = true;
                     return {
                         assetCode: item.assetCode.trim(),
                         serialNumber: item.serialNumber.trim() || null,
@@ -144,6 +151,8 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                     const parts = line.split(/[,\t]/).map(part => part.trim());
                     const assetCode = parts[0];
                     if (!assetCode) hasError = true;
+                    if (requiresSerialNumber && !parts[1]) hasError = true;
+                    if (requiresMacAddress && !parts[2]) hasError = true;
                     return {
                         assetCode: assetCode,
                         serialNumber: parts[1] || null,
@@ -151,9 +160,19 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                     };
                 });
         }
-
+        
+        let errorMessage = "An error occurred.";
         if (hasError) {
-            toast.error("Asset Code is required for all items.");
+            if (itemsPayload.some(item => !item.assetCode)) {
+                errorMessage = "Asset Code is required for all items.";
+            } else if (requiresSerialNumber && requiresMacAddress) {
+                errorMessage = "Serial Number and MAC Address are required for all items.";
+            } else if (requiresSerialNumber) {
+                errorMessage = "Serial Number is required for all items.";
+            } else if (requiresMacAddress) {
+                errorMessage = "MAC Address is required for all items.";
+            }
+            toast.error(errorMessage);
             setIsLoading(false);
             return;
         }
@@ -209,7 +228,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                             <ProductModelCombobox onSelect={handleModelSelect} />
                         </div>
                         <div className="space-y-2">
-                            <Label>{t('suppliers')}</Label>
+                            <Label>{t('suppliers')} <span className="text-red-500">*</span></Label>
                             <SupplierCombobox
                                 selectedValue={selectedSupplierId}
                                 onSelect={(value) => setSelectedSupplierId(value)}

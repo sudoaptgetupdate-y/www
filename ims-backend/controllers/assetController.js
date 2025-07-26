@@ -34,6 +34,32 @@ assetController.createAsset = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
+
+        // --- START: ADDED VALIDATION ---
+        const productModel = await prisma.productModel.findUnique({
+            where: { id: parsedModelId },
+            include: { category: true },
+        });
+
+        if (!productModel) {
+            const err = new Error('Product Model not found.');
+            err.statusCode = 404;
+            return next(err);
+        }
+
+        const { category } = productModel;
+        if (category.requiresSerialNumber && (!serialNumber || serialNumber.trim() === '')) {
+            const err = new Error('Serial Number is required for this category.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (category.requiresMacAddress && (!macAddress || macAddress.trim() === '')) {
+            const err = new Error('MAC Address is required for this category.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: ADDED VALIDATION ---
+
         if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
             const err = new Error('Invalid MAC Address format.');
             err.statusCode = 400;
@@ -88,12 +114,31 @@ assetController.addBatchAssets = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
+        
+        // --- START: ADDED VALIDATION ---
+        const productModel = await prisma.productModel.findUnique({
+            where: { id: parsedModelId },
+            include: { category: true },
+        });
+        if (!productModel) {
+            const err = new Error('Product Model not found.');
+            err.statusCode = 404;
+            return next(err);
+        }
+        const { category } = productModel;
+        // --- END: ADDED VALIDATION ---
 
         const newAssets = await prisma.$transaction(async (tx) => {
             const createdAssets = [];
             for (const item of items) {
                 if (!item.assetCode || typeof item.assetCode !== 'string' || item.assetCode.trim() === '') {
                     throw new Error('Asset Code is required for all items in the list.');
+                }
+                if (category.requiresSerialNumber && (!item.serialNumber || item.serialNumber.trim() === '')) {
+                    throw new Error(`Serial Number is required for Asset Code ${item.assetCode}.`);
+                }
+                if (category.requiresMacAddress && (!item.macAddress || item.macAddress.trim() === '')) {
+                    throw new Error(`MAC Address is required for Asset Code ${item.assetCode}.`);
                 }
                 if (item.macAddress && (typeof item.macAddress !== 'string' || !macRegex.test(item.macAddress))) {
                     throw new Error(`Invalid MAC Address format for Asset Code ${item.assetCode}.`);
@@ -139,7 +184,7 @@ assetController.updateAsset = async (req, res, next) => {
     const { id } = req.params;
     const actorId = req.user.id;
     try {
-        const { assetCode, serialNumber, macAddress, status, productModelId } = req.body;
+        const { assetCode, serialNumber, macAddress, status, productModelId, supplierId } = req.body;
 
         const assetId = parseInt(id);
         if (isNaN(assetId)) {
@@ -159,6 +204,29 @@ assetController.updateAsset = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
+
+        // --- START: ADDED VALIDATION ---
+        const productModel = await prisma.productModel.findUnique({
+            where: { id: parsedModelId },
+            include: { category: true },
+        });
+        if (!productModel) {
+            const err = new Error('Product Model not found.');
+            err.statusCode = 404;
+            return next(err);
+        }
+        const { category } = productModel;
+        if (category.requiresSerialNumber && (!serialNumber || serialNumber.trim() === '')) {
+            const err = new Error('Serial Number is required for this category.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (category.requiresMacAddress && (!macAddress || macAddress.trim() === '')) {
+            const err = new Error('MAC Address is required for this category.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: ADDED VALIDATION ---
 
         if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
             const err = new Error('Invalid MAC Address format.');
@@ -181,7 +249,8 @@ assetController.updateAsset = async (req, res, next) => {
                     serialNumber: serialNumber || null,
                     macAddress: macAddress || null,
                     status,
-                    productModelId: parsedModelId
+                    productModelId: parsedModelId,
+                    supplierId: supplierId ? parseInt(supplierId, 10) : null,
                 },
             });
 
@@ -284,16 +353,14 @@ assetController.getAllAssets = async (req, res, next) => {
             where.productModel = { ...where.productModel, brandId: parseInt(brandIdFilter) };
         }
 
-        // --- START: CORRECTED SORTING LOGIC ---
         let orderBy = {};
         if (sortBy === 'productModel') {
             orderBy = { productModel: { modelNumber: sortOrder } };
-        } else if (sortBy === 'category') { // Added this case
+        } else if (sortBy === 'category') {
             orderBy = { productModel: { category: { name: sortOrder } } };
         } else {
             orderBy = { [sortBy]: sortOrder };
         }
-        // --- END: CORRECTED SORTING LOGIC ---
 
         const include = {
             productModel: { include: { category: true, brand: true } },

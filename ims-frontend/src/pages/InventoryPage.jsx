@@ -31,7 +31,7 @@ import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 import { useTranslation } from "react-i18next";
 import BatchAddInventoryDialog from "@/components/dialogs/BatchAddInventoryDialog";
-import { SupplierCombobox } from "@/components/ui/SupplierCombobox"; // <-- 1. IMPORT SUPPLIER COMBOBOX
+import { SupplierCombobox } from "@/components/ui/SupplierCombobox";
 
 const formatMacAddress = (value) => {
   const cleaned = (value || '').replace(/[^0-9a-fA-F]/g, '').toUpperCase();
@@ -49,7 +49,7 @@ const initialEditFormData = {
     macAddress: "",
     productModelId: "",
     status: "IN_STOCK",
-    supplierId: "", // <-- 2. ADD supplierId TO INITIAL STATE
+    supplierId: "",
 };
 
 const SortableHeader = ({ children, sortKey, currentSortBy, sortOrder, onSort, className }) => (
@@ -76,7 +76,7 @@ export default function InventoryPage() {
     const [editFormData, setEditFormData] = useState(initialEditFormData);
     const [editingItemId, setEditingItemId] = useState(null);
     const [selectedModelInfo, setSelectedModelInfo] = useState(null);
-    const [initialSupplier, setInitialSupplier] = useState(null); // <-- 3. ADD STATE FOR INITIAL SUPPLIER
+    const [initialSupplier, setInitialSupplier] = useState(null);
     const [isMacRequired, setIsMacRequired] = useState(true);
     const [isSerialRequired, setIsSerialRequired] = useState(true);
     const [itemToDelete, setItemToDelete] = useState(null);
@@ -98,10 +98,10 @@ export default function InventoryPage() {
         setEditFormData({
             serialNumber: item.serialNumber, macAddress: item.macAddress || '',
             productModelId: item.productModelId, status: item.status,
-            supplierId: item.supplierId || "", // <-- 4. SET supplierId IN FORM DATA
+            supplierId: item.supplierId || "",
         });
         setSelectedModelInfo(item.productModel);
-        setInitialSupplier(item.supplier); // <-- 5. SET INITIAL SUPPLIER FOR COMBOBOX
+        setInitialSupplier(item.supplier);
         setIsMacRequired(item.productModel.category.requiresMacAddress);
         setIsSerialRequired(item.productModel.category.requiresSerialNumber);
         setIsEditDialogOpen(true);
@@ -118,7 +118,6 @@ export default function InventoryPage() {
         setEditFormData({ ...editFormData, macAddress: formatted });
     };
     
-    // --- 6. ADD HANDLER FOR SUPPLIER SELECTION ---
     const handleEditSupplierSelect = (supplierId) => {
         setEditFormData(prev => ({ ...prev, supplierId: supplierId }));
     };
@@ -144,12 +143,20 @@ export default function InventoryPage() {
             toast.error("Please select a Product Model.");
             return;
         }
+        if (isSerialRequired && !editFormData.serialNumber?.trim()) {
+            toast.error("Serial Number is required for this product category.");
+            return;
+        }
+        if (isMacRequired && !editFormData.macAddress?.trim()) {
+            toast.error("MAC Address is required for this product category.");
+            return;
+        }
         const payload = {
             serialNumber: editFormData.serialNumber || null,
             macAddress: editFormData.macAddress || null,
             productModelId: parseInt(editFormData.productModelId, 10),
             status: editFormData.status,
-            supplierId: editFormData.supplierId ? parseInt(editFormData.supplierId, 10) : null, // <-- 7. ADD supplierId TO PAYLOAD
+            supplierId: editFormData.supplierId ? parseInt(editFormData.supplierId, 10) : null,
         };
         try {
             await axiosInstance.put(`/inventory/${editingItemId}`, payload, { headers: { Authorization: `Bearer ${token}` } });
@@ -462,7 +469,6 @@ export default function InventoryPage() {
                                 <div className="space-y-2"><Label>{t('tableHeader_brand')}</Label><Input value={selectedModelInfo.brand.name} disabled /></div>
                             </div>
                         )}
-                        {/* --- START: 8. ADD SUPPLIER COMBOBOX --- */}
                         <div className="space-y-2">
                             <Label>{t('suppliers')}</Label>
                             <SupplierCombobox
@@ -471,7 +477,6 @@ export default function InventoryPage() {
                                 initialSupplier={initialSupplier}
                             />
                         </div>
-                        {/* --- END: 8. ADD SUPPLIER COMBOBOX --- */}
                         <div className="space-y-2">
                             <Label htmlFor="serialNumber">{t('tableHeader_serialNumber')} {!isSerialRequired && <span className="text-xs text-slate-500 ml-2">(Not Required)</span>}</Label>
                             <Input id="serialNumber" value={editFormData.serialNumber || ''} onChange={handleEditInputChange} required={isSerialRequired} disabled={!isSerialRequired} />

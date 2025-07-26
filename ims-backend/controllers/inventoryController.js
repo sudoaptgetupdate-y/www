@@ -30,6 +30,38 @@ inventoryController.addInventoryItem = async (req, res, next) => {
             return next(err);
         }
 
+        // --- START: MODIFIED VALIDATION ---
+        const parsedSupplierId = parseInt(supplierId, 10);
+        if (isNaN(parsedSupplierId)) {
+            const err = new Error('Supplier ID is required and must be a valid number.');
+            err.statusCode = 400;
+            return next(err);
+        }
+
+        const productModel = await prisma.productModel.findUnique({
+            where: { id: parsedModelId },
+            include: { category: true },
+        });
+
+        if (!productModel) {
+            const err = new Error('Product Model not found.');
+            err.statusCode = 404;
+            return next(err);
+        }
+
+        const { category } = productModel;
+        if (category.requiresSerialNumber && (!serialNumber || serialNumber.trim() === '')) {
+            const err = new Error('Serial Number is required for this category.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (category.requiresMacAddress && (!macAddress || macAddress.trim() === '')) {
+            const err = new Error('MAC Address is required for this category.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: MODIFIED VALIDATION ---
+
         if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
             const err = new Error('Invalid MAC Address format.');
             err.statusCode = 400;
@@ -44,7 +76,7 @@ inventoryController.addInventoryItem = async (req, res, next) => {
                     serialNumber: serialNumber || null,
                     macAddress: macAddress || null,
                     productModelId: parsedModelId,
-                    supplierId: supplierId ? parseInt(supplierId) : null,
+                    supplierId: parsedSupplierId,
                     addedById: userId,
                     status: 'IN_STOCK',
                 },
@@ -79,15 +111,41 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
             return next(err);
         }
 
+        // --- START: MODIFIED VALIDATION ---
+        const parsedSupplierId = parseInt(supplierId, 10);
+        if (isNaN(parsedSupplierId)) {
+            const err = new Error('Supplier ID is required and must be a valid number.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: MODIFIED VALIDATION ---
+
         if (!Array.isArray(items) || items.length === 0) {
             const err = new Error('Items list cannot be empty.');
             err.statusCode = 400;
             return next(err);
         }
+        
+        const productModel = await prisma.productModel.findUnique({
+            where: { id: parsedModelId },
+            include: { category: true },
+        });
+        if (!productModel) {
+            const err = new Error('Product Model not found.');
+            err.statusCode = 404;
+            return next(err);
+        }
+        const { category } = productModel;
 
         const newItems = await prisma.$transaction(async (tx) => {
             const createdItems = [];
             for (const item of items) {
+                if (category.requiresSerialNumber && (!item.serialNumber || item.serialNumber.trim() === '')) {
+                    throw new Error(`Serial Number is required for all items in this batch.`);
+                }
+                if (category.requiresMacAddress && (!item.macAddress || item.macAddress.trim() === '')) {
+                    throw new Error(`MAC Address is required for all items in this batch.`);
+                }
                 if (item.macAddress && (typeof item.macAddress !== 'string' || !macRegex.test(item.macAddress))) {
                     throw new Error(`Invalid MAC Address format for one of the items: ${item.macAddress}`);
                 }
@@ -99,7 +157,7 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
                         serialNumber: item.serialNumber || null,
                         macAddress: item.macAddress || null,
                         productModelId: parsedModelId,
-                        supplierId: supplierId ? parseInt(supplierId) : null,
+                        supplierId: parsedSupplierId,
                         addedById: userId,
                         status: 'IN_STOCK',
                     },
@@ -127,6 +185,7 @@ inventoryController.addBatchInventoryItems = async (req, res, next) => {
         next(error);
     }
 };
+
 
 inventoryController.getAllInventoryItems = async (req, res, next) => {
     try {
@@ -187,7 +246,7 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         const include = {
             productModel: { include: { category: true, brand: true } },
             addedBy: { select: { name: true } },
-            supplier: true, // <-- ADDED THIS LINE
+            supplier: true,
             borrowingRecords: {
                 where: { returnedAt: null },
                 select: { borrowingId: true }
@@ -262,7 +321,7 @@ inventoryController.updateInventoryItem = async (req, res, next) => {
     const { id } = req.params;
     const actorId = req.user.id;
     try {
-        const { serialNumber, macAddress, status, productModelId, supplierId } = req.body; // <-- ADDED supplierId
+        const { serialNumber, macAddress, status, productModelId, supplierId } = req.body;
         
         const itemId = parseInt(id);
         if (isNaN(itemId)) {
@@ -277,6 +336,30 @@ inventoryController.updateInventoryItem = async (req, res, next) => {
             err.statusCode = 400;
             return next(err);
         }
+
+        // --- START: MODIFIED VALIDATION ---
+        const productModel = await prisma.productModel.findUnique({
+            where: { id: parsedModelId },
+            include: { category: true },
+        });
+        if (!productModel) {
+            const err = new Error('Product Model not found.');
+            err.statusCode = 404;
+            return next(err);
+        }
+        const { category } = productModel;
+        if (category.requiresSerialNumber && (!serialNumber || serialNumber.trim() === '')) {
+            const err = new Error('Serial Number is required for this category.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        if (category.requiresMacAddress && (!macAddress || macAddress.trim() === '')) {
+            const err = new Error('MAC Address is required for this category.');
+            err.statusCode = 400;
+            return next(err);
+        }
+        // --- END: MODIFIED VALIDATION ---
+
         if (macAddress && (typeof macAddress !== 'string' || !macRegex.test(macAddress))) {
             const err = new Error('Invalid MAC Address format.');
             err.statusCode = 400;
@@ -291,7 +374,7 @@ inventoryController.updateInventoryItem = async (req, res, next) => {
                     macAddress: macAddress || null,
                     status,
                     productModelId: parsedModelId,
-                    supplierId: supplierId ? parseInt(supplierId, 10) : null, // <-- ADDED THIS LINE
+                    supplierId: supplierId ? parseInt(supplierId, 10) : null,
                 },
             }),
             createEventLog(
