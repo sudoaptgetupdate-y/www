@@ -21,6 +21,7 @@ import { useTranslation } from "react-i18next";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const SkeletonRow = () => (
     <TableRow>
@@ -127,8 +128,23 @@ export default function CustomerPage() {
                                     <TableCell>{customer.customerCode}</TableCell>
                                     <TableCell>{customer.name}</TableCell>
                                     <TableCell>{customer.phone}</TableCell>
-                                    {/* --- START: เพิ่ม Cell ของ Address --- */}
-                                    <TableCell>{customer.address || '-'}</TableCell>
+                                    {/* --- START: เพิ่ม Cell ของ Address พร้อม Tooltip --- */}
+                                    <TableCell>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="max-w-xs truncate">
+                                                        {customer.address || '-'}
+                                                    </div>
+                                                </TooltipTrigger>
+                                                {customer.address && (
+                                                    <TooltipContent>
+                                                        <p className="max-w-md">{customer.address}</p>
+                                                    </TooltipContent>
+                                                )}
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </TableCell>
                                     {/* --- END --- */}
                                     {canManage && (
                                         <TableCell className="text-center">
