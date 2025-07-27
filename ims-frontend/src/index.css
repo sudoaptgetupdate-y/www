@@ -46,6 +46,10 @@
     visibility: hidden;
   }
 
+  .no-print {
+    display: none !important;
+  }
+
   .printable-area, .printable-area * {
     visibility: visible;
   }
@@ -55,29 +59,51 @@
     left: 0;
     top: 0;
     width: 100%;
-    padding: 0.75in 0.5in;
+    padding: 0.5in;
     font-size: 10pt;
     font-family: 'Sarabun', sans-serif !important;
+  }
+  
+  .printable-area .card {
+    box-shadow: none !important;
+    border: none !important;
+    margin-top: 0 !important;
   }
 
   .print-header {
     display: block !important;
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
   }
   .print-header h1 {
     font-size: 16pt !important;
     font-weight: 700 !important;
+    line-height: 1.2;
   }
-  .print-header p {
-    font-size: 10pt !important;
-    margin: 0;
+  
+  .printable-area .grid {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  .printable-area p, .printable-area div, .printable-area label {
+    line-height: 1.3 !important;
+  }
+  
+  .printable-area .space-y-1 > :not([hidden]) ~ :not([hidden]),
+  .printable-area .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.2rem !important;
+  }
+
+  .printable-area .card.mt-6 {
+    margin-top: 1rem !important;
+    margin-bottom: 1rem !important;
   }
   
   .signature-section {
     display: flex !important;
     justify-content: space-between !important;
-    margin-top: 5rem !important;
+    margin-top: 2.5rem !important;
     page-break-inside: avoid !important;
   }
   
@@ -93,46 +119,10 @@
     height: 3rem;
   }
 
-  .shipping-label-page {
-    visibility: visible !important;
-    display: flex !important;
-    flex-direction: column;
-    justify-content: space-between;
-    page-break-before: always;
-    width: 100%;
-    height: 95vh;
-    padding: 0.5in;
-    font-family: 'Sarabun', sans-serif !important;
-    font-size: 12pt;
-  }
-
-  .receiver-address {
-    visibility: visible !important;
-    align-self: flex-start;
-    text-align: left;
-    border: 2px solid black;
-    padding: 1.5rem;
-    width: 60%;
-  }
-
-  .sender-address {
-    visibility: visible !important;
-    align-self: flex-end;
-    text-align: right;
-    width: 60%;
-  }
-
-  .receiver-address p, .sender-address p {
-    visibility: visible !important;
-    margin: 0;
-  }
-  
-  .print-footer {
-    display: block !important;
-  }
-
   table, thead, tbody, tfoot, tr, th, td {
     border-color: #666 !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
   }
 }
 /* --- END: Final Print Styles --- */

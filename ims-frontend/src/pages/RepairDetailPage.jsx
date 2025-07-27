@@ -174,7 +174,7 @@ export default function RepairDetailPage() {
     const getOwnerInfo = () => {
         if (!repairOrder) return "";
         if (repairOrder.customer) {
-            return `for ${repairOrder.customer.name}`;
+            return `(${repairOrder.customer.name})`;
         }
         if (repairOrder.items.length > 0) {
             const firstItemType = repairOrder.items[0].inventoryItem.itemType;
@@ -189,7 +189,7 @@ export default function RepairDetailPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center no-print">
                 <Button variant="outline" onClick={() => navigate('/repairs')}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> {t('back_to_list')}
                 </Button>
@@ -201,83 +201,136 @@ export default function RepairDetailPage() {
                 </div>
             </div>
             
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-3">
-                        <Wrench className="h-6 w-6" />
-                        <span>Repair Order #{repairOrder.id} {getOwnerInfo()}</span>
-                    </CardTitle>
-                    <CardDescription>{t('repairDetail_description')}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="space-y-2">
-                            <Label>{t('repairDetail_status')}</Label>
-                            <div className="flex items-center gap-2">
-                                <StatusBadge status={repairOrder.status} />
+            <div className="printable-area">
+                <Card>
+                    <CardHeader>
+                        <div className="print-header hidden">
+                            <h1 className="text-xl font-bold">
+                                ใบส่งซ่อมสินค้า / Repair Order
+                            </h1>
+                        </div>
+                        <div className="no-print">
+                            <CardTitle className="flex items-center gap-3">
+                                <Wrench className="h-6 w-6" />
+                                <span>Repair Order #{repairOrder.id} {getOwnerInfo()}</span>
+                            </CardTitle>
+                            <CardDescription>{t('repairDetail_description')}</CardDescription>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="no-print">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="space-y-2">
+                                    <Label>{t('repairDetail_status')}</Label>
+                                    <div className="flex items-center gap-2">
+                                        <StatusBadge status={repairOrder.status} />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label>{t('createRepair_sender_label')}</Label>
+                                    <p className="font-medium whitespace-pre-wrap">{repairOrder.sender.name}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label>{t('createRepair_receiver_label')}</Label>
+                                    <p className="font-medium whitespace-pre-wrap">{repairOrder.receiver.name}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label>{t('tableHeader_repairDate')}</Label>
+                                    <p>{new Date(repairOrder.repairDate).toLocaleString()}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label>{t('tableHeader_createdBy')}</Label>
+                                    <p>{repairOrder.createdBy.name}</p>
+                                </div>
+                                <div className="space-y-1 md:col-span-3">
+                                    <Label>{t('createBorrowing_notes_label')}</Label>
+                                    <p className="text-sm p-3 bg-muted rounded-md min-h-[50px] whitespace-pre-wrap">{repairOrder.notes || 'N/A'}</p>
+                                </div>
                             </div>
                         </div>
-                        <div className="space-y-1">
-                            <Label>{t('createRepair_sender_label')}</Label>
-                            <p className="font-medium">{repairOrder.sender.name}</p>
+                        
+                        <div className="hidden print:block text-sm">
+                             <div className="grid grid-cols-2 gap-x-8 border-t border-b py-4">
+                                <div className="space-y-1">
+                                    <p className="font-semibold text-muted-foreground">{t('repair_form_sender')}</p>
+                                    <p className="font-bold">{repairOrder.sender.name}</p>
+                                    <p className="whitespace-pre-wrap">{repairOrder.sender.address || 'N/A'}</p>
+                                    <p>ผู้ติดต่อ: {repairOrder.sender.contactPerson || '-'}</p>
+                                    <p>โทร: {repairOrder.sender.phone || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="font-semibold text-muted-foreground">{t('repair_form_receiver')}</p>
+                                    <p className="font-bold">{repairOrder.receiver.name}</p>
+                                    <p className="whitespace-pre-wrap">{repairOrder.receiver.address || 'N/A'}</p>
+                                    <p>ผู้ติดต่อ: {repairOrder.receiver.contactPerson || '-'}</p>
+                                    <p>โทร: {repairOrder.receiver.phone || '-'}</p>
+                                </div>
+                            </div>
+                             <div className="mt-4 space-y-1">
+                                <p><span className="font-semibold">Repair Order #{repairOrder.id} {getOwnerInfo()}</span></p>
+                                <p><span className="text-muted-foreground">{t('tableHeader_repairDate')}:</span> <span className="font-semibold">{new Date(repairOrder.repairDate).toLocaleString()}</span></p>
+                                <p><span className="text-muted-foreground">{t('tableHeader_createdBy')}:</span> <span className="font-semibold">{repairOrder.createdBy.name}</span></p>
+                                {repairOrder.customer && <p><span className="text-muted-foreground">{t('tableHeader_customer')}:</span> <span className="font-semibold">{repairOrder.customer.name}</span></p>}
+                            </div>
+                            <div className="mt-4 space-y-1">
+                                <Label className="text-muted-foreground">{t('createBorrowing_notes_label')}:</Label>
+                                <p className="text-sm p-3 border rounded-md min-h-[40px] whitespace-pre-wrap">{repairOrder.notes || 'N/A'}</p>
+                            </div>
                         </div>
-                        <div className="space-y-1">
-                            <Label>{t('createRepair_receiver_label')}</Label>
-                            <p className="font-medium">{repairOrder.receiver.name}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <Label>{t('tableHeader_repairDate')}</Label>
-                            <p>{new Date(repairOrder.repairDate).toLocaleString()}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <Label>{t('tableHeader_createdBy')}</Label>
-                            <p>{repairOrder.createdBy.name}</p>
-                        </div>
-                        <div className="space-y-1 md:col-span-3">
-                            <Label>{t('createBorrowing_notes_label')}</Label>
-                            <p className="text-sm p-3 bg-muted rounded-md min-h-[50px]">{repairOrder.notes || 'N/A'}</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>{t('createSale_selected_items', { count: repairOrder.items.length })}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="border rounded-md">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>{t('tableHeader_category')}</TableHead>
-                                    <TableHead>{t('tableHeader_brand')}</TableHead>
-                                    <TableHead>{t('tableHeader_productModel')}</TableHead>
-                                    <TableHead>{t('tableHeader_assetCode')}</TableHead>
-                                    <TableHead>{t('tableHeader_serialNumber')}</TableHead>
-                                    <TableHead className="text-center">{t('repairDetail_returned')}</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {repairOrder.items.map(item => (
-                                    <TableRow key={item.inventoryItemId}>
-                                        <TableCell>{item.inventoryItem.productModel.category.name}</TableCell>
-                                        <TableCell>{item.inventoryItem.productModel.brand.name}</TableCell>
-                                        <TableCell>{item.inventoryItem.productModel.modelNumber}</TableCell>
-                                        <TableCell>
-                                            {item.inventoryItem.itemType === 'ASSET' ? item.inventoryItem.assetCode : 'N/A'}
-                                        </TableCell>
-                                        <TableCell>{item.inventoryItem.serialNumber}</TableCell>
-                                        <TableCell className="text-center">
-                                            {item.returnedAt ? <Check className="text-green-500 mx-auto" /> : <X className="text-red-500 mx-auto" />}
-                                        </TableCell>
+                <Card className="mt-6">
+                    <CardHeader>
+                        <CardTitle>{t('createSale_selected_items', { count: repairOrder.items.length })}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="border rounded-md">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>{t('tableHeader_category')}</TableHead>
+                                        <TableHead>{t('tableHeader_brand')}</TableHead>
+                                        <TableHead>{t('tableHeader_productModel')}</TableHead>
+                                        <TableHead>{t('tableHeader_assetCode')}</TableHead>
+                                        <TableHead>{t('tableHeader_serialNumber')}</TableHead>
+                                        <TableHead className="text-center">{t('repairDetail_returned')}</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {repairOrder.items.map(item => (
+                                        <TableRow key={item.inventoryItemId}>
+                                            <TableCell>{item.inventoryItem.productModel.category.name}</TableCell>
+                                            <TableCell>{item.inventoryItem.productModel.brand.name}</TableCell>
+                                            <TableCell>{item.inventoryItem.productModel.modelNumber}</TableCell>
+                                            <TableCell>
+                                                {item.inventoryItem.itemType === 'ASSET' ? item.inventoryItem.assetCode : 'N/A'}
+                                            </TableCell>
+                                            <TableCell>{item.inventoryItem.serialNumber}</TableCell>
+                                            <TableCell className="text-center">
+                                                {item.returnedAt ? <Check className="text-green-500 mx-auto" /> : <X className="text-red-500 mx-auto" />}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <div className="signature-section hidden">
+                    <div className="signature-box">
+                        <div className="signature-line"></div>
+                        <p>({repairOrder.sender.contactPerson || '.....................................................'})</p>
+                        <p>{t('print_sender_signature')}</p>
                     </div>
-                </CardContent>
-            </Card>
+                    <div className="signature-box">
+                        <div className="signature-line"></div>
+                        <p>({repairOrder.receiver.contactPerson || '.....................................................'})</p>
+                        <p>{t('print_receiver_signature')}</p>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
