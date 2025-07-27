@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const SkeletonRow = () => (
     <TableRow>
@@ -123,7 +124,22 @@ export default function AddressPage() {
                                     <TableCell>{address.name}</TableCell>
                                     <TableCell>{address.contactPerson || '-'}</TableCell>
                                     <TableCell>{address.phone || '-'}</TableCell>
-                                    <TableCell>{address.address || '-'}</TableCell>
+                                    <TableCell>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="max-w-xs truncate">
+                                                        {address.address || '-'}
+                                                    </div>
+                                                </TooltipTrigger>
+                                                {address.address && (
+                                                    <TooltipContent>
+                                                        <p className="max-w-md">{address.address}</p>
+                                                    </TooltipContent>
+                                                )}
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </TableCell>
                                     {canManage && (
                                         <TableCell className="text-center">
                                             <div className="flex items-center justify-center gap-2">

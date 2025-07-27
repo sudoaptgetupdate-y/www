@@ -259,7 +259,7 @@
   "tableHeader_handledBy": "Handled By",
   "tableHeader_event": "Event",
   "item_history_title": "Item History",
-  "item_history_description": "Tracking history for: {{modelNumber}} (S/N: {{serialNumber}})",
+  "item_history_description": "Tracking history for: {{modelNumber}}",
   "item_history_back_button": "Back to Inventory",
   "item_history_log_title": "Transaction Log",
   "item_history_log_description": "A complete chronological history of this item.",

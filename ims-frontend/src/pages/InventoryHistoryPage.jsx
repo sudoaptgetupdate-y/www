@@ -103,8 +103,8 @@ export default function InventoryHistoryPage() {
     };
 
     const handleItemsPerPageChange = (newSize) => {
-        setItemsPerPage(parseInt(newSize, 10));
-        setCurrentPage(1); // กลับไปหน้าแรกเมื่อเปลี่ยนจำนวนรายการต่อหน้า
+        setItemsPerPage(parseInt(newSize, 10)); // กลับไปหน้าแรกเมื่อเปลี่ยนจำนวนรายการต่อหน้า
+        setCurrentPage(1);
     };
     // --- END ---
 
@@ -117,14 +117,11 @@ export default function InventoryHistoryPage() {
                         {t('item_history_title')}
                     </h1>
                     <div className="text-muted-foreground mt-1">
-                        <p>
-                            {t('item_history_description', { 
-                                modelNumber: itemDetails.productModel.modelNumber, 
-                                serialNumber: itemDetails.serialNumber || 'N/A' 
-                            })}
-                        </p>
+                        <p>{t('item_history_description', { modelNumber: itemDetails.productModel.modelNumber })}</p>
+                        <p className="text-sm">{t('tableHeader_serialNumber')}: {itemDetails.serialNumber || 'N/A'}</p>
+                        <p className="text-sm">{t('tableHeader_macAddress')}: {itemDetails.macAddress || 'N/A'}</p>
                         {itemDetails.supplier && (
-                            <p className="text-sm mt-1">{t('purchased_from')}: <span className="font-semibold">{itemDetails.supplier.name}</span></p>
+                            <p className="text-sm mt-1">{t('purchased_from')}: <span className="font-semibold text-foreground">{itemDetails.supplier.name}</span></p>
                         )}
                     </div>
                 </div>

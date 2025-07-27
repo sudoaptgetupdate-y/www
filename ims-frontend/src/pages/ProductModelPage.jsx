@@ -7,9 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-// --- START: 1. Import ไอคอน ---
 import { PlusCircle, Edit, Trash2, ArrowUpDown, Boxes } from "lucide-react";
-// --- END ---
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from "@/components/ui/dialog";
@@ -26,10 +24,12 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const SkeletonRow = () => (
     <TableRow>
+        <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
         <TableCell><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
@@ -143,7 +143,6 @@ export default function ProductModelPage() {
     return (
         <Card>
             <CardHeader>
-                {/* --- START: 2. ปรับปรุง CardHeader --- */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <CardTitle className="flex items-center gap-2">
@@ -158,7 +157,6 @@ export default function ProductModelPage() {
                         </Button>
                     }
                 </div>
-                {/* --- END --- */}
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
@@ -177,20 +175,20 @@ export default function ProductModelPage() {
                         onSelect={(value) => handleFilterChange('brandId', value)}
                     />
                 </div>
-                {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
                 <div className="border rounded-md">
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                <SortableHeader sortKey="modelNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
-                                    {t('tableHeader_productModel')}
-                                </SortableHeader>
                                 <SortableHeader sortKey="category" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
                                     {t('tableHeader_category')}
                                 </SortableHeader>
                                 <SortableHeader sortKey="brand" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
                                     {t('tableHeader_brand')}
                                 </SortableHeader>
+                                <SortableHeader sortKey="modelNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_productModel')}
+                                </SortableHeader>
+                                <TableHead>{t('product_model_form_description')}</TableHead>
                                 <SortableHeader sortKey="sellingPrice" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange} className="text-right">
                                     {t('tableHeader_price')}
                                 </SortableHeader>
@@ -202,9 +200,25 @@ export default function ProductModelPage() {
                                 [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
                             ) : productModels.map((model) => (
                                 <TableRow key={model.id}>
-                                    <TableCell>{model.modelNumber}</TableCell>
                                     <TableCell>{model.category.name}</TableCell>
                                     <TableCell>{model.brand.name}</TableCell>
+                                    <TableCell>{model.modelNumber}</TableCell>
+                                    <TableCell>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="max-w-xs truncate">
+                                                        {model.description || '-'}
+                                                    </div>
+                                                </TooltipTrigger>
+                                                {model.description && (
+                                                    <TooltipContent>
+                                                        <p className="max-w-md">{model.description}</p>
+                                                    </TooltipContent>
+                                                )}
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </TableCell>
                                     <TableCell className="text-right">{model.sellingPrice.toFixed(2)}</TableCell>
                                     {canManage && (
                                         <TableCell className="text-center">
@@ -223,7 +237,6 @@ export default function ProductModelPage() {
                         </TableBody>
                     </Table>
                 </div>
-                {/* --- END --- */}
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
