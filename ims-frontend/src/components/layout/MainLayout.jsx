@@ -120,77 +120,66 @@ const MainLayout = () => {
     }
 
     const SidebarContent = () => (
-        <div className="flex flex-col h-full relative">
-            <Link to="/dashboard" className="p-4 border-b flex items-center gap-3 h-[65px] hover:bg-muted/50 transition-colors">
-                <div className="bg-primary p-2 rounded-lg">
-                    <Layers className="text-primary-foreground" size={24}/>
-                </div>
-                <h1 className={cn("text-lg font-bold text-slate-800 transition-all whitespace-nowrap", isSidebarCollapsed && "opacity-0 hidden")}>
-                    Engineer IMS
-                </h1>
-            </Link>
+    <div className="flex flex-col h-full relative">
+        <Link to="/dashboard" className="p-4 border-b flex items-center gap-3 h-[65px] hover:bg-muted/50 transition-colors">
+            <div className="bg-primary p-2 rounded-lg">
+                <Layers className="text-primary-foreground" size={24}/>
+            </div>
+            <h1 className={cn("text-lg font-bold text-slate-800 transition-all whitespace-nowrap", isSidebarCollapsed && "opacity-0 hidden")}>
+                Engineer IMS
+            </h1>
+        </Link>
+        
+        <nav className="h-[calc(100vh-65px)] px-3 py-4 space-y-1.5 overflow-y-auto">
+             <NavItem to="/dashboard" icon={<Boxes size={18} />} text={t('dashboard')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
             
-            <nav className="h-[calc(100vh-65px)] px-3 py-4 space-y-1.5 overflow-y-auto">
-                 <NavItem to="/dashboard" icon={<Boxes size={18} />} text={t('dashboard')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                
-                <div>
+            {/* --- กลุ่มที่ 1: ธุรกรรม (Transactions) --- */}
+            <div>
+                <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
+                    {isSidebarCollapsed ? 'T' : 'Transactions'}
+                </p>
+                <div className="space-y-1">
+                    <NavItem to="/sales" icon={<ShoppingCart size={18}/>} text={t('sales')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                    <NavItem to="/borrowings" icon={<ArrowRightLeft size={18}/>} text={t('borrowing')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                    <NavItem to="/asset-assignments" icon={<HardDrive size={18}/>} text={t('assignments')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                    <NavItem to="/repairs" icon={<Wrench size={18}/>} text={t('repairOrders')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                </div>
+            </div>
+
+            {/* --- กลุ่มที่ 2: จัดการข้อมูลหลัก (Master Data) --- */}
+            <div>
+                <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
+                     {isSidebarCollapsed ? 'M' : 'Master Data'}
+                </p>
+                 <div className="space-y-1">
+                    {/* ข้อมูลสินค้าและคลัง */}
+                    <NavItem to="/inventory" icon={<Package size={18}/>} text={t('inventory')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                    <NavItem to="/assets" icon={<Layers size={18}/>} text={t('assetList')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                    <NavItem to="/product-models" icon={<Boxes size={18}/>} text={t('models')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                    <NavItem to="/categories" icon={<Tag size={18}/>} text={t('categories')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                    <NavItem to="/brands" icon={<Building2 size={18}/>} text={t('brands')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                    {/* ข้อมูลติดต่อ */}
+                    <NavItem to="/customers" icon={<UsersIcon size={18}/>} text={t('customers')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                    <NavItem to="/suppliers" icon={<Truck size={18}/>} text={t('suppliers')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                    <NavItem to="/addresses" icon={<BookUser size={18}/>} text={t('addressBook')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                </div>
+            </div>
+            
+            {/* --- กลุ่มที่ 3: ระบบ (System) - สำหรับ Super Admin --- */}
+            {isSuperAdmin && (
+                 <div className="pt-2">
                     <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
-                        {isSidebarCollapsed ? t('business').charAt(0) : t('business')}
+                        {isSidebarCollapsed ? t('system').charAt(0) : t('system')}
                     </p>
                     <div className="space-y-1">
-                        <NavItem to="/sales" icon={<ShoppingCart size={18}/>} text={t('sales')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/borrowings" icon={<ArrowRightLeft size={18}/>} text={t('borrowing')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/customers" icon={<UsersIcon size={18}/>} text={t('customers')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/users" icon={<Settings size={18}/>} text={t('userManagement')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/company-profile" icon={<Building size={18}/>} text="Company Profile" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                     </div>
                 </div>
-
-                <div>
-                    <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
-                         {isSidebarCollapsed ? t('repair').charAt(0) : t('repair')}
-                    </p>
-                    <div className="space-y-1">
-                        <NavItem to="/repairs" icon={<Wrench size={18}/>} text={t('repairOrders')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/addresses" icon={<BookUser size={18}/>} text={t('addressBook')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                    </div>
-                </div>
-
-                <div>
-                    <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
-                        {isSidebarCollapsed ? t('products').charAt(0) : t('products')}
-                    </p>
-                     <div className="space-y-1">
-                        <NavItem to="/inventory" icon={<Package size={18}/>} text={t('inventory')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/product-models" icon={<Boxes size={18}/>} text={t('models')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/brands" icon={<Building2 size={18}/>} text={t('brands')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/categories" icon={<Tag size={18}/>} text={t('categories')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/suppliers" icon={<Truck size={18}/>} text={t('suppliers')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                    </div>
-                </div>
-
-                <div>
-                    <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
-                        {isSidebarCollapsed ? t('assets').charAt(0) : t('assets')}
-                    </p>
-                    <div className="space-y-1">
-                        <NavItem to="/asset-assignments" icon={<HardDrive size={18}/>} text={t('assignments')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/assets" icon={<Layers size={18}/>} text={t('assetList')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                    </div>
-                </div>
-
-                {isSuperAdmin && (
-                     <div className="pt-2">
-                        <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
-                            {isSidebarCollapsed ? t('system').charAt(0) : t('system')}
-                        </p>
-                        <div className="space-y-1">
-                            <NavItem to="/company-profile" icon={<Building size={18}/>} text="Company Profile" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                            <NavItem to="/users" icon={<Settings size={18}/>} text={t('userManagement')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        </div>
-                    </div>
-                )}
-            </nav>
-        </div>
-    );
+            )}
+        </nav>
+    </div>
+);
 
     return (
         <div className="relative min-h-screen md:flex bg-slate-50">
