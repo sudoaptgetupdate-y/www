@@ -7,9 +7,7 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-// --- START: 1. Import ไอคอน ---
 import { ArrowLeft, CheckSquare, Square, Printer, CornerDownLeft, HardDrive } from "lucide-react";
-// --- END ---
 import {
     AlertDialog,
     AlertDialogAction,
@@ -87,7 +85,6 @@ export default function AssetAssignmentDetailPage() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
-                {/* --- START: 2. ปรับปรุง Header --- */}
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <HardDrive className="h-6 w-6" />
@@ -95,7 +92,6 @@ export default function AssetAssignmentDetailPage() {
                     </h1>
                     <p className="text-muted-foreground mt-1">Viewing details for Assignment ID #{formattedAssignmentId}</p>
                 </div>
-                {/* --- END --- */}
                  <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={() => navigate(-1)}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
@@ -159,8 +155,12 @@ export default function AssetAssignmentDetailPage() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b bg-muted/40">
-                                    <th className="p-2 text-left">รหัสทรัพย์สิน (Asset Code)</th>
-                                    <th className="p-2 text-left">รุ่น (Product Model)</th>
+                                    {/* --- START: แก้ไขส่วนหัวตาราง --- */}
+                                    <th className="p-2 text-left">Category</th>
+                                    <th className="p-2 text-left">Brand</th>
+                                    <th className="p-2 text-left">Product Model</th>
+                                    <th className="p-2 text-left">Asset Code</th>
+                                    {/* --- END: แก้ไขส่วนหัวตาราง --- */}
                                     <th className="p-2 text-left">Serial Number</th>
                                     <th className="p-2 text-left">สถานะ (Status)</th>
                                 </tr>
@@ -168,8 +168,12 @@ export default function AssetAssignmentDetailPage() {
                             <tbody>
                                 {assignment.items.map(item => (
                                     <tr key={item.inventoryItem.id} className="border-b">
-                                        <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
+                                        {/* --- START: เพิ่ม Cell ของตาราง --- */}
+                                        <td className="p-2">{item.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
+                                        <td className="p-2">{item.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
+                                        {/* --- END: เพิ่ม Cell ของตาราง --- */}
                                         <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
+                                        <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
                                         <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
                                         <td className="p-2">
                                             <StatusBadge status={item.returnedAt ? 'RETURNED' : 'ASSIGNED'} />
@@ -201,7 +205,7 @@ export default function AssetAssignmentDetailPage() {
             </Card>
 
             <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
-                 <DialogContent>
+                 <DialogContent className="max-w-3xl">
                     <DialogHeader>
                         <DialogTitle>Receive Returned Assets</DialogTitle>
                         <DialogDescription>Select assets that the employee is returning.</DialogDescription>
@@ -209,14 +213,18 @@ export default function AssetAssignmentDetailPage() {
                     <div className="py-4 max-h-[60vh] overflow-y-auto">
                         <div className="border rounded-md">
                             <table className="w-full text-sm">
+                                {/* --- START: แก้ไขส่วนหัวตารางใน Dialog --- */}
                                 <thead>
                                     <tr className="border-b">
                                         <th className="p-2 w-12 text-center">Return</th>
                                         <th className="p-2 text-left">Asset Code</th>
+                                        <th className="p-2 text-left">Category</th>
+                                        <th className="p-2 text-left">Brand</th>
                                         <th className="p-2 text-left">Product</th>
                                         <th className="p-2 text-left">Serial Number</th>
                                     </tr>
                                 </thead>
+                                {/* --- END: แก้ไขส่วนหัวตารางใน Dialog --- */}
                                 <tbody>
                                     {itemsToReturn.map(item => (
                                         <tr
@@ -230,7 +238,11 @@ export default function AssetAssignmentDetailPage() {
                                                     : <Square className="h-5 w-5 text-muted-foreground mx-auto" />
                                                 }
                                             </td>
+                                            {/* --- START: เพิ่ม Cell ของตารางใน Dialog --- */}
                                             <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
+                                            <td className="p-2">{item.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
+                                            <td className="p-2">{item.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
+                                            {/* --- END: เพิ่ม Cell ของตารางใน Dialog --- */}
                                             <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
                                             <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
                                         </tr>

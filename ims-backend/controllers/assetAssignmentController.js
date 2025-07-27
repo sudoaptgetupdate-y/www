@@ -93,7 +93,6 @@ assetAssignmentController.createAssignment = async (req, res, next) => {
     }
 };
 
-// ... (rest of the file remains the same)
 assetAssignmentController.returnItems = async (req, res, next) => {
     const { assignmentId } = req.params;
     const { itemIdsToReturn } = req.body;
@@ -262,7 +261,14 @@ assetAssignmentController.getAssignmentById = async (req, res, next) => {
                     include: {
                         inventoryItem: {
                             include: {
-                                productModel: true
+                                // --- START: แก้ไขส่วนนี้ ---
+                                productModel: {
+                                    include: {
+                                        category: true,
+                                        brand: true
+                                    }
+                                }
+                                // --- END: แก้ไขส่วนนี้ ---
                             }
                         }
                     }
