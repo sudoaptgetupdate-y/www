@@ -16,7 +16,7 @@ const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
 };
 
 repairController.createRepairOrder = async (req, res, next) => {
-    const { senderId, receiverId, notes, items } = req.body;
+    const { senderId, receiverId, notes, items, customerId } = req.body;
     const createdById = req.user.id;
 
     const parsedSenderId = parseInt(senderId, 10);
@@ -69,6 +69,7 @@ repairController.createRepairOrder = async (req, res, next) => {
                     receiverId: parsedReceiverId,
                     notes,
                     createdById,
+                    customerId: customerId ? parseInt(customerId) : null,
                     items: {
                         create: allItemIds.map(id => ({
                             inventoryItemId: id
@@ -121,7 +122,8 @@ repairController.getAllRepairOrders = async (req, res, next) => {
                 OR: [
                     { sender: { name: { contains: searchTerm } } },
                     { receiver: { name: { contains: searchTerm } } },
-                    { id: { equals: parseInt(searchTerm) || 0 } }
+                    { id: { equals: parseInt(searchTerm) || 0 } },
+                    { customer: { name: { contains: searchTerm } } }
                 ]
             });
         }
@@ -139,19 +141,10 @@ repairController.getAllRepairOrders = async (req, res, next) => {
                 include: {
                     sender: true,
                     receiver: true,
+                    customer: { select: { name: true } },
                     items: { 
                         include: { 
-                            inventoryItem: {
-                                include: {
-                                    sale: {
-                                        include: {
-                                            customer: {
-                                                select: { name: true }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            inventoryItem: true
                         }
                     } 
                 }
@@ -162,13 +155,21 @@ repairController.getAllRepairOrders = async (req, res, next) => {
         const formattedRepairs = repairs.map(r => {
             const totalItemCount = r.items.length;
             const returnedItemCount = r.items.filter(i => i.returnedAt !== null).length;
-            let customerName = null;
-            const firstCustomerItem = r.items.find(item => item.inventoryItem?.sale?.customer?.name);
-            if (firstCustomerItem) {
-                customerName = firstCustomerItem.inventoryItem.sale.customer.name;
+            
+            let displayOwner = 'N/A';
+            if (r.customer) {
+                displayOwner = r.customer.name;
+            } else if (r.items.length > 0) {
+                const firstItemType = r.items[0].inventoryItem.itemType;
+                if (firstItemType === 'ASSET') {
+                    displayOwner = 'ทรัพย์สินบริษัท';
+                } else {
+                    displayOwner = 'สินค้าคงคลัง';
+                }
             }
+
             const { items, ...rest } = r;
-            return { ...rest, totalItemCount, returnedItemCount, customerName };
+            return { ...rest, totalItemCount, returnedItemCount, owner: displayOwner };
         });
 
         res.status(200).json({

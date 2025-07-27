@@ -91,7 +91,7 @@ export default function RepairListPage() {
                         <TableHeader>
                             <TableRow className="bg-muted/50 hover:bg-muted/50">
                                 <TableHead>{t('tableHeader_repairId')}</TableHead>
-                                <TableHead>{t('tableHeader_customer')}</TableHead>
+                                <TableHead>{t('tableHeader_owner')}</TableHead>
                                 <TableHead>{t('tableHeader_sentTo')}</TableHead>
                                 <TableHead>{t('tableHeader_repairDate')}</TableHead>
                                 <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
@@ -105,7 +105,7 @@ export default function RepairListPage() {
                             ) : repairs.map((r) => (
                                 <TableRow key={r.id}>
                                     <TableCell>#{r.id}</TableCell>
-                                    <TableCell>{r.customerName || 'N/A'}</TableCell>
+                                    <TableCell>{r.owner || 'N/A'}</TableCell>
                                     <TableCell>{r.receiver?.name || 'N/A'}</TableCell>
                                     <TableCell>{new Date(r.repairDate).toLocaleDateString()}</TableCell>
                                     <TableCell className="text-center">

@@ -106,7 +106,7 @@ model User {
   createdProductModels  ProductModel[]
   addedInventoryItems   InventoryItem[] @relation("AddedBy")
   createdCustomers      Customer[]
-  createdSuppliers      Supplier[]      // <-- เพิ่มความสัมพันธ์ใหม่
+  createdSuppliers      Supplier[]
   salesMade             Sale[]
   approvedBorrowings    Borrowing[]     @relation("ApprovedBorrowings")
   voidedSales           Sale[]          @relation("VoidedSales")
@@ -116,7 +116,6 @@ model User {
   events                EventLog[]
 }
 
-// --- START: เพิ่ม Model ใหม่สำหรับ Supplier ---
 model Supplier {
   id            Int      @id @default(autoincrement())
   supplierCode  String   @unique
@@ -134,7 +133,6 @@ model Supplier {
 
   @@index([name])
 }
-// --- END ---
 
 model Customer {
   id           Int      @id @default(autoincrement())
@@ -148,6 +146,7 @@ model Customer {
   createdBy    User     @relation(fields: [createdById], references: [id])
   sales        Sale[]
   borrowings   Borrowing[]
+  repairs      Repair[]
 }
 
 model InventoryItem {
@@ -167,10 +166,8 @@ model InventoryItem {
   addedById           Int
   addedBy             User                     @relation("AddedBy", fields: [addedById], references: [id])
   
-  // --- START: เพิ่ม Field และความสัมพันธ์สำหรับ Supplier ---
   supplierId          Int?
   supplier            Supplier?                @relation(fields: [supplierId], references: [id])
-  // --- END ---
 
   assignmentRecords   AssetAssignmentOnItems[]
   saleId              Int?
@@ -182,7 +179,7 @@ model InventoryItem {
   @@index([status])
   @@index([itemType])
   @@index([ownerType])
-  @@index([supplierId]) // <-- เพิ่ม Index
+  @@index([supplierId])
 }
 
 model Borrowing {
@@ -208,7 +205,6 @@ model BorrowingOnItems {
   inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
   assignedAt      DateTime @default(now())
   returnedAt      DateTime?
-
   @@id([borrowingId, inventoryItemId])
 }
 
@@ -293,7 +289,6 @@ model AssetAssignmentOnItems {
   inventoryItem   InventoryItem   @relation(fields: [inventoryItemId], references: [id])
   assignedAt      DateTime        @default(now())
   returnedAt      DateTime?
-
   @@id([assignmentId, inventoryItemId])
 }
 
@@ -327,6 +322,9 @@ model Repair {
   receiverId      Int
   receiver        Address  @relation("SentTo", fields: [receiverId], references: [id])
   
+  customerId      Int?
+  customer        Customer? @relation(fields: [customerId], references: [id], onUpdate: Cascade, onDelete: SetNull)
+
   items           RepairOnItems[]
 }
 
@@ -359,9 +357,8 @@ model EventLog {
   @@index([eventType])
 }
 
-// --- START: ADD NEW MODEL FOR COMPANY PROFILE ---
 model CompanyProfile {
-  id           Int     @id @default(1) // Use a fixed ID to ensure only one row
+  id           Int     @id @default(1)
   name         String?
   addressLine1 String? @db.Text
   addressLine2 String?

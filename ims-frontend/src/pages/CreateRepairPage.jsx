@@ -215,6 +215,7 @@ export default function CreateRepairPage() {
             senderId: parseInt(senderId),
             receiverId: parseInt(receiverId),
             notes,
+            customerId: repairType === 'CUSTOMER' ? parseInt(selectedCustomerId) : null,
             items: selectedItems.map(({ id, isCustomerItem, productModelId, serialNumber }) => ({
                 id, isCustomerItem: !!isCustomerItem, productModelId, serialNumber
             }))
