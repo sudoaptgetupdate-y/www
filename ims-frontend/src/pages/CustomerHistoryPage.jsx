@@ -153,7 +153,9 @@ export default function CustomerHistoryPage() {
                                     return (
                                         <tr key={item.id} className="border-b">
                                             <td className="p-2 text-center">
-                                                <StatusBadge status={item.type} className="w-20" />
+                                                {/* --- START: แก้ไขส่วนนี้ --- */}
+                                                <StatusBadge status={item.type === 'SALE' ? item.details.status : item.type} className="w-20" />
+                                                {/* --- END: แก้ไขส่วนนี้ --- */}
                                             </td>
                                             <td className="p-2 text-left whitespace-nowrap">{new Date(item.date).toLocaleString()}</td>
                                             <td className="p-2 text-center">{item.itemCount}</td>

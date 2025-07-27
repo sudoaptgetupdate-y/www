@@ -1,8 +1,8 @@
 // src/components/layout/MainLayout.jsx
 
-import { useState } from 'react';
-import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef, useLayoutEffect } from 'react'; // --- 1. เพิ่ม useRef และ useLayoutEffect ---
+import { NavLink, Outlet, useNavigate, Link, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
     LogOut, Menu, User, ArrowRightLeft, Building2, 
     ShoppingCart, Settings, Package, Boxes, Tag, Users as UsersIcon, 
@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { LanguageToggle } from "@/components/ui/LanguageToggle";
+
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
@@ -37,10 +39,11 @@ const Footer = () => {
     );
 };
 
-const NavItem = ({ to, icon, text, isCollapsed, handleclick }) => (
+// --- 2. เพิ่ม Prop `onClick` เข้าไปใน NavItem ---
+const NavItem = ({ to, icon, text, isCollapsed, onClick }) => (
     <NavLink
         to={to}
-        onClick={handleclick}
+        onClick={onClick}
         className={({ isActive }) => cn(
             "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm transition-colors relative font-medium",
             "text-slate-600 hover:bg-slate-200 hover:text-slate-900",
@@ -70,116 +73,109 @@ const NavItem = ({ to, icon, text, isCollapsed, handleclick }) => (
     </NavLink>
 );
 
-const LanguageToggle = () => {
-    const { i18n, t } = useTranslation();
-    const toggleLanguage = () => {
-        const newLang = i18n.language === 'th' ? 'en' : 'th';
-        i18n.changeLanguage(newLang);
-    };
-
-    return (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={toggleLanguage} className="w-[88px]">
-                        <span className="mr-2 text-lg">
-                            {i18n.language === 'th' ? '🇹🇭' : '🇬🇧'}
-                        </span>
-                        <span className="font-semibold">
-                            {i18n.language.toUpperCase()}
-                        </span>
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>Change Language</p>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
-    );
-};
-
 
 const MainLayout = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const location = useLocation();
     const logout = useAuthStore((state) => state.logout);
     const currentUser = useAuthStore((state) => state.user);
     const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
+    // --- 3. สร้าง Ref สำหรับเก็บ scroll position และ element ---
+    const navRef = useRef(null);
+    const scrollPos = useRef(0);
+
+    // --- 4. สร้างฟังก์ชันสำหรับจัดการการคลิกเมนู ---
+    const handleNavLinkClick = () => {
+        if (navRef.current) {
+            // เก็บตำแหน่ง scroll ปัจจุบันไว้ใน ref
+            scrollPos.current = navRef.current.scrollTop;
+        }
+        // ไม่ต้องสั่งปิดเมนูที่นี่แล้ว useEffect จะจัดการเอง
+    };
+    
+    // --- 5. ใช้ useEffect เพื่อปิดเมนู *หลังจาก* การเปลี่ยนหน้า ---
+    useEffect(() => {
+        if (isMobileMenuOpen) {
+            setIsMobileMenuOpen(false);
+        }
+    }, [location.pathname]);
+
+    // --- 6. ใช้ useLayoutEffect เพื่อคืนค่า scroll position ---
+    // useLayoutEffect จะทำงานหลังจาก DOM update แต่ก่อนที่ browser จะ paint
+    // ทำให้การคืนค่า scroll position ราบรื่น ไม่กระตุก
+    useLayoutEffect(() => {
+        if (navRef.current) {
+            navRef.current.scrollTop = scrollPos.current;
+        }
+    });
+
+
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
 
-    const onNavLinkClick = () => {
-        if (isMobileMenuOpen) {
-            setIsMobileMenuOpen(false);
-        }
-    }
-
     const SidebarContent = () => (
-    <div className="flex flex-col h-full relative">
-        <Link to="/dashboard" className="p-4 border-b flex items-center gap-3 h-[65px] hover:bg-muted/50 transition-colors">
-            <div className="bg-primary p-2 rounded-lg">
-                <Layers className="text-primary-foreground" size={24}/>
-            </div>
-            <h1 className={cn("text-lg font-bold text-slate-800 transition-all whitespace-nowrap", isSidebarCollapsed && "opacity-0 hidden")}>
-                Engineer IMS
-            </h1>
-        </Link>
-        
-        <nav className="h-[calc(100vh-65px)] px-3 py-4 space-y-1.5 overflow-y-auto">
-             <NavItem to="/dashboard" icon={<Boxes size={18} />} text={t('dashboard')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-            
-            {/* --- กลุ่มที่ 1: ธุรกรรม (Transactions) --- */}
-            <div>
-                <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
-                    {isSidebarCollapsed ? 'T' : 'Transactions'}
-                </p>
-                <div className="space-y-1">
-                    <NavItem to="/sales" icon={<ShoppingCart size={18}/>} text={t('sales')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                    <NavItem to="/borrowings" icon={<ArrowRightLeft size={18}/>} text={t('borrowing')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                    <NavItem to="/asset-assignments" icon={<HardDrive size={18}/>} text={t('assignments')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                    <NavItem to="/repairs" icon={<Wrench size={18}/>} text={t('repairOrders')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+        <div className="flex flex-col h-full relative">
+            <Link to="/dashboard" className="p-4 border-b flex items-center gap-3 h-[65px] hover:bg-muted/50 transition-colors">
+                <div className="bg-primary p-2 rounded-lg">
+                    <Layers className="text-primary-foreground" size={24}/>
                 </div>
-            </div>
-
-            {/* --- กลุ่มที่ 2: จัดการข้อมูลหลัก (Master Data) --- */}
-            <div>
-                <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
-                     {isSidebarCollapsed ? 'M' : 'Master Data'}
-                </p>
-                 <div className="space-y-1">
-                    {/* ข้อมูลสินค้าและคลัง */}
-                    <NavItem to="/inventory" icon={<Package size={18}/>} text={t('inventory')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                    <NavItem to="/assets" icon={<Layers size={18}/>} text={t('assetList')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                    <NavItem to="/product-models" icon={<Boxes size={18}/>} text={t('models')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                    <NavItem to="/categories" icon={<Tag size={18}/>} text={t('categories')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                    <NavItem to="/brands" icon={<Building2 size={18}/>} text={t('brands')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                    {/* ข้อมูลติดต่อ */}
-                    <NavItem to="/customers" icon={<UsersIcon size={18}/>} text={t('customers')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                    <NavItem to="/suppliers" icon={<Truck size={18}/>} text={t('suppliers')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                    <NavItem to="/addresses" icon={<BookUser size={18}/>} text={t('addressBook')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                </div>
-            </div>
+                <h1 className={cn("text-lg font-bold text-slate-800 transition-all whitespace-nowrap", isSidebarCollapsed && "opacity-0 hidden")}>
+                    Engineer IMS
+                </h1>
+            </Link>
             
-            {/* --- กลุ่มที่ 3: ระบบ (System) - สำหรับ Super Admin --- */}
-            {isSuperAdmin && (
-                 <div className="pt-2">
+            {/* --- 7. เพิ่ม ref และส่ง `handleNavLinkClick` เข้าไปใน NavItem --- */}
+            <nav ref={navRef} className="h-[calc(100vh-65px)] px-3 py-4 space-y-1.5 overflow-y-auto">
+                 <NavItem to="/dashboard" icon={<Boxes size={18} />} text={t('dashboard')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                
+                <div>
                     <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
-                        {isSidebarCollapsed ? t('system').charAt(0) : t('system')}
+                        {isSidebarCollapsed ? 'T' : 'Transactions'}
                     </p>
                     <div className="space-y-1">
-                        <NavItem to="/users" icon={<Settings size={18}/>} text={t('userManagement')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
-                        <NavItem to="/company-profile" icon={<Building size={18}/>} text="Company Profile" isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
+                        <NavItem to="/sales" icon={<ShoppingCart size={18}/>} text={t('sales')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                        <NavItem to="/borrowings" icon={<ArrowRightLeft size={18}/>} text={t('borrowing')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                        <NavItem to="/asset-assignments" icon={<HardDrive size={18}/>} text={t('assignments')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                        <NavItem to="/repairs" icon={<Wrench size={18}/>} text={t('repairOrders')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
                     </div>
                 </div>
-            )}
-        </nav>
-    </div>
-);
+
+                <div>
+                    <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
+                         {isSidebarCollapsed ? 'M' : 'Master Data'}
+                    </p>
+                     <div className="space-y-1">
+                        <NavItem to="/inventory" icon={<Package size={18}/>} text={t('inventory')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                        <NavItem to="/assets" icon={<Layers size={18}/>} text={t('assetList')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                        <NavItem to="/product-models" icon={<Boxes size={18}/>} text={t('models')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                        <NavItem to="/categories" icon={<Tag size={18}/>} text={t('categories')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                        <NavItem to="/brands" icon={<Building2 size={18}/>} text={t('brands')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                        <NavItem to="/customers" icon={<UsersIcon size={18}/>} text={t('customers')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                        <NavItem to="/suppliers" icon={<Truck size={18}/>} text={t('suppliers')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                        <NavItem to="/addresses" icon={<BookUser size={18}/>} text={t('addressBook')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                    </div>
+                </div>
+
+                {isSuperAdmin && (
+                     <div className="pt-2">
+                        <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
+                            {isSidebarCollapsed ? t('system').charAt(0) : t('system')}
+                        </p>
+                        <div className="space-y-1">
+                            <NavItem to="/users" icon={<Settings size={18}/>} text={t('userManagement')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                            <NavItem to="/company-profile" icon={<Building size={18}/>} text="Company Profile" isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                        </div>
+                    </div>
+                )}
+            </nav>
+        </div>
+    );
 
     return (
         <div className="relative min-h-screen md:flex bg-slate-50">
@@ -246,13 +242,17 @@ const MainLayout = () => {
                 </header>
 
                 <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
-                    <motion.div
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, ease: "easeOut" }}
-                    >
-                        <Outlet />
-                    </motion.div>
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={location.pathname}
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 15 }}
+                            transition={{ duration: 0.25, ease: "easeInOut" }}
+                        >
+                            <Outlet />
+                        </motion.div>
+                    </AnimatePresence>
                 </main>
                 
                 <Footer />
