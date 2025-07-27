@@ -19,7 +19,6 @@ repairController.createRepairOrder = async (req, res, next) => {
     const { senderId, receiverId, notes, items } = req.body;
     const createdById = req.user.id;
 
-    // --- START: FIX ---
     const parsedSenderId = parseInt(senderId, 10);
     const parsedReceiverId = parseInt(receiverId, 10);
     if (isNaN(parsedSenderId) || isNaN(parsedReceiverId)) {
@@ -27,7 +26,6 @@ repairController.createRepairOrder = async (req, res, next) => {
         err.statusCode = 400;
         return next(err);
     }
-    // --- END: FIX ---
 
     if (!Array.isArray(items) || items.length === 0) {
         const err = new Error('Items must be a non-empty array.');
@@ -67,8 +65,8 @@ repairController.createRepairOrder = async (req, res, next) => {
 
             const repairOrder = await tx.repair.create({
                 data: {
-                    senderId: parsedSenderId, // Use parsed ID
-                    receiverId: parsedReceiverId, // Use parsed ID
+                    senderId: parsedSenderId,
+                    receiverId: parsedReceiverId,
                     notes,
                     createdById,
                     items: {
@@ -103,7 +101,6 @@ repairController.createRepairOrder = async (req, res, next) => {
     }
 };
 
-// ... (ส่วนที่เหลือของไฟล์ไม่ต้องแก้ไข)
 repairController.getAllRepairOrders = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -142,7 +139,21 @@ repairController.getAllRepairOrders = async (req, res, next) => {
                 include: {
                     sender: true,
                     receiver: true,
-                    items: { select: { returnedAt: true } } 
+                    items: { 
+                        include: { 
+                            inventoryItem: {
+                                include: {
+                                    sale: {
+                                        include: {
+                                            customer: {
+                                                select: { name: true }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } 
                 }
             }),
             prisma.repair.count({ where })
@@ -151,8 +162,13 @@ repairController.getAllRepairOrders = async (req, res, next) => {
         const formattedRepairs = repairs.map(r => {
             const totalItemCount = r.items.length;
             const returnedItemCount = r.items.filter(i => i.returnedAt !== null).length;
+            let customerName = null;
+            const firstCustomerItem = r.items.find(item => item.inventoryItem?.sale?.customer?.name);
+            if (firstCustomerItem) {
+                customerName = firstCustomerItem.inventoryItem.sale.customer.name;
+            }
             const { items, ...rest } = r;
-            return { ...rest, totalItemCount, returnedItemCount };
+            return { ...rest, totalItemCount, returnedItemCount, customerName };
         });
 
         res.status(200).json({
