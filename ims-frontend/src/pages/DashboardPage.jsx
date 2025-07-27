@@ -1,3 +1,4 @@
+// src/pages/DashboardPage.jsx
 import { useEffect, useState } from 'react';
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from '@/store/authStore';
@@ -143,14 +144,16 @@ export default function DashboardPage() {
         return <p>Could not load dashboard data.</p>;
     }
 
+    // --- START: แก้ไขคอลัมน์ของตาราง Sales ---
     const salesColumns = [
         { key: 'customer', header: t('tableHeader_customer'), render: (row) => row.customer.name, className: "font-medium" },
+        { key: 'status', header: t('tableHeader_status'), render: (row) => <StatusBadge status={row.status} />, className: "text-center" },
         { key: 'total', header: t('tableHeader_total'), render: (row) => new Intl.NumberFormat('th-TH').format(row.total), className: "text-right" },
-        { key: 'date', header: t('tableHeader_saleDate'), render: (row) => new Date(row.saleDate).toLocaleDateString('en-GB'), className: "text-right text-muted-foreground" },
     ];
+    // --- END: แก้ไขคอลัมน์ของตาราง Sales ---
     
     const borrowingColumns = [
-        { key: 'borrower', header: t('customers'), render: (row) => row.customer.name, className: "font-medium" }, // <-- แก้ไข
+        { key: 'borrower', header: t('customers'), render: (row) => row.customer.name, className: "font-medium" },
         { key: 'status', header: t('tableHeader_status'), render: (row) => <StatusBadge status={row.status} />, className: "text-center" },
         { key: 'date', header: t('tableHeader_borrowDate'), render: (row) => new Date(row.borrowDate).toLocaleDateString('en-GB'), className: "text-right text-muted-foreground" },
     ];

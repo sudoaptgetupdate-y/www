@@ -1,12 +1,10 @@
 // src/components/layout/MainLayout.jsx
 
 import { useState } from 'react';
-// --- START: 1. Import Link ---
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
-// --- END: 1. Import Link ---
 import { motion } from "framer-motion";
 import { 
-    LogOut, Menu, X, User, ArrowRightLeft, Building2, 
+    LogOut, Menu, User, ArrowRightLeft, Building2, 
     ShoppingCart, Settings, Package, Boxes, Tag, Users as UsersIcon, 
     HardDrive, Layers, Wrench, BookUser, Truck, Building
 } from "lucide-react";
@@ -27,7 +25,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const Footer = () => {
     const currentYear = new Date().getFullYear();
     return (
-        <footer className="bg-white border-t mt-auto no-print">
+        <footer className="bg-white border-t mt-auto no-print hidden md:flex">
             <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-center items-center text-sm text-muted-foreground">
                     <p>
@@ -123,7 +121,6 @@ const MainLayout = () => {
 
     const SidebarContent = () => (
         <div className="flex flex-col h-full relative">
-            {/* --- START: 2. แก้ไข Header ของ Sidebar --- */}
             <Link to="/dashboard" className="p-4 border-b flex items-center gap-3 h-[65px] hover:bg-muted/50 transition-colors">
                 <div className="bg-primary p-2 rounded-lg">
                     <Layers className="text-primary-foreground" size={24}/>
@@ -132,9 +129,8 @@ const MainLayout = () => {
                     Engineer IMS
                 </h1>
             </Link>
-            {/* --- END: 2. แก้ไข Header ของ Sidebar --- */}
             
-            <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+            <nav className="h-[calc(100vh-65px)] px-3 py-4 space-y-1.5 overflow-y-auto">
                  <NavItem to="/dashboard" icon={<Boxes size={18} />} text={t('dashboard')} isCollapsed={isSidebarCollapsed} handleclick={onNavLinkClick} />
                 
                 <div>
