@@ -22,12 +22,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-// --- START: 1. Import สิ่งที่จำเป็นเข้ามา ---
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 import { BrandCombobox } from "@/components/ui/BrandCombobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// --- END ---
 
 
 export default function CreateAssetAssignmentPage() {
@@ -40,7 +38,6 @@ export default function CreateAssetAssignmentPage() {
     const [selectedAssets, setSelectedAssets] = useState([]);
     const [notes, setNotes] = useState("");
     
-    // --- START: 2. ใช้ usePaginatedFetch Hook ---
     const {
         data: availableAssets,
         pagination,
@@ -52,11 +49,10 @@ export default function CreateAssetAssignmentPage() {
         handleItemsPerPageChange,
         handleFilterChange
     } = usePaginatedFetch("/assets", 10, {
-        status: "IN_WAREHOUSE", // Hardcode status เป็น IN_WAREHOUSE เสมอ
+        status: "IN_WAREHOUSE",
         categoryId: "All",
         brandId: "All"
     });
-    // --- END ---
 
     useEffect(() => {
         const initialItems = location.state?.initialItems || [];
@@ -103,7 +99,6 @@ export default function CreateAssetAssignmentPage() {
         }
     };
     
-    // กรองรายการทรัพย์สินที่แสดงผล ไม่ให้แสดงรายการที่ถูกเลือกไปแล้ว
     const displayedAvailableAssets = availableAssets.filter(
         asset => !selectedAssets.some(selected => selected.id === asset.id)
     );
@@ -116,7 +111,6 @@ export default function CreateAssetAssignmentPage() {
                     <CardDescription>{t('createAssignment_description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {/* --- START: 3. เพิ่ม UI สำหรับ Filter --- */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                         <Input
                             placeholder={t('asset_search_placeholder')}
@@ -133,12 +127,14 @@ export default function CreateAssetAssignmentPage() {
                             onSelect={(value) => handleFilterChange('brandId', value)}
                         />
                     </div>
-                    {/* --- END --- */}
                     <div className="border rounded-md">
                         <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>{t('tableHeader_assetCode')}</TableHead>
+                                    {/* --- START: เพิ่มหัวตาราง Category --- */}
+                                    <TableHead>{t('tableHeader_category')}</TableHead>
+                                    {/* --- END: เพิ่มหัวตาราง Category --- */}
                                     <TableHead>{t('tableHeader_brand')}</TableHead>
                                     <TableHead>{t('tableHeader_productModel')}</TableHead>
                                     <TableHead>{t('tableHeader_serialNumber')}</TableHead>
@@ -147,11 +143,14 @@ export default function CreateAssetAssignmentPage() {
                             </TableHeader>
                             <TableBody>
                                 {isLoading ? (
-                                    <TableRow><TableCell colSpan="5" className="text-center h-24">Searching...</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan="6" className="text-center h-24">Searching...</TableCell></TableRow>
                                 ) : displayedAvailableAssets.length > 0 ? (
                                     displayedAvailableAssets.map(asset => (
                                     <TableRow key={asset.id}>
                                         <TableCell>{asset.assetCode}</TableCell>
+                                        {/* --- START: เพิ่มข้อมูล Category --- */}
+                                        <TableCell>{asset.productModel.category.name}</TableCell>
+                                        {/* --- END: เพิ่มข้อมูล Category --- */}
                                         <TableCell>{asset.productModel.brand.name}</TableCell>
                                         <TableCell>{asset.productModel.modelNumber}</TableCell>
                                         <TableCell>{asset.serialNumber || '-'}</TableCell>
@@ -160,14 +159,13 @@ export default function CreateAssetAssignmentPage() {
                                         </TableCell>
                                     </TableRow>
                                 ))) : (
-                                    <TableRow><TableCell colSpan="5" className="text-center h-24">No available assets found.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan="6" className="text-center h-24">No available assets found.</TableCell></TableRow>
                                 )
                                 }
                             </TableBody>
                         </Table>
                     </div>
                 </CardContent>
-                {/* --- START: 4. เพิ่ม UI สำหรับ Pagination --- */}
                 <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
@@ -186,7 +184,6 @@ export default function CreateAssetAssignmentPage() {
                         <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={!pagination || pagination.currentPage >= pagination.totalPages}>{t('next')}</Button>
                     </div>
                 </CardFooter>
-                {/* --- END --- */}
             </Card>
             <Card>
                 <CardHeader><CardTitle>{t('createAssignment_summary_title')}</CardTitle></CardHeader>
