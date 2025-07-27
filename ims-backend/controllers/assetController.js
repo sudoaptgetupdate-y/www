@@ -285,7 +285,6 @@ assetController.deleteAsset = async (req, res, next) => {
             throw err;
         }
 
-        // --- START: MODIFIED DELETION LOGIC ---
         const assignmentHistoryCount = await prisma.assetAssignmentOnItems.count({
             where: { inventoryItemId: assetId }
         });
@@ -305,7 +304,6 @@ assetController.deleteAsset = async (req, res, next) => {
             err.statusCode = 400;
             throw err;
         }
-        // --- END: MODIFIED DELETION LOGIC ---
 
         await prisma.$transaction(async (tx) => {
             await tx.eventLog.deleteMany({ where: { inventoryItemId: assetId } });
@@ -358,9 +356,12 @@ assetController.getAllAssets = async (req, res, next) => {
             orderBy = { productModel: { modelNumber: sortOrder } };
         } else if (sortBy === 'category') {
             orderBy = { productModel: { category: { name: sortOrder } } };
+        } else if (sortBy === 'brand') { // --- START: แก้ไขส่วนนี้ ---
+            orderBy = { productModel: { brand: { name: sortOrder } } };
         } else {
             orderBy = { [sortBy]: sortOrder };
         }
+        // --- END: แก้ไขส่วนนี้ ---
 
         const include = {
             productModel: { include: { category: true, brand: true } },
@@ -451,7 +452,6 @@ assetController.getAssetById = async (req, res, next) => {
     }
 };
 
-// --- START: NEW HELPER FUNCTION & NEW CONTROLLERS ---
 const updateAssetStatus = async (res, req, next, expectedStatus, newStatus, eventType, details) => {
     const { id } = req.params;
     const actorId = req.user.id;
@@ -510,6 +510,5 @@ assetController.markAsDefective = (req, res, next) => {
 assetController.markAsInWarehouse = (req, res, next) => {
     updateAssetStatus(res, req, next, 'DEFECTIVE', 'IN_WAREHOUSE', EventType.UPDATE, 'Asset returned to warehouse from defective status.');
 };
-// --- END: NEW HELPER FUNCTION & NEW CONTROLLERS ---
 
 module.exports = assetController;

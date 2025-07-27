@@ -1,6 +1,6 @@
 // src/components/layout/MainLayout.jsx
 
-import { useState, useEffect, useRef, useLayoutEffect } from 'react'; // --- 1. เพิ่ม useRef และ useLayoutEffect ---
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { NavLink, Outlet, useNavigate, Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -39,7 +39,6 @@ const Footer = () => {
     );
 };
 
-// --- 2. เพิ่ม Prop `onClick` เข้าไปใน NavItem ---
 const NavItem = ({ to, icon, text, isCollapsed, onClick }) => (
     <NavLink
         to={to}
@@ -84,29 +83,21 @@ const MainLayout = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-    // --- 3. สร้าง Ref สำหรับเก็บ scroll position และ element ---
     const navRef = useRef(null);
     const scrollPos = useRef(0);
 
-    // --- 4. สร้างฟังก์ชันสำหรับจัดการการคลิกเมนู ---
     const handleNavLinkClick = () => {
         if (navRef.current) {
-            // เก็บตำแหน่ง scroll ปัจจุบันไว้ใน ref
             scrollPos.current = navRef.current.scrollTop;
         }
-        // ไม่ต้องสั่งปิดเมนูที่นี่แล้ว useEffect จะจัดการเอง
     };
     
-    // --- 5. ใช้ useEffect เพื่อปิดเมนู *หลังจาก* การเปลี่ยนหน้า ---
     useEffect(() => {
         if (isMobileMenuOpen) {
             setIsMobileMenuOpen(false);
         }
     }, [location.pathname]);
 
-    // --- 6. ใช้ useLayoutEffect เพื่อคืนค่า scroll position ---
-    // useLayoutEffect จะทำงานหลังจาก DOM update แต่ก่อนที่ browser จะ paint
-    // ทำให้การคืนค่า scroll position ราบรื่น ไม่กระตุก
     useLayoutEffect(() => {
         if (navRef.current) {
             navRef.current.scrollTop = scrollPos.current;
@@ -130,8 +121,7 @@ const MainLayout = () => {
                 </h1>
             </Link>
             
-            {/* --- 7. เพิ่ม ref และส่ง `handleNavLinkClick` เข้าไปใน NavItem --- */}
-            <nav ref={navRef} className="h-[calc(100vh-65px)] px-3 py-4 space-y-1.5 overflow-y-auto">
+            <nav ref={navRef} className="sidebar-nav h-[calc(100vh-65px)] px-3 py-4 space-y-1.5 overflow-y-auto">
                  <NavItem to="/dashboard" icon={<Boxes size={18} />} text={t('dashboard')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
                 
                 <div>

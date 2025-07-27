@@ -9,13 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-// --- START: MODIFIED IMPORT ---
 import { PlusCircle, MoreHorizontal, History, Edit, ArrowRightLeft, Archive, ArrowUpDown, Layers, ShieldCheck, ShieldAlert, Trash2, ArchiveRestore } from "lucide-react";
-// --- END: MODIFIED IMPORT ---
 import { toast } from "sonner";
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-    AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+    AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -34,7 +32,7 @@ import EditAssetDialog from "@/components/dialogs/EditAssetDialog";
 
 const SkeletonRow = () => (
     <TableRow>
-        <TableCell colSpan="8"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
+        <TableCell colSpan="9"><div className="h-5 bg-gray-200 rounded animate-pulse"></div></TableCell>
     </TableRow>
 );
 
@@ -185,6 +183,11 @@ export default function AssetPage() {
                                 <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
                                     {t('tableHeader_serialNumber')}
                                 </SortableHeader>
+                                {/* --- START: เพิ่มหัวตาราง Mac Address --- */}
+                                <SortableHeader sortKey="macAddress" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
+                                    {t('tableHeader_macAddress')}
+                                </SortableHeader>
+                                {/* --- END: เพิ่มหัวตาราง Mac Address --- */}
                                 <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
                                 <TableHead>{t('tableHeader_assignedTo')}</TableHead>
                                 <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
@@ -195,7 +198,7 @@ export default function AssetPage() {
                                 [...Array(pagination.itemsPerPage)].map((_, i) => <SkeletonRow key={i} />)
                             ) : assets.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan="8" className="text-center h-24">No assets found.</TableCell>
+                                    <TableCell colSpan="9" className="text-center h-24">No assets found.</TableCell>
                                 </TableRow>
                             ) : assets.map((asset) => (
                                 <TableRow key={asset.id}>
@@ -204,6 +207,9 @@ export default function AssetPage() {
                                     <TableCell>{asset.productModel.brand.name}</TableCell>
                                     <TableCell>{asset.productModel?.modelNumber || 'N/A'}</TableCell>
                                     <TableCell>{asset.serialNumber || 'N/A'}</TableCell>
+                                    {/* --- START: เพิ่มข้อมูล Mac Address --- */}
+                                    <TableCell>{asset.macAddress || 'N/A'}</TableCell>
+                                    {/* --- END: เพิ่มข้อมูล Mac Address --- */}
                                     <TableCell className="text-center">
                                         <StatusBadge
                                             status={asset.status}
