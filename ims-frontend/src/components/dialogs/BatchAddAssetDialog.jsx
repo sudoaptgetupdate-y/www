@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { PlusCircle, XCircle } from "lucide-react";
-import { translateThaiToEnglish } from "@/lib/keyboardUtils";
+// import { translateThaiToEnglish } from "@/lib/keyboardUtils"; // --- 1. ลบการ import ---
 import { useTranslation } from "react-i18next";
 
 const MAX_ASSETS_MANUAL = 10;
@@ -50,31 +50,23 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
         setSelectedModel(model);
     };
 
+    // --- START: 2. แก้ไขฟังก์ชัน handleInputChange ---
     const handleInputChange = (e, index, field) => {
-        const inputElement = e.currentTarget;
-        const rawValue = inputElement.value;
-        const selectionStart = inputElement.selectionStart;
+        const { value } = e.target;
+        let processedValue = value;
 
-        let processedValue = translateThaiToEnglish(rawValue);
         if (field === 'macAddress') {
-            processedValue = formatMacAddress(processedValue);
+            processedValue = formatMacAddress(value);
         } else {
-            processedValue = processedValue.toUpperCase();
+            // Asset Code และ Serial Number ยังคงแปลงเป็นตัวพิมพ์ใหญ่
+            processedValue = value.toUpperCase();
         }
 
-        setManualItems(currentItems => {
-            const newItems = [...currentItems];
-            newItems[index][field] = processedValue;
-            return newItems;
-        });
-
-        requestAnimationFrame(() => {
-            if (inputElement.value !== processedValue) {
-                inputElement.value = processedValue;
-                inputElement.setSelectionRange(selectionStart, selectionStart);
-            }
-        });
+        const newItems = [...manualItems];
+        newItems[index][field] = processedValue;
+        setManualItems(newItems);
     };
+    // --- END: 2. แก้ไขฟังก์ชัน handleInputChange ---
 
     const addManualItemRow = () => {
         if (manualItems.length < MAX_ASSETS_MANUAL) {
