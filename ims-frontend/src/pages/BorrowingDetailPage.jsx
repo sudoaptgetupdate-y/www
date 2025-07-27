@@ -119,9 +119,9 @@ export default function BorrowingDetailPage() {
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-1">
                             <p className="text-sm text-muted-foreground">ผู้ยืม (Borrower)</p>
-                            <p className="font-semibold">{borrowing.customer?.name || 'N/A'}</p> {/* <-- แก้ไข */}
-                            <p className="text-sm text-muted-foreground">{borrowing.customer?.address || "No address provided"}</p> {/* <-- แก้ไข */}
-                            <p className="text-sm text-muted-foreground">โทร. {borrowing.customer?.phone || 'N/A'}</p> {/* <-- แก้ไข */}
+                            <p className="font-semibold">{borrowing.customer?.name || 'N/A'}</p>
+                            <p className="text-sm text-muted-foreground">{borrowing.customer?.address || "No address provided"}</p>
+                            <p className="text-sm text-muted-foreground">โทร. {borrowing.customer?.phone || 'N/A'}</p>
                         </div>
                         <div className="space-y-1 text-right">
                              <p className="text-sm text-muted-foreground">เลขที่ (Record ID)</p>
@@ -151,6 +151,8 @@ export default function BorrowingDetailPage() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b bg-muted/40">
+                                    <th className="p-2 text-left">Category</th>
+                                    <th className="p-2 text-left">Brand</th>
                                     <th className="p-2 text-left">รุ่นสินค้า (Product Model)</th>
                                     <th className="p-2 text-left">Serial Number</th>
                                     <th className="p-2 text-left">MAC Address</th>
@@ -160,6 +162,8 @@ export default function BorrowingDetailPage() {
                             <tbody>
                                 {borrowing.items.map(boi => (
                                     <tr key={boi.inventoryItemId} className="border-b">
+                                        <td className="p-2">{boi.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
+                                        <td className="p-2">{boi.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
                                         <td className="p-2">{boi.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
                                         <td className="p-2">{boi.inventoryItem?.serialNumber || 'N/A'}</td>
                                         <td className="p-2">{boi.inventoryItem?.macAddress || 'N/A'}</td>
@@ -186,14 +190,14 @@ export default function BorrowingDetailPage() {
                     </div>
                     <div className="signature-box">
                         <div className="signature-line"></div>
-                        <p>( {borrowing.customer?.name || '.....................................................'} )</p> {/* <-- แก้ไข */}
+                        <p>( {borrowing.customer?.name || '.....................................................'} )</p>
                         <p>ผู้ยืมสินค้า</p>
                     </div>
                 </div>
             </Card>
 
             <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
-                <DialogContent>
+                <DialogContent className="max-w-3xl">
                     <DialogHeader>
                         <DialogTitle>Receive Returned Items</DialogTitle>
                         <DialogDescription>Select items that the customer is returning now.</DialogDescription>
@@ -201,13 +205,17 @@ export default function BorrowingDetailPage() {
                     <div className="py-4 max-h-[60vh] overflow-y-auto">
                          <div className="border rounded-md">
                             <table className="w-full text-sm">
+                                {/* --- START: แก้ไขส่วนหัวตาราง --- */}
                                 <thead>
                                     <tr className="border-b">
                                         <th className="p-2 w-12 text-center">Return</th>
+                                        <th className="p-2 text-left">Category</th>
+                                        <th className="p-2 text-left">Brand</th>
                                         <th className="p-2 text-left">Product</th>
                                         <th className="p-2 text-left">Serial Number</th>
                                     </tr>
                                 </thead>
+                                {/* --- END: แก้ไขส่วนหัวตาราง --- */}
                                 <tbody>
                                     {itemsToReturn.map(item => (
                                         <tr
@@ -221,6 +229,10 @@ export default function BorrowingDetailPage() {
                                                     : <Square className="h-5 w-5 text-muted-foreground mx-auto" />
                                                 }
                                             </td>
+                                            {/* --- START: เพิ่ม Cell ของตาราง --- */}
+                                            <td className="p-2">{item.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
+                                            <td className="p-2">{item.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
+                                            {/* --- END: เพิ่ม Cell ของตาราง --- */}
                                             <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
                                             <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
                                         </tr>

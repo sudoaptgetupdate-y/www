@@ -85,20 +85,26 @@ const RepairItemReturnDialog = ({ items, onReturn, repairId, repairStatus }) => 
                 {t('repairDetail_return_items')}
             </Button>
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="max-w-3xl">
+                <DialogContent className="max-w-4xl">
                     <DialogHeader>
                         <DialogTitle>{t('repairDetail_return_items')}</DialogTitle>
                     </DialogHeader>
                     <div className="max-h-[60vh] overflow-y-auto pr-2">
                         <Table>
+                            {/* --- START: แก้ไขส่วนหัวตาราง --- */}
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[50px]"></TableHead>
+                                    <TableHead>{t('tableHeader_category')}</TableHead>
+                                    <TableHead>{t('tableHeader_brand')}</TableHead>
                                     <TableHead>{t('tableHeader_productModel')}</TableHead>
                                     <TableHead>{t('tableHeader_serialNumber')}</TableHead>
                                     <TableHead>{t('repairDetail_outcome')}</TableHead>
                                 </TableRow>
                             </TableHeader>
+                            {/* --- END: แก้ไขส่วนหัวตาราง --- */}
+                            
+                            {/* --- START: แก้ไขส่วนเนื้อหาตาราง --- */}
                             <TableBody>
                                 {unreturnedItems.map(item => (
                                     <TableRow key={item.inventoryItemId}>
@@ -110,6 +116,8 @@ const RepairItemReturnDialog = ({ items, onReturn, repairId, repairStatus }) => 
                                                 className="h-4 w-4"
                                             />
                                         </TableCell>
+                                        <TableCell>{item.inventoryItem.productModel.category.name}</TableCell>
+                                        <TableCell>{item.inventoryItem.productModel.brand.name}</TableCell>
                                         <TableCell>{item.inventoryItem.productModel.modelNumber}</TableCell>
                                         <TableCell>{item.inventoryItem.serialNumber}</TableCell>
                                         <TableCell>
@@ -131,6 +139,7 @@ const RepairItemReturnDialog = ({ items, onReturn, repairId, repairStatus }) => 
                                     </TableRow>
                                 ))}
                             </TableBody>
+                            {/* --- END: แก้ไขส่วนเนื้อหาตาราง --- */}
                         </Table>
                     </div>
                     <DialogFooter>
