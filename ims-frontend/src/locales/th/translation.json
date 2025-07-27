@@ -346,5 +346,17 @@
   "company_profile_phone_placeholder": "02-123-4567",
   "company_profile_tax_id_label": "เลขประจำตัวผู้เสียภาษี",
   "company_profile_tax_id_placeholder": "0-1234-56789-01-2",
-  "company_profile_save_button": "บันทึกการเปลี่ยนแปลง"
+  "company_profile_save_button": "บันทึกการเปลี่ยนแปลง",
+  "company_asset": "ทรัพย์สินบริษัท",
+  "company_inventory": "สินค้าคงคลัง",
+  "print": "พิมพ์",
+  "repairDetail_description": "รายละเอียดใบส่งซ่อมสำหรับติดตามสถานะและจัดการสินค้าที่ส่งซ่อม",
+  "repairDetail_status": "สถานะใบส่งซ่อม",
+  "repairDetail_return_items": "รับคืนสินค้า",
+  "repairDetail_returned": "รับคืนแล้ว",
+  "repairDetail_outcome": "ผลการซ่อม",
+  "repairDetail_outcome_success": "ซ่อมสำเร็จ",
+  "repairDetail_outcome_failed": "ซ่อมไม่ได้",
+  "back_to_list": "กลับไปที่รายการ",
+  "tableHeader_createdBy": "สร้างโดย"
 }

@@ -202,9 +202,19 @@ repairController.getRepairOrderById = async (req, res, next) => {
                 sender: true,
                 receiver: true,
                 createdBy: { select: { name: true } },
+                customer: { select: { name: true } }, // <-- ADDED to get customer name
                 items: {
                     include: {
-                        inventoryItem: { include: { productModel: true } }
+                        inventoryItem: { 
+                            include: { 
+                                productModel: { // <-- MODIFIED to include category and brand
+                                    include: {
+                                        category: true,
+                                        brand: true,
+                                    }
+                                } 
+                            } 
+                        }
                     },
                     orderBy: { sentAt: 'asc' }
                 }
