@@ -68,22 +68,22 @@ const PrintableItemsCard = ({ sale }) => (
                                 <td className="p-2">{item.productModel.modelNumber}</td>
                                 <td className="p-2">{item.serialNumber || 'N/A'}</td>
                                 <td className="p-2">{item.macAddress || 'N/A'}</td>
-                                <td className="p-2 text-right">{item.productModel.sellingPrice.toFixed(2)}</td>
+                                <td className="p-2 text-right">{item.productModel.sellingPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             </tr>
                         ))}
                     </tbody>
                     <tfoot>
                         <tr className="border-t font-semibold">
                             <td colSpan="5" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
-                            <td className="p-2 text-right">{sale.subtotal.toFixed(2)}</td>
+                            <td className="p-2 text-right">{sale.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         </tr>
                         <tr className="border-t">
                             <td colSpan="5" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
-                            <td className="p-2 text-right">{sale.vatAmount.toFixed(2)}</td>
+                            <td className="p-2 text-right">{sale.vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         </tr>
                         <tr className="border-t text-base font-bold bg-muted/40">
                             <td colSpan="5" className="p-2 text-right">ยอดสุทธิ (Total)</td>
-                            <td className="p-2 text-right">{sale.total.toFixed(2)} THB</td>
+                            <td className="p-2 text-right">{sale.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} THB</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -244,22 +244,22 @@ export default function SaleDetailPage() {
                                                 <td className="p-2">{item.productModel.modelNumber}</td>
                                                 <td className="p-2">{item.serialNumber || 'N/A'}</td>
                                                 <td className="p-2">{item.macAddress || 'N/A'}</td>
-                                                <td className="p-2 text-right">{item.productModel.sellingPrice.toFixed(2)}</td>
+                                                <td className="p-2 text-right">{item.productModel.sellingPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                     <tfoot>
                                         <tr className="border-t font-semibold">
                                             <td colSpan="5" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
-                                            <td className="p-2 text-right">{sale.subtotal.toFixed(2)}</td>
+                                            <td className="p-2 text-right">{sale.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                         </tr>
                                         <tr className="border-t">
                                             <td colSpan="5" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
-                                            <td className="p-2 text-right">{sale.vatAmount.toFixed(2)}</td>
+                                            <td className="p-2 text-right">{sale.vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                         </tr>
                                         <tr className="border-t text-base font-bold bg-muted/40">
                                             <td colSpan="5" className="p-2 text-right">ยอดสุทธิ (Total)</td>
-                                            <td className="p-2 text-right">{sale.total.toFixed(2)} THB</td>
+                                            <td className="p-2 text-right">{sale.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} THB</td>
                                         </tr>
                                     </tfoot>
                                 </table>
