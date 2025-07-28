@@ -53,9 +53,9 @@ export default function LoginPage() {
                 <div className="mx-auto grid w-[350px] gap-8">
                     <div className="grid gap-2 text-center">
                         <Layers className="mx-auto h-12 w-12 text-primary" />
-                        <h1 className="text-3xl font-bold">Welcome Back</h1>
+                        <h1 className="text-3xl font-bold">ยินดีต้อนรับ</h1>
                         <p className="text-balance text-muted-foreground">
-                            Enter your credentials to access the system
+                            กรุณาเข้าสู่ระบบ
                         </p>
                     </div>
                     <form onSubmit={handleSubmit}>
@@ -92,10 +92,10 @@ export default function LoginPage() {
                  <div className="text-center">
                     <Network className="mx-auto h-24 w-24 text-slate-400" />
                     <h2 className="mt-6 text-4xl font-bold">
-                        Inventory Management System
+                        ศูนย์ขายและวิศวกรรมบริการ นครศรีธรรมราช
                     </h2>
                     <p className="mt-2 text-lg text-slate-400">
-                        Streamline your business operations with ease.
+                        บริษัทโทรคมนาคมแห่งชาติ จำกัด (มหาชน)
                     </p>
                 </div>
             </div>
