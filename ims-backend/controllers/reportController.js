@@ -2,90 +2,103 @@
 
 const prisma = require('../prisma/client');
 
+const getDateRange = (period, year) => {
+    const now = new Date();
+    let startDate, endDate = new Date();
+    let prevStartDate, prevEndDate;
+    
+    const targetYear = year ? parseInt(year) : now.getFullYear();
+
+    switch (period) {
+        case 'this_month':
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+            prevStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            prevEndDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+            break;
+        case 'last_3_months':
+            startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+            prevStartDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+            prevEndDate = new Date(now.getFullYear(), now.getMonth() - 2, 0, 23, 59, 59);
+            break;
+        case 'last_6_months':
+            startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+            prevStartDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+            prevEndDate = new Date(now.getFullYear(), now.getMonth() - 5, 0, 23, 59, 59);
+            break;
+        case 'this_year':
+        default:
+            startDate = new Date(targetYear, 0, 1);
+            endDate = new Date(targetYear, 11, 31, 23, 59, 59);
+            prevStartDate = new Date(targetYear - 1, 0, 1);
+            prevEndDate = new Date(targetYear - 1, 11, 31, 23, 59, 59);
+    }
+    return { startDate, endDate, prevStartDate, prevEndDate };
+};
+
 exports.getSalesReport = async (req, res, next) => {
     try {
-        const { year, month } = req.query;
+        const { period = 'this_month', year } = req.query;
 
-        if (!year) {
-            return res.status(400).json({ error: 'Year is a required query parameter.' });
-        }
+        const { startDate, endDate, prevStartDate, prevEndDate } = getDateRange(period, year);
+        
+        const currentPeriodWhere = { status: 'COMPLETED', saleDate: { gte: startDate, lte: endDate } };
+        const previousPeriodWhere = { status: 'COMPLETED', saleDate: { gte: prevStartDate, lte: prevEndDate } };
 
-        const startDate = month && month !== 'all' ? new Date(year, month - 1, 1) : new Date(year, 0, 1);
-        const endDate = month && month !== 'all' ? new Date(year, month, 0, 23, 59, 59) : new Date(year, 11, 31, 23, 59, 59);
+        const [currentSales, previousSales] = await Promise.all([
+            prisma.sale.findMany({ where: currentPeriodWhere, include: { itemsSold: { include: { productModel: true } }, customer: true } }),
+            prisma.sale.findMany({ where: previousPeriodWhere, include: { itemsSold: true } })
+        ]);
+        
+        // --- Current Period Stats ---
+        const totalRevenue = currentSales.reduce((sum, sale) => sum + sale.total, 0);
+        const totalSales = currentSales.length;
+        const allItemsSold = currentSales.flatMap(sale => sale.itemsSold);
+        const totalItemsSoldCount = allItemsSold.length;
+        const uniqueCustomerIds = new Set(currentSales.map(sale => sale.customerId));
+        const totalUniqueCustomers = uniqueCustomerIds.size;
+        
+        // --- Previous Period Stats for Comparison ---
+        const prevTotalRevenue = previousSales.reduce((sum, sale) => sum + sale.total, 0);
+        const prevTotalItemsSoldCount = previousSales.reduce((sum, sale) => sum + sale.itemsSold.length, 0);
 
-        const whereClause = {
-            status: 'COMPLETED',
-            saleDate: {
-                gte: startDate,
-                lte: endDate,
-            },
-        };
-
-        const salesData = await prisma.sale.findMany({
-            where: whereClause,
-            include: {
-                itemsSold: {
-                    include: {
-                        productModel: true,
-                    },
-                },
-                customer: true,
-            },
-        });
-
-        const totalRevenue = salesData.reduce((sum, sale) => sum + sale.total, 0);
-        const totalSales = salesData.length;
-
-        const allItemsSold = salesData.flatMap(sale => sale.itemsSold);
-
+        // Top 10 Products
         const productSales = allItemsSold.reduce((acc, item) => {
             const modelId = item.productModelId;
             if (!acc[modelId]) {
-                acc[modelId] = {
-                    count: 0,
-                    revenue: 0,
-                    modelNumber: item.productModel.modelNumber
-                };
+                acc[modelId] = { count: 0, revenue: 0, modelNumber: item.productModel.modelNumber };
             }
             acc[modelId].count += 1;
             acc[modelId].revenue += item.productModel.sellingPrice;
             return acc;
         }, {});
-        
-        const top10Products = Object.entries(productSales)
-            .sort(([, a], [, b]) => b.revenue - a.revenue)
-            .slice(0, 10)
-            .map(([id, data]) => ({
-                productModelId: parseInt(id),
-                modelNumber: data.modelNumber,
-                totalRevenue: data.revenue,
-                unitsSold: data.count
-            }));
+        const top10Products = Object.values(productSales).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
 
-        const customerSales = salesData.reduce((acc, sale) => {
+        // Top 10 Customers
+        const customerStats = currentSales.reduce((acc, sale) => {
             if (!sale.customer) return acc;
-            acc[sale.customerId] = (acc[sale.customerId] || 0) + sale.total;
+            const customerId = sale.customerId;
+            if (!acc[customerId]) {
+                acc[customerId] = { name: sale.customer.name, totalRevenue: 0, transactionCount: 0 };
+            }
+            acc[customerId].totalRevenue += sale.total;
+            acc[customerId].transactionCount += 1;
             return acc;
         }, {});
-        
-        let topCustomer = null;
-        if (Object.keys(customerSales).length > 0) {
-            const topCustomerId = parseInt(Object.keys(customerSales).reduce((a, b) => customerSales[a] > customerSales[b] ? a : b));
-            const customer = await prisma.customer.findUnique({ where: { id: topCustomerId } });
-            topCustomer = customer ? customer.name : 'N/A';
-        }
+        const top10Customers = Object.values(customerStats).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 10);
 
+        // Chart Data
         let salesOverTime;
-        if (month && month !== 'all') {
-            salesOverTime = salesData.reduce((acc, sale) => {
-                const day = new Date(sale.saleDate).getDate().toString();
-                acc[day] = (acc[day] || 0) + sale.total;
-                return acc;
-            }, {});
-            salesOverTime = Object.entries(salesOverTime).map(([name, total]) => ({ name, total }));
-        } else {
+        if (period.startsWith('last_') || period === 'this_month') {
+             const monthlyData = {};
+             currentSales.forEach(sale => {
+                const monthName = new Date(sale.saleDate).toLocaleString('default', { month: 'short' });
+                monthlyData[monthName] = (monthlyData[monthName] || 0) + sale.total;
+            });
+            salesOverTime = Object.entries(monthlyData).map(([name, total]) => ({ name, total }));
+        } else { // Year view
             const monthlyData = Array.from({ length: 12 }, (_, i) => ({ name: new Date(0, i).toLocaleString('default', { month: 'short' }), total: 0 }));
-            salesData.forEach(sale => {
+            currentSales.forEach(sale => {
                 const monthIndex = new Date(sale.saleDate).getMonth();
                 monthlyData[monthIndex].total += sale.total;
             });
@@ -96,12 +109,16 @@ exports.getSalesReport = async (req, res, next) => {
             summary: {
                 totalRevenue,
                 totalSales,
-                bestSellingProduct: top10Products[0]?.modelNumber || 'N/A',
-                topCustomer
+                totalItemsSoldCount,
+                totalUniqueCustomers, // <-- This is the corrected field
+            },
+            comparison: {
+                prevTotalRevenue,
+                prevTotalItemsSoldCount
             },
             top10Products,
+            top10Customers,
             salesOverTime,
-            transactions: salesData
         });
 
     } catch (error) {

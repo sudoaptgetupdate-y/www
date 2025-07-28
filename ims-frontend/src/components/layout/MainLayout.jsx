@@ -123,14 +123,13 @@ const MainLayout = () => {
             
             <nav ref={navRef} className="sidebar-nav h-[calc(100vh-65px)] px-3 py-4 space-y-1.5 overflow-y-auto">
                  <NavItem to="/dashboard" icon={<Boxes size={18} />} text={t('dashboard')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
-                
+                <NavItem to="/reports/sales" icon={<BarChart2 size={18}/>} text="Reports" isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
                 <div>
                     <p className={cn("px-3 mt-4 mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider", isSidebarCollapsed && "text-center")}>
                         {isSidebarCollapsed ? 'T' : 'Transactions'}
                     </p>
                     <div className="space-y-1">
                         <NavItem to="/sales" icon={<ShoppingCart size={18}/>} text={t('sales')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
-                        <NavItem to="/reports/sales" icon={<BarChart2 size={18}/>} text="Reports" isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
                         <NavItem to="/borrowings" icon={<ArrowRightLeft size={18}/>} text={t('borrowing')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
                         <NavItem to="/asset-assignments" icon={<HardDrive size={18}/>} text={t('assignments')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
                         <NavItem to="/repairs" icon={<Wrench size={18}/>} text={t('repairOrders')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
@@ -145,8 +144,8 @@ const MainLayout = () => {
                         <NavItem to="/inventory" icon={<Package size={18}/>} text={t('inventory')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
                         <NavItem to="/assets" icon={<Layers size={18}/>} text={t('assetList')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
                         <NavItem to="/product-models" icon={<Boxes size={18}/>} text={t('models')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
-                        <NavItem to="/categories" icon={<Tag size={18}/>} text={t('categories')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
                         <NavItem to="/brands" icon={<Building2 size={18}/>} text={t('brands')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                        <NavItem to="/categories" icon={<Tag size={18}/>} text={t('categories')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
                         <NavItem to="/customers" icon={<UsersIcon size={18}/>} text={t('customers')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
                         <NavItem to="/suppliers" icon={<Truck size={18}/>} text={t('suppliers')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
                         <NavItem to="/addresses" icon={<BookUser size={18}/>} text={t('addressBook')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
