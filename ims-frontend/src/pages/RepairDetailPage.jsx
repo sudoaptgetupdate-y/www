@@ -91,7 +91,6 @@ const RepairItemReturnDialog = ({ items, onReturn, repairId, repairStatus }) => 
                     </DialogHeader>
                     <div className="max-h-[60vh] overflow-y-auto pr-2">
                         <Table>
-                            {/* --- START: แก้ไขส่วนหัวตาราง --- */}
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[50px]"></TableHead>
@@ -102,9 +101,7 @@ const RepairItemReturnDialog = ({ items, onReturn, repairId, repairStatus }) => 
                                     <TableHead>{t('repairDetail_outcome')}</TableHead>
                                 </TableRow>
                             </TableHeader>
-                            {/* --- END: แก้ไขส่วนหัวตาราง --- */}
                             
-                            {/* --- START: แก้ไขส่วนเนื้อหาตาราง --- */}
                             <TableBody>
                                 {unreturnedItems.map(item => (
                                     <TableRow key={item.inventoryItemId}>
@@ -139,7 +136,6 @@ const RepairItemReturnDialog = ({ items, onReturn, repairId, repairStatus }) => 
                                     </TableRow>
                                 ))}
                             </TableBody>
-                            {/* --- END: แก้ไขส่วนเนื้อหาตาราง --- */}
                         </Table>
                     </div>
                     <DialogFooter>
@@ -294,21 +290,22 @@ export default function RepairDetailPage() {
                         <CardTitle>{t('createSale_selected_items', { count: repairOrder.items.length })}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="border rounded-md">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>{t('tableHeader_category')}</TableHead>
-                                        <TableHead>{t('tableHeader_brand')}</TableHead>
-                                        <TableHead>{t('tableHeader_productModel')}</TableHead>
-                                        <TableHead>{t('tableHeader_assetCode')}</TableHead>
-                                        <TableHead>{t('tableHeader_serialNumber')}</TableHead>
-                                        <TableHead className="text-center">{t('repairDetail_returned')}</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
+                        <div className="border rounded-lg overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b bg-muted/40">
+                                        <th className="p-2 text-left">{t('tableHeader_category')}</th>
+                                        <th className="p-2 text-left">{t('tableHeader_brand')}</th>
+                                        <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
+                                        <th className="p-2 text-left">{t('tableHeader_assetCode')}</th>
+                                        <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
+                                        <th className="p-2 text-center">{t('repairDetail_returned')}</th>
+                                        <th className="p-2 text-center">{t('repairDetail_outcome')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                                     {repairOrder.items.map(item => (
-                                        <TableRow key={item.inventoryItemId}>
+                                        <tr key={item.inventoryItemId} className="border-b">
                                             <TableCell>{item.inventoryItem.productModel.category.name}</TableCell>
                                             <TableCell>{item.inventoryItem.productModel.brand.name}</TableCell>
                                             <TableCell>{item.inventoryItem.productModel.modelNumber}</TableCell>
@@ -319,10 +316,13 @@ export default function RepairDetailPage() {
                                             <TableCell className="text-center">
                                                 {item.returnedAt ? <Check className="text-green-500 mx-auto" /> : <X className="text-red-500 mx-auto" />}
                                             </TableCell>
-                                        </TableRow>
+                                            <TableCell className="text-center">
+                                                {item.repairOutcome ? <StatusBadge status={item.repairOutcome} /> : '-'}
+                                            </TableCell>
+                                        </tr>
                                     ))}
-                                </TableBody>
-                            </Table>
+                                </tbody>
+                            </table>
                         </div>
                     </CardContent>
                 </Card>
