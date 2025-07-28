@@ -4,20 +4,19 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
-// --- START: 1. Import CardFooter และส่วนประกอบสำหรับ Pagination ---
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// --- END ---
 import { toast } from "sonner";
-import { 
-    ArrowLeft, ShoppingCart, ArrowRightLeft, CornerUpLeft, Package, 
-    ArchiveX, Wrench, ShieldCheck, History as HistoryIcon, PlusCircle, Edit, ArchiveRestore, ShieldAlert 
+import {
+    ArrowLeft, ShoppingCart, ArrowRightLeft, CornerUpLeft,
+    ArchiveX, Wrench, ShieldCheck, History as HistoryIcon, PlusCircle, Edit, ArchiveRestore, ShieldAlert, Package
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { getStatusProperties } from "@/lib/statusUtils";
 import { useTranslation } from "react-i18next";
+import { Separator } from "@/components/ui/separator";
 
 const eventConfig = {
     CREATE: { icon: <PlusCircle className="h-4 w-4" /> },
@@ -45,11 +44,8 @@ export default function InventoryHistoryPage() {
     const [itemDetails, setItemDetails] = useState(null);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    // --- START: 2. เพิ่ม State สำหรับจัดการ Pagination ---
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-    // --- END ---
 
     useEffect(() => {
         const fetchData = async () => {
@@ -89,7 +85,6 @@ export default function InventoryHistoryPage() {
     if (loading) return <p>Loading history...</p>;
     if (!itemDetails) return <p>Item not found.</p>;
 
-    // --- START: 3. เพิ่ม Logic สำหรับคำนวณและแบ่งหน้าข้อมูล ---
     const totalPages = Math.ceil(history.length / itemsPerPage);
     const paginatedHistory = history.slice(
         (currentPage - 1) * itemsPerPage,
@@ -103,33 +98,54 @@ export default function InventoryHistoryPage() {
     };
 
     const handleItemsPerPageChange = (newSize) => {
-        setItemsPerPage(parseInt(newSize, 10)); // กลับไปหน้าแรกเมื่อเปลี่ยนจำนวนรายการต่อหน้า
+        setItemsPerPage(parseInt(newSize, 10));
         setCurrentPage(1);
     };
-    // --- END ---
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <HistoryIcon className="h-6 w-6" /> 
-                        {t('item_history_title')}
-                    </h1>
-                    <div className="text-muted-foreground mt-1">
-                        <p>{t('item_history_description', { modelNumber: itemDetails.productModel.modelNumber })}</p>
-                        <p className="text-sm">{t('tableHeader_serialNumber')}: {itemDetails.serialNumber || 'N/A'}</p>
-                        <p className="text-sm">{t('tableHeader_macAddress')}: {itemDetails.macAddress || 'N/A'}</p>
-                        {itemDetails.supplier && (
-                            <p className="text-sm mt-1">{t('purchased_from')}: <span className="font-semibold text-foreground">{itemDetails.supplier.name}</span></p>
-                        )}
-                    </div>
-                </div>
+                <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <HistoryIcon className="h-6 w-6" />
+                    {t('item_history_title')}
+                </h1>
                 <Button variant="outline" onClick={() => navigate('/inventory')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     {t('item_history_back_button')}
                 </Button>
             </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-3">
+                        <Package className="h-6 w-6" />
+                        <span>{itemDetails.productModel.modelNumber}</span>
+                    </CardTitle>
+                    <CardDescription>
+                       {t('item_history_description_title')}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Separator />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-6 mt-4 text-sm">
+                        <div>
+                            <p className="text-muted-foreground">{t('tableHeader_serialNumber')}</p>
+                            <p className="font-semibold text-foreground">{itemDetails.serialNumber || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground">{t('tableHeader_macAddress')}</p>
+                            <p className="font-semibold text-foreground">{itemDetails.macAddress || 'N/A'}</p>
+                        </div>
+                        {itemDetails.supplier && (
+                            <div>
+                                <p className="text-muted-foreground">{t('purchased_from')}</p>
+                                <p className="font-semibold text-foreground">{itemDetails.supplier.name}</p>
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle>{t('item_history_log_title')}</CardTitle>
@@ -147,26 +163,18 @@ export default function InventoryHistoryPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {/* --- START: 4. เปลี่ยนไปใช้ข้อมูลที่แบ่งหน้าแล้ว --- */}
                                 {paginatedHistory.length > 0 ? paginatedHistory.map((event) => {
                                     const link = getTransactionLink(event.eventType, event.details);
-                                    
                                     const getDisplayInfo = (historyEvent) => {
                                         if (historyEvent.eventType === 'REPAIR_RETURNED') {
-                                            if (historyEvent.details.outcome === 'REPAIRED_SUCCESSFULLY') {
-                                                return { status: 'REPAIR_SUCCESS' };
-                                            }
-                                            if (historyEvent.details.outcome === 'UNREPAIRABLE') {
-                                                return { status: 'REPAIR_FAILED' };
-                                            }
+                                            if (historyEvent.details.outcome === 'REPAIRED_SUCCESSFULLY') return { status: 'REPAIR_SUCCESS' };
+                                            if (historyEvent.details.outcome === 'UNREPAIRABLE') return { status: 'REPAIR_FAILED' };
                                         }
                                         return { status: historyEvent.eventType };
                                     };
-
                                     const { status: displayStatus } = getDisplayInfo(event);
                                     const eventIcon = eventConfig[displayStatus]?.icon;
                                     const { label: eventLabel } = getStatusProperties(displayStatus);
-
                                     return (
                                     <tr key={event.id} className="border-b">
                                         <td className="p-2">{new Date(event.createdAt).toLocaleString()}</td>
@@ -175,11 +183,7 @@ export default function InventoryHistoryPage() {
                                         </td>
                                         <td className="p-2">{event.user?.name || 'System'}</td>
                                         <td className="p-2 text-center">
-                                            <StatusBadge
-                                                status={displayStatus}
-                                                className="w-36"
-                                                {...(link && { onClick: () => navigate(link) })}
-                                            >
+                                            <StatusBadge status={displayStatus} className="w-36" {...(link && { onClick: () => navigate(link) })}>
                                                 {eventIcon}
                                                 <span className="ml-1.5">{eventLabel}</span>
                                             </StatusBadge>
@@ -188,31 +192,30 @@ export default function InventoryHistoryPage() {
                                 )}) : (
                                     <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">{t('item_history_no_history')}</td></tr>
                                 )}
-                                {/* --- END --- */}
                             </tbody>
                         </table>
                     </div>
                 </CardContent>
-                {/* --- START: 5. เพิ่ม CardFooter พร้อมส่วนควบคุม Pagination --- */}
-                <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
-                        <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
-                            <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                        {t('pagination_info', { currentPage: currentPage, totalPages: totalPages, totalItems: history.length })}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage <= 1}>{t('previous')}</Button>
-                        <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages}>{t('next')}</Button>
-                    </div>
-                </CardFooter>
-                {/* --- END --- */}
+                {history.length > 0 && (
+                    <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
+                            <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                                <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                            {t('pagination_info', { currentPage, totalPages, totalItems: history.length })}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage <= 1}>{t('previous')}</Button>
+                            <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages}>{t('next')}</Button>
+                        </div>
+                    </CardFooter>
+                )}
             </Card>
         </div>
     );

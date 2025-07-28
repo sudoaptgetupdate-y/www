@@ -29,8 +29,8 @@ assetAssignmentController.createAssignment = async (req, res, next) => {
     try {
         const newAssignment = await prisma.$transaction(async (tx) => {
             const itemsToAssign = await tx.inventoryItem.findMany({
-                where: { 
-                    id: { in: inventoryItemIds }, 
+                where: {
+                    id: { in: inventoryItemIds },
                     status: 'IN_WAREHOUSE',
                     itemType: 'ASSET'
                 }
@@ -56,14 +56,14 @@ assetAssignmentController.createAssignment = async (req, res, next) => {
                     status: 'ASSIGNED',
                 },
             });
-            
+
             await tx.assetAssignmentOnItems.createMany({
                 data: inventoryItemIds.map(itemId => ({
                     assignmentId: createdAssignment.id,
                     inventoryItemId: itemId,
                 })),
             });
-            
+
             await tx.inventoryItem.updateMany({
                 where: { id: { in: inventoryItemIds } },
                 data: { status: 'ASSIGNED' },
@@ -75,10 +75,10 @@ assetAssignmentController.createAssignment = async (req, res, next) => {
                     itemId,
                     approvedById,
                     EventType.ASSIGN,
-                    { 
+                    {
                         assignee: assignee.name,
                         assignmentId: createdAssignment.id,
-                        notes: `Assigned to ${assignee.name}.`
+                        details: `Assigned to ${assignee.name}.`
                     }
                 );
             }
@@ -126,7 +126,7 @@ assetAssignmentController.returnItems = async (req, res, next) => {
                 },
                 data: { returnedAt: new Date() },
             });
-            
+
             await tx.inventoryItem.updateMany({
                 where: { id: { in: itemIdsToReturn } },
                 data: { status: 'IN_WAREHOUSE' },
@@ -141,7 +141,7 @@ assetAssignmentController.returnItems = async (req, res, next) => {
                     {
                         returnedFrom: assignment.assignee?.name || 'N/A',
                         assignmentId: id,
-                        notes: `Returned from ${assignment.assignee?.name || 'N/A'}.`
+                        details: `Returned from ${assignment.assignee?.name || 'N/A'}.`
                     }
                 );
             }
@@ -154,7 +154,7 @@ assetAssignmentController.returnItems = async (req, res, next) => {
             });
 
             let newStatus = remainingItems === 0 ? AssignmentStatus.RETURNED : AssignmentStatus.PARTIALLY_RETURNED;
-            
+
             await tx.assetAssignment.update({
                 where: { id: id },
                 data: {
