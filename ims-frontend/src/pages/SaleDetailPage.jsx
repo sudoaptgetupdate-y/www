@@ -120,10 +120,10 @@ export default function SaleDetailPage() {
                 </div>
             </div>
 
-            <Card className="printable-area p-4 sm:p-6 md:p-8 font-sarabun">
+            <div className="printable-area">
                 <PrintableHeader profile={companyProfile} />
                 
-                <CardHeader className="p-0 mb-6">
+                <Card className="p-4 sm:p-6 md:p-8 font-sarabun">
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-1">
                             <p className="text-sm text-muted-foreground">ลูกค้า (Customer)</p>
@@ -143,7 +143,7 @@ export default function SaleDetailPage() {
                      <div className="mt-4 flex justify-end no-print">
                         <StatusBadge status={sale.status} className="w-28 text-base" />
                     </div>
-                </CardHeader>
+                </Card>
 
                 {sale.status === 'VOIDED' && (
                     <Card className="border-red-500 my-4 bg-red-50/50 no-print">
@@ -157,46 +157,48 @@ export default function SaleDetailPage() {
                     </Card>
                 )}
 
-                <CardContent className="p-0 mt-6">
-                    <div className="border rounded-lg overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b bg-muted/40">
-                                    <th className="p-2 text-left">รายการ (Product)</th>
-                                    <th className="p-2 text-left">หมวดหมู่ (Category)</th>
-                                    <th className="p-2 text-left">ยี่ห้อ (Brand)</th>
-                                    <th className="p-2 text-left">Serial Number</th>
-                                    <th className="p-2 text-right">ราคา (Price)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {sale.itemsSold.map(item => (
-                                    <tr key={item.id} className="border-b">
-                                        <td className="p-2">{item.productModel.modelNumber}</td>
-                                        <td className="p-2">{item.productModel.category.name}</td>
-                                        <td className="p-2">{item.productModel.brand.name}</td>
-                                        <td className="p-2">{item.serialNumber || 'N/A'}</td>
-                                        <td className="p-2 text-right">{item.productModel.sellingPrice.toFixed(2)}</td>
+                <Card className="mt-6 font-sarabun">
+                    <CardContent className="p-0">
+                        <div className="border rounded-lg overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b bg-muted/40">
+                                        <th className="p-2 text-left">รายการ (Product)</th>
+                                        <th className="p-2 text-left">หมวดหมู่ (Category)</th>
+                                        <th className="p-2 text-left">ยี่ห้อ (Brand)</th>
+                                        <th className="p-2 text-left">Serial Number</th>
+                                        <th className="p-2 text-right">ราคา (Price)</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                            <tfoot>
-                                <tr className="border-t font-semibold">
-                                    <td colSpan="4" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
-                                    <td className="p-2 text-right">{sale.subtotal.toFixed(2)}</td>
-                                </tr>
-                                <tr className="border-t">
-                                    <td colSpan="4" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
-                                    <td className="p-2 text-right">{sale.vatAmount.toFixed(2)}</td>
-                                </tr>
-                                <tr className="border-t text-base font-bold bg-muted/40">
-                                    <td colSpan="4" className="p-2 text-right">ยอดสุทธิ (Total)</td>
-                                    <td className="p-2 text-right">{sale.total.toFixed(2)} THB</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </CardContent>
+                                </thead>
+                                <tbody>
+                                    {sale.itemsSold.map(item => (
+                                        <tr key={item.id} className="border-b">
+                                            <td className="p-2">{item.productModel.modelNumber}</td>
+                                            <td className="p-2">{item.productModel.category.name}</td>
+                                            <td className="p-2">{item.productModel.brand.name}</td>
+                                            <td className="p-2">{item.serialNumber || 'N/A'}</td>
+                                            <td className="p-2 text-right">{item.productModel.sellingPrice.toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                                <tfoot>
+                                    <tr className="border-t font-semibold">
+                                        <td colSpan="4" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
+                                        <td className="p-2 text-right">{sale.subtotal.toFixed(2)}</td>
+                                    </tr>
+                                    <tr className="border-t">
+                                        <td colSpan="4" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
+                                        <td className="p-2 text-right">{sale.vatAmount.toFixed(2)}</td>
+                                    </tr>
+                                    <tr className="border-t text-base font-bold bg-muted/40">
+                                        <td colSpan="4" className="p-2 text-right">ยอดสุทธิ (Total)</td>
+                                        <td className="p-2 text-right">{sale.total.toFixed(2)} THB</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
                 
                 <div className="signature-section hidden">
                     <div className="signature-box">
@@ -215,7 +217,7 @@ export default function SaleDetailPage() {
                      <p>ขอบคุณที่ใช้บริการ</p>
                      <p>Thank you for your business!</p>
                 </div>
-            </Card>
+            </div>
 
             <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
                 <AlertDialogContent>

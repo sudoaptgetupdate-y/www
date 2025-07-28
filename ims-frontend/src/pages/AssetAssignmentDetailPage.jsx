@@ -109,86 +109,88 @@ export default function AssetAssignmentDetailPage() {
                 </div>
             </div>
 
-            <Card className="printable-area p-4 sm:p-6 md:p-8 font-sarabun">
+            <div className="printable-area font-sarabun">
                  <div className="print-header hidden">
                     <h1 className="text-xl font-bold">ใบเบิกจ่ายทรัพย์สิน / Asset Assignment Note</h1>
                 </div>
 
-                <CardHeader className="p-0 mb-6">
-                    <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">ผู้เบิก (Assignee)</p>
-                            <p className="font-semibold">{assignment.assignee?.name || 'N/A'}</p>
-                            <p className="text-sm text-muted-foreground">{assignment.assignee?.username || 'N/A'}</p>
-                            <p className="text-sm text-muted-foreground">อีเมล: {assignment.assignee?.email || 'N/A'}</p>
+                <Card className="p-4 sm:p-6 md:p-8">
+                    <CardHeader className="p-0 mb-6">
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">ผู้เบิก (Assignee)</p>
+                                <p className="font-semibold">{assignment.assignee?.name || 'N/A'}</p>
+                                <p className="text-sm text-muted-foreground">{assignment.assignee?.username || 'N/A'}</p>
+                                <p className="text-sm text-muted-foreground">อีเมล: {assignment.assignee?.email || 'N/A'}</p>
+                            </div>
+                            <div className="space-y-1 text-right">
+                                 <p className="text-sm text-muted-foreground">เลขที่ (Assignment ID)</p>
+                                 <p className="font-semibold">#{formattedAssignmentId}</p>
+                                 <p className="text-sm text-muted-foreground">วันที่เบิก (Assigned Date)</p>
+                                 <p className="font-semibold">{new Date(assignment.assignedDate).toLocaleString('th-TH')}</p>
+                                 <p className="text-sm text-muted-foreground">ผู้อนุมัติ (Approved By)</p>
+                                 <p className="font-semibold">{assignment.approvedBy?.name || 'N/A'}</p>
+                                 {assignment.returnDate && (
+                                    <>
+                                    <p className="text-sm text-muted-foreground">วันที่คืนครบ (Completion Date)</p>
+                                    <p className="font-semibold">{new Date(assignment.returnDate).toLocaleString('th-TH')}</p>
+                                    </>
+                                )}
+                            </div>
                         </div>
-                        <div className="space-y-1 text-right">
-                             <p className="text-sm text-muted-foreground">เลขที่ (Assignment ID)</p>
-                             <p className="font-semibold">#{formattedAssignmentId}</p>
-                             <p className="text-sm text-muted-foreground">วันที่เบิก (Assigned Date)</p>
-                             <p className="font-semibold">{new Date(assignment.assignedDate).toLocaleString('th-TH')}</p>
-                             <p className="text-sm text-muted-foreground">ผู้อนุมัติ (Approved By)</p>
-                             <p className="font-semibold">{assignment.approvedBy?.name || 'N/A'}</p>
-                             {assignment.returnDate && (
-                                <>
-                                <p className="text-sm text-muted-foreground">วันที่คืนครบ (Completion Date)</p>
-                                <p className="font-semibold">{new Date(assignment.returnDate).toLocaleString('th-TH')}</p>
-                                </>
-                            )}
+                        <div className="mt-4 flex justify-end no-print">
+                            <StatusBadge status={assignment.status} className="w-32 text-base" />
                         </div>
-                    </div>
-                    <div className="mt-4 flex justify-end no-print">
-                        <StatusBadge status={assignment.status} className="w-32 text-base" />
-                    </div>
-                    {assignment.notes && (
-                        <div className="mt-6">
-                            <p className="font-semibold">หมายเหตุ (Notes):</p>
-                            <p className="whitespace-pre-wrap text-sm text-muted-foreground border p-3 rounded-md bg-muted/30 no-print">{assignment.notes}</p>
-                            <p className="whitespace-pre-wrap text-sm print-block hidden">{assignment.notes}</p>
-                        </div>
-                    )}
-                </CardHeader>
-
-                 <CardContent className="p-0 mt-6">
-                     <p className="font-semibold mb-2 text-base">รายการทรัพย์สินที่เบิก ({assignment.items.length})</p>
-                    <div className="border rounded-lg overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b bg-muted/40">
-                                    {/* --- START: แก้ไขส่วนหัวตาราง --- */}
-                                    <th className="p-2 text-left">Category</th>
-                                    <th className="p-2 text-left">Brand</th>
-                                    <th className="p-2 text-left">Product Model</th>
-                                    <th className="p-2 text-left">Asset Code</th>
-                                    {/* --- END: แก้ไขส่วนหัวตาราง --- */}
-                                    <th className="p-2 text-left">Serial Number</th>
-                                    <th className="p-2 text-left">สถานะ (Status)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {assignment.items.map(item => (
-                                    <tr key={item.inventoryItem.id} className="border-b">
-                                        {/* --- START: เพิ่ม Cell ของตาราง --- */}
-                                        <td className="p-2">{item.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
-                                        <td className="p-2">{item.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
-                                        {/* --- END: เพิ่ม Cell ของตาราง --- */}
-                                        <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
-                                        <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
-                                        <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
-                                        <td className="p-2">
-                                            <StatusBadge status={item.returnedAt ? 'RETURNED' : 'ASSIGNED'} />
-                                            {item.returnedAt && (
-                                                <span className="text-xs text-muted-foreground ml-2">
-                                                    (เมื่อ {new Date(item.returnedAt).toLocaleDateString('th-TH')})
-                                                </span>
-                                            )}
-                                        </td>
+                        {assignment.notes && (
+                            <div className="mt-6">
+                                <p className="font-semibold">หมายเหตุ (Notes):</p>
+                                <p className="whitespace-pre-wrap text-sm text-muted-foreground border p-3 rounded-md bg-muted/30 no-print">{assignment.notes}</p>
+                                <p className="whitespace-pre-wrap text-sm print-block hidden">{assignment.notes}</p>
+                            </div>
+                        )}
+                    </CardHeader>
+                </Card>
+                
+                <Card className="mt-6">
+                    <CardHeader>
+                        <CardTitle>รายการทรัพย์สินที่เบิก ({assignment.items.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <div className="border rounded-lg overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b bg-muted/40">
+                                        <th className="p-2 text-left">Category</th>
+                                        <th className="p-2 text-left">Brand</th>
+                                        <th className="p-2 text-left">Product Model</th>
+                                        <th className="p-2 text-left">Asset Code</th>
+                                        <th className="p-2 text-left">Serial Number</th>
+                                        <th className="p-2 text-left">สถานะ (Status)</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                 </CardContent>
+                                </thead>
+                                <tbody>
+                                    {assignment.items.map(item => (
+                                        <tr key={item.inventoryItem.id} className="border-b">
+                                            <td className="p-2">{item.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
+                                            <td className="p-2">{item.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
+                                            <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
+                                            <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
+                                            <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
+                                            <td className="p-2">
+                                                <StatusBadge status={item.returnedAt ? 'RETURNED' : 'ASSIGNED'} />
+                                                {item.returnedAt && (
+                                                    <span className="text-xs text-muted-foreground ml-2">
+                                                        (เมื่อ {new Date(item.returnedAt).toLocaleDateString('th-TH')})
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 <div className="signature-section hidden">
                     <div className="signature-box">
@@ -202,7 +204,7 @@ export default function AssetAssignmentDetailPage() {
                         <p>พนักงานผู้รับทรัพย์สิน</p>
                     </div>
                 </div>
-            </Card>
+            </div>
 
             <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
                  <DialogContent className="max-w-3xl">
@@ -213,7 +215,6 @@ export default function AssetAssignmentDetailPage() {
                     <div className="py-4 max-h-[60vh] overflow-y-auto">
                         <div className="border rounded-md">
                             <table className="w-full text-sm">
-                                {/* --- START: แก้ไขส่วนหัวตารางใน Dialog --- */}
                                 <thead>
                                     <tr className="border-b">
                                         <th className="p-2 w-12 text-center">Return</th>
@@ -224,7 +225,6 @@ export default function AssetAssignmentDetailPage() {
                                         <th className="p-2 text-left">Serial Number</th>
                                     </tr>
                                 </thead>
-                                {/* --- END: แก้ไขส่วนหัวตารางใน Dialog --- */}
                                 <tbody>
                                     {itemsToReturn.map(item => (
                                         <tr
@@ -238,11 +238,9 @@ export default function AssetAssignmentDetailPage() {
                                                     : <Square className="h-5 w-5 text-muted-foreground mx-auto" />
                                                 }
                                             </td>
-                                            {/* --- START: เพิ่ม Cell ของตารางใน Dialog --- */}
                                             <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
                                             <td className="p-2">{item.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
                                             <td className="p-2">{item.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
-                                            {/* --- END: เพิ่ม Cell ของตารางใน Dialog --- */}
                                             <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
                                             <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
                                         </tr>
