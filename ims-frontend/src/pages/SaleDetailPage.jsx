@@ -13,20 +13,82 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Separator } from "@/components/ui/separator";
 
-const PrintableHeader = ({ profile }) => (
-    <div className="print-header hidden">
-        <div className="text-center mb-4">
-            <h1 className="text-2xl font-bold">{profile.name}</h1>
-            <p className="text-sm">{profile.addressLine1}</p>
-            <p className="text-sm">{profile.addressLine2}</p>
-            <p className="text-sm">โทรศัพท์ (Tel): {profile.phone} เลขประจำตัวผู้เสียภาษี (Tax ID): {profile.taxId}</p>
-        </div>
-        <Separator className="my-4 border-black" />
-        <h2 className="text-xl font-bold text-center tracking-widest">ใบกำกับภาษีอย่างย่อ / RECEIPT (TAX INVOICE)</h2>
-        <Separator className="my-4 border-black" />
-    </div>
+const PrintableHeaderCard = ({ profile, sale, formattedSaleId }) => (
+    <Card className="hidden print:block mb-0 border-black rounded-b-none border-b-0">
+        <CardHeader className="text-center p-4">
+            <h1 className="text-lg font-bold">{profile.name}</h1>
+            <p className="text-xs">{profile.addressLine1}</p>
+            <p className="text-xs">{profile.addressLine2}</p>
+            <p className="text-xs mt-2">โทรศัพท์ (Tel): {profile.phone} เลขประจำตัวผู้เสียภาษี (Tax ID): {profile.taxId}</p>
+        </CardHeader>
+        <CardContent className="p-2 border-y border-black">
+            <h2 className="text-md font-bold text-center tracking-widest">ใบกำกับภาษีอย่างย่อ / RECEIPT (TAX INVOICE)</h2>
+        </CardContent>
+        <CardContent className="p-4">
+             <div className="grid grid-cols-2 gap-6 text-xs">
+                <div className="space-y-1">
+                    <p className="text-slate-600">ลูกค้า (Customer)</p>
+                    <p className="font-semibold">{sale.customer.name}</p>
+                    <p className="text-slate-600">{sale.customer.address || ""}</p>
+                    <p className="text-slate-600">โทร. {sale.customer.phone || "-"}</p>
+                </div>
+                <div className="space-y-1 text-right">
+                    <p className="text-slate-600">เลขที่ (Sale ID)</p>
+                    <p className="font-semibold">#{formattedSaleId}</p>
+                    <p className="text-slate-600">วันที่ (Date)</p>
+                    <p className="font-semibold">{new Date(sale.saleDate).toLocaleString('th-TH')}</p>
+                    <p className="text-slate-600">พนักงานขาย (Sold By)</p>
+                    <p className="font-semibold">{sale.soldBy.name}</p>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
+
+const PrintableItemsCard = ({ sale }) => (
+    <Card className="hidden print:block mt-0 font-sarabun border-black rounded-t-none">
+        <CardContent className="p-0">
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="border-b bg-muted/40">
+                            <th className="p-2 text-left">รายการ (Product)</th>
+                            <th className="p-2 text-left">หมวดหมู่ (Category)</th>
+                            <th className="p-2 text-left">ยี่ห้อ (Brand)</th>
+                            <th className="p-2 text-left">Serial Number</th>
+                            <th className="p-2 text-right">ราคา (Price)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {sale.itemsSold.map(item => (
+                            <tr key={item.id} className="border-b">
+                                <td className="p-2">{item.productModel.modelNumber}</td>
+                                <td className="p-2">{item.productModel.category.name}</td>
+                                <td className="p-2">{item.productModel.brand.name}</td>
+                                <td className="p-2">{item.serialNumber || 'N/A'}</td>
+                                <td className="p-2 text-right">{item.productModel.sellingPrice.toFixed(2)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                    <tfoot>
+                        <tr className="border-t font-semibold">
+                            <td colSpan="4" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
+                            <td className="p-2 text-right">{sale.subtotal.toFixed(2)}</td>
+                        </tr>
+                        <tr className="border-t">
+                            <td colSpan="4" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
+                            <td className="p-2 text-right">{sale.vatAmount.toFixed(2)}</td>
+                        </tr>
+                        <tr className="border-t text-base font-bold bg-muted/40">
+                            <td colSpan="4" className="p-2 text-right">ยอดสุทธิ (Total)</td>
+                            <td className="p-2 text-right">{sale.total.toFixed(2)} THB</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </CardContent>
+    </Card>
 );
 
 
@@ -120,85 +182,88 @@ export default function SaleDetailPage() {
                 </div>
             </div>
 
-            <div className="printable-area">
-                <PrintableHeader profile={companyProfile} />
+            <div className="printable-area font-sarabun">
+                <PrintableHeaderCard profile={companyProfile} sale={sale} formattedSaleId={formattedSaleId} />
+                <PrintableItemsCard sale={sale} />
                 
-                <Card className="p-4 sm:p-6 md:p-8 font-sarabun">
-                    <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">ลูกค้า (Customer)</p>
-                            <p className="font-semibold">{sale.customer.name}</p>
-                            <p className="text-sm text-muted-foreground">{sale.customer.address || ""}</p>
-                            <p className="text-sm text-muted-foreground">โทร. {sale.customer.phone || "-"}</p>
+                <div className="no-print space-y-6">
+                    <Card className="p-4 sm:p-6 md:p-8">
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">ลูกค้า (Customer)</p>
+                                <p className="font-semibold">{sale.customer.name}</p>
+                                <p className="text-sm text-muted-foreground">{sale.customer.address || ""}</p>
+                                <p className="text-sm text-muted-foreground">โทร. {sale.customer.phone || "-"}</p>
+                            </div>
+                            <div className="space-y-1 text-right">
+                                <p className="text-sm text-muted-foreground">เลขที่ (Sale ID)</p>
+                                <p className="font-semibold">#{formattedSaleId}</p>
+                                <p className="text-sm text-muted-foreground">วันที่ (Date)</p>
+                                <p className="font-semibold">{new Date(sale.saleDate).toLocaleString('th-TH')}</p>
+                                <p className="text-sm text-muted-foreground">พนักงานขาย (Sold By)</p>
+                                <p className="font-semibold">{sale.soldBy.name}</p>
+                            </div>
                         </div>
-                        <div className="space-y-1 text-right">
-                            <p className="text-sm text-muted-foreground">เลขที่ (Sale ID)</p>
-                            <p className="font-semibold">#{formattedSaleId}</p>
-                            <p className="text-sm text-muted-foreground">วันที่ (Date)</p>
-                            <p className="font-semibold">{new Date(sale.saleDate).toLocaleString('th-TH')}</p>
-                            <p className="text-sm text-muted-foreground">พนักงานขาย (Sold By)</p>
-                            <p className="font-semibold">{sale.soldBy.name}</p>
+                         <div className="mt-4 flex justify-end">
+                            <StatusBadge status={sale.status} className="w-28 text-base" />
                         </div>
-                    </div>
-                     <div className="mt-4 flex justify-end no-print">
-                        <StatusBadge status={sale.status} className="w-28 text-base" />
-                    </div>
-                </Card>
+                    </Card>
 
-                {sale.status === 'VOIDED' && (
-                    <Card className="border-red-500 my-4 bg-red-50/50 no-print">
-                        <CardHeader>
-                            <CardTitle className="text-red-600 text-base">Void Information</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4 text-sm pb-4">
-                            <div><p className="font-semibold">Voided By</p><p>{sale.voidedBy?.name || 'N/A'}</p></div>
-                            <div><p className="font-semibold">Voided Date</p><p>{new Date(sale.voidedAt).toLocaleString()}</p></div>
+                    {sale.status === 'VOIDED' && (
+                        <Card className="border-red-500 bg-red-50/50">
+                            <CardHeader>
+                                <CardTitle className="text-red-600 text-base">Void Information</CardTitle>
+                            </CardHeader>
+                            <CardContent className="grid grid-cols-2 gap-4 text-sm pb-4">
+                                <div><p className="font-semibold">Voided By</p><p>{sale.voidedBy?.name || 'N/A'}</p></div>
+                                <div><p className="font-semibold">Voided Date</p><p>{new Date(sale.voidedAt).toLocaleString()}</p></div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    <Card>
+                        <CardContent className="p-0">
+                            <div className="border rounded-lg overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b bg-muted/40">
+                                            <th className="p-2 text-left">รายการ (Product)</th>
+                                            <th className="p-2 text-left">หมวดหมู่ (Category)</th>
+                                            <th className="p-2 text-left">ยี่ห้อ (Brand)</th>
+                                            <th className="p-2 text-left">Serial Number</th>
+                                            <th className="p-2 text-right">ราคา (Price)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {sale.itemsSold.map(item => (
+                                            <tr key={item.id} className="border-b">
+                                                <td className="p-2">{item.productModel.modelNumber}</td>
+                                                <td className="p-2">{item.productModel.category.name}</td>
+                                                <td className="p-2">{item.productModel.brand.name}</td>
+                                                <td className="p-2">{item.serialNumber || 'N/A'}</td>
+                                                <td className="p-2 text-right">{item.productModel.sellingPrice.toFixed(2)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="border-t font-semibold">
+                                            <td colSpan="4" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
+                                            <td className="p-2 text-right">{sale.subtotal.toFixed(2)}</td>
+                                        </tr>
+                                        <tr className="border-t">
+                                            <td colSpan="4" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
+                                            <td className="p-2 text-right">{sale.vatAmount.toFixed(2)}</td>
+                                        </tr>
+                                        <tr className="border-t text-base font-bold bg-muted/40">
+                                            <td colSpan="4" className="p-2 text-right">ยอดสุทธิ (Total)</td>
+                                            <td className="p-2 text-right">{sale.total.toFixed(2)} THB</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </CardContent>
                     </Card>
-                )}
-
-                <Card className="mt-6 font-sarabun">
-                    <CardContent className="p-0">
-                        <div className="border rounded-lg overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b bg-muted/40">
-                                        <th className="p-2 text-left">รายการ (Product)</th>
-                                        <th className="p-2 text-left">หมวดหมู่ (Category)</th>
-                                        <th className="p-2 text-left">ยี่ห้อ (Brand)</th>
-                                        <th className="p-2 text-left">Serial Number</th>
-                                        <th className="p-2 text-right">ราคา (Price)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {sale.itemsSold.map(item => (
-                                        <tr key={item.id} className="border-b">
-                                            <td className="p-2">{item.productModel.modelNumber}</td>
-                                            <td className="p-2">{item.productModel.category.name}</td>
-                                            <td className="p-2">{item.productModel.brand.name}</td>
-                                            <td className="p-2">{item.serialNumber || 'N/A'}</td>
-                                            <td className="p-2 text-right">{item.productModel.sellingPrice.toFixed(2)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                                <tfoot>
-                                    <tr className="border-t font-semibold">
-                                        <td colSpan="4" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
-                                        <td className="p-2 text-right">{sale.subtotal.toFixed(2)}</td>
-                                    </tr>
-                                    <tr className="border-t">
-                                        <td colSpan="4" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
-                                        <td className="p-2 text-right">{sale.vatAmount.toFixed(2)}</td>
-                                    </tr>
-                                    <tr className="border-t text-base font-bold bg-muted/40">
-                                        <td colSpan="4" className="p-2 text-right">ยอดสุทธิ (Total)</td>
-                                        <td className="p-2 text-right">{sale.total.toFixed(2)} THB</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
+                </div>
                 
                 <div className="signature-section hidden">
                     <div className="signature-box">

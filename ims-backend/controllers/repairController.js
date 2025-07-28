@@ -274,7 +274,13 @@ repairController.returnItemsFromRepair = async (req, res, next) => {
                     where: {
                         repairId_inventoryItemId: { repairId: id, inventoryItemId: inventoryItemId }
                     },
-                    include: { inventoryItem: true }
+                    include: { 
+                        inventoryItem: {
+                            include: {
+                                sale: true // Include the related sale to check its status
+                            }
+                        } 
+                    }
                 });
 
                 if (!repairItemRecord || repairItemRecord.inventoryItem.status !== 'REPAIRING') {
@@ -291,8 +297,11 @@ repairController.returnItemsFromRepair = async (req, res, next) => {
                 const { inventoryItem } = repairItemRecord;
                 let newStatus;
                 
-                const isSoldItem = inventoryItem.saleId !== null;
-                if (inventoryItem.ownerType === ItemOwner.CUSTOMER || isSoldItem) {
+                // *** START: CORRECTED LOGIC ***
+                // Check if the item was part of a COMPLETED sale.
+                const isSoldAndCompleted = inventoryItem.sale && inventoryItem.sale.status === 'COMPLETED';
+
+                if (inventoryItem.ownerType === ItemOwner.CUSTOMER || isSoldAndCompleted) {
                     newStatus = ItemStatus.RETURNED_TO_CUSTOMER;
                 } else {
                     if (repairOutcome === RepairOutcome.REPAIRED_SUCCESSFULLY) {
@@ -301,6 +310,7 @@ repairController.returnItemsFromRepair = async (req, res, next) => {
                         newStatus = ItemStatus.DECOMMISSIONED;
                     }
                 }
+                // *** END: CORRECTED LOGIC ***
                 
                 await tx.inventoryItem.update({
                     where: { id: inventoryItemId },

@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowLeft, Check, X, Wrench, Printer } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useTranslation } from "react-i18next";
 import {
@@ -148,6 +147,86 @@ const RepairItemReturnDialog = ({ items, onReturn, repairId, repairStatus }) => 
     );
 };
 
+const PrintableTitleCard = () => (
+    <Card className="hidden print:block mb-0 border-black rounded-b-none border-b-0">
+        <CardContent className="p-2">
+            <h1 className="text-xl font-bold text-center">ใบส่งซ่อมสินค้า / Repair Order</h1>
+        </CardContent>
+    </Card>
+);
+
+const PrintableHeaderCard = ({ repairOrder, getOwnerInfo, t }) => (
+    <Card className="hidden print:block mt-0 border-black rounded-none border-b-0">
+        <CardHeader className="p-4 border-t border-black">
+            <div className="grid grid-cols-2 gap-x-8 text-xs">
+                <div className="space-y-1">
+                    <p className="font-semibold text-slate-600">{t('repair_form_sender')}</p>
+                    <p className="font-bold">{repairOrder.sender.name}</p>
+                    <p className="whitespace-pre-wrap">{repairOrder.sender.address || 'N/A'}</p>
+                    <p>ผู้ติดต่อ: {repairOrder.sender.contactPerson || '-'}</p>
+                    <p>โทร: {repairOrder.sender.phone || '-'}</p>
+                </div>
+                <div className="space-y-1">
+                    <p className="font-semibold text-slate-600">{t('repair_form_receiver')}</p>
+                    <p className="font-bold">{repairOrder.receiver.name}</p>
+                    <p className="whitespace-pre-wrap">{repairOrder.receiver.address || 'N/A'}</p>
+                    <p>ผู้ติดต่อ: {repairOrder.receiver.contactPerson || '-'}</p>
+                    <p>โทร: {repairOrder.receiver.phone || '-'}</p>
+                </div>
+            </div>
+             <div className="mt-4 space-y-1 text-xs">
+                <p><span className="font-semibold">Repair Order #{repairOrder.id} {getOwnerInfo()}</span></p>
+                <p><span className="text-slate-600">{t('tableHeader_repairDate')}:</span> <span className="font-semibold">{new Date(repairOrder.repairDate).toLocaleString('th-TH')}</span></p>
+                <p><span className="text-slate-600">{t('tableHeader_createdBy')}:</span> <span className="font-semibold">{repairOrder.createdBy.name}</span></p>
+                {repairOrder.customer && <p><span className="text-slate-600">{t('tableHeader_customer')}:</span> <span className="font-semibold">{repairOrder.customer.name}</span></p>}
+            </div>
+            <div className="mt-4 space-y-1 text-xs">
+                <p className="font-semibold text-slate-600">{t('createBorrowing_notes_label')}:</p>
+                <p className="p-3 border rounded-md min-h-[40px] whitespace-pre-wrap">{repairOrder.notes || 'N/A'}</p>
+            </div>
+        </CardHeader>
+    </Card>
+);
+
+const PrintableItemsCard = ({ repairOrder, t }) => (
+    <Card className="hidden print:block mt-0 font-sarabun border-black rounded-t-none">
+        <CardHeader className="p-2 border-t border-black">
+            <CardTitle className="text-sm">{t('createSale_selected_items', { count: repairOrder.items.length })}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+            <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                    <thead>
+                        <tr className="border-b bg-muted/40">
+                            <th className="p-2 text-left">{t('tableHeader_category')}</th>
+                            <th className="p-2 text-left">{t('tableHeader_brand')}</th>
+                            <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
+                            <th className="p-2 text-left">{t('tableHeader_assetCode')}</th>
+                            <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
+                            <th className="p-2 text-center">{t('repairDetail_returned')}</th>
+                            <th className="p-2 text-center">{t('repairDetail_outcome')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {repairOrder.items.map(item => (
+                            <tr key={item.inventoryItemId} className="border-b">
+                                <td className="p-2">{item.inventoryItem.productModel.category.name}</td>
+                                <td className="p-2">{item.inventoryItem.productModel.brand.name}</td>
+                                <td className="p-2">{item.inventoryItem.productModel.modelNumber}</td>
+                                <td className="p-2">{item.inventoryItem.itemType === 'ASSET' ? item.inventoryItem.assetCode : 'N/A'}</td>
+                                <td className="p-2">{item.inventoryItem.serialNumber}</td>
+                                <td className="p-2 text-center">{item.returnedAt ? 'Yes' : 'No'}</td>
+                                <td className="p-2 text-center">{item.repairOutcome || '-'}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </CardContent>
+    </Card>
+);
+
+
 export default function RepairDetailPage() {
     const { repairId } = useParams();
     const navigate = useNavigate();
@@ -206,24 +285,17 @@ export default function RepairDetailPage() {
                 </div>
             </div>
             
-            <div className="printable-area">
-                <Card>
-                    <CardHeader>
-                        <div className="print-header hidden">
-                            <h1 className="text-xl font-bold">
-                                ใบส่งซ่อมสินค้า / Repair Order
-                            </h1>
-                        </div>
-                        <div className="no-print">
+            <div className="printable-area font-sarabun">
+                <div className="no-print space-y-6">
+                    <Card>
+                        <CardHeader>
                             <CardTitle className="flex items-center gap-3">
                                 <Wrench className="h-6 w-6" />
                                 <span>Repair Order #{repairOrder.id} {getOwnerInfo()}</span>
                             </CardTitle>
                             <CardDescription>{t('repairDetail_description')}</CardDescription>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="no-print">
+                        </CardHeader>
+                        <CardContent>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="space-y-2">
                                     <Label>{t('repairDetail_status')}</Label>
@@ -252,80 +324,57 @@ export default function RepairDetailPage() {
                                     <p className="text-sm p-3 bg-muted rounded-md min-h-[50px] whitespace-pre-wrap">{repairOrder.notes || 'N/A'}</p>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div className="hidden print:block text-sm">
-                             <div className="grid grid-cols-2 gap-x-8 border-t border-b py-4">
-                                <div className="space-y-1">
-                                    <p className="font-semibold text-muted-foreground">{t('repair_form_sender')}</p>
-                                    <p className="font-bold">{repairOrder.sender.name}</p>
-                                    <p className="whitespace-pre-wrap">{repairOrder.sender.address || 'N/A'}</p>
-                                    <p>ผู้ติดต่อ: {repairOrder.sender.contactPerson || '-'}</p>
-                                    <p>โทร: {repairOrder.sender.phone || '-'}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="font-semibold text-muted-foreground">{t('repair_form_receiver')}</p>
-                                    <p className="font-bold">{repairOrder.receiver.name}</p>
-                                    <p className="whitespace-pre-wrap">{repairOrder.receiver.address || 'N/A'}</p>
-                                    <p>ผู้ติดต่อ: {repairOrder.receiver.contactPerson || '-'}</p>
-                                    <p>โทร: {repairOrder.receiver.phone || '-'}</p>
-                                </div>
-                            </div>
-                             <div className="mt-4 space-y-1">
-                                <p><span className="font-semibold">Repair Order #{repairOrder.id} {getOwnerInfo()}</span></p>
-                                <p><span className="text-muted-foreground">{t('tableHeader_repairDate')}:</span> <span className="font-semibold">{new Date(repairOrder.repairDate).toLocaleString()}</span></p>
-                                <p><span className="text-muted-foreground">{t('tableHeader_createdBy')}:</span> <span className="font-semibold">{repairOrder.createdBy.name}</span></p>
-                                {repairOrder.customer && <p><span className="text-muted-foreground">{t('tableHeader_customer')}:</span> <span className="font-semibold">{repairOrder.customer.name}</span></p>}
-                            </div>
-                            <div className="mt-4 space-y-1">
-                                <Label className="text-muted-foreground">{t('createBorrowing_notes_label')}:</Label>
-                                <p className="text-sm p-3 border rounded-md min-h-[40px] whitespace-pre-wrap">{repairOrder.notes || 'N/A'}</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
 
-                <Card className="mt-6">
-                    <CardHeader>
-                        <CardTitle>{t('createSale_selected_items', { count: repairOrder.items.length })}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="border rounded-lg overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b bg-muted/40">
-                                        <th className="p-2 text-left">{t('tableHeader_category')}</th>
-                                        <th className="p-2 text-left">{t('tableHeader_brand')}</th>
-                                        <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
-                                        <th className="p-2 text-left">{t('tableHeader_assetCode')}</th>
-                                        <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
-                                        <th className="p-2 text-center">{t('repairDetail_returned')}</th>
-                                        <th className="p-2 text-center">{t('repairDetail_outcome')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {repairOrder.items.map(item => (
-                                        <tr key={item.inventoryItemId} className="border-b">
-                                            <TableCell>{item.inventoryItem.productModel.category.name}</TableCell>
-                                            <TableCell>{item.inventoryItem.productModel.brand.name}</TableCell>
-                                            <TableCell>{item.inventoryItem.productModel.modelNumber}</TableCell>
-                                            <TableCell>
-                                                {item.inventoryItem.itemType === 'ASSET' ? item.inventoryItem.assetCode : 'N/A'}
-                                            </TableCell>
-                                            <TableCell>{item.inventoryItem.serialNumber}</TableCell>
-                                            <TableCell className="text-center">
-                                                {item.returnedAt ? <Check className="text-green-500 mx-auto" /> : <X className="text-red-500 mx-auto" />}
-                                            </TableCell>
-                                            <TableCell className="text-center">
-                                                {item.repairOutcome ? <StatusBadge status={item.repairOutcome} /> : '-'}
-                                            </TableCell>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{t('createSale_selected_items', { count: repairOrder.items.length })}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="border rounded-lg overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b bg-muted/40">
+                                            <th className="p-2 text-left">{t('tableHeader_category')}</th>
+                                            <th className="p-2 text-left">{t('tableHeader_brand')}</th>
+                                            <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
+                                            <th className="p-2 text-left">{t('tableHeader_assetCode')}</th>
+                                            <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
+                                            <th className="p-2 text-center">{t('repairDetail_returned')}</th>
+                                            <th className="p-2 text-center">{t('repairDetail_outcome')}</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
+                                    </thead>
+                                    <tbody>
+                                        {repairOrder.items.map(item => (
+                                            <tr key={item.inventoryItemId} className="border-b">
+                                                <TableCell>{item.inventoryItem.productModel.category.name}</TableCell>
+                                                <TableCell>{item.inventoryItem.productModel.brand.name}</TableCell>
+                                                <TableCell>{item.inventoryItem.productModel.modelNumber}</TableCell>
+                                                <TableCell>
+                                                    {item.inventoryItem.itemType === 'ASSET' ? item.inventoryItem.assetCode : 'N/A'}
+                                                </TableCell>
+                                                <TableCell>{item.inventoryItem.serialNumber}</TableCell>
+                                                <TableCell className="text-center">
+                                                    {item.returnedAt ? <Check className="text-green-500 mx-auto" /> : <X className="text-red-500 mx-auto" />}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    {item.repairOutcome ? <StatusBadge status={item.repairOutcome} /> : '-'}
+                                                </TableCell>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+                
+                <div className="hidden print:block">
+                    <PrintableTitleCard />
+                    <PrintableHeaderCard repairOrder={repairOrder} getOwnerInfo={getOwnerInfo} t={t} />
+                    <PrintableItemsCard repairOrder={repairOrder} t={t} />
+                </div>
 
                 <div className="signature-section hidden">
                     <div className="signature-box">

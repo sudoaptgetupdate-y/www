@@ -22,6 +22,84 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
+const PrintableTitleCard = () => (
+    <Card className="hidden print:block mb-0 border-black rounded-b-none border-b-0">
+        <CardContent className="p-2">
+            <h1 className="text-xl font-bold text-center">ใบยืม-คืนสินค้า / Borrowing Note</h1>
+        </CardContent>
+    </Card>
+);
+
+const PrintableHeaderCard = ({ borrowing, formattedBorrowingId }) => (
+    <Card className="hidden print:block mt-0 border-black rounded-none border-b-0">
+        <CardHeader className="p-4 border-t border-black">
+            <div className="grid grid-cols-2 gap-6 text-xs">
+                <div className="space-y-1">
+                    <p className="text-slate-600">ผู้ยืม (Borrower)</p>
+                    <p className="font-semibold">{borrowing.customer?.name || 'N/A'}</p>
+                    <p className="text-slate-600">{borrowing.customer?.address || "No address provided"}</p>
+                    <p className="text-slate-600">โทร. {borrowing.customer?.phone || 'N/A'}</p>
+                </div>
+                <div className="space-y-1 text-right">
+                    <p className="text-slate-600">เลขที่ (Record ID)</p>
+                    <p className="font-semibold">#{formattedBorrowingId}</p>
+                    <p className="text-slate-600">วันที่ยืม (Borrow Date)</p>
+                    <p className="font-semibold">{new Date(borrowing.borrowDate).toLocaleString('th-TH')}</p>
+                    <p className="text-slate-600">กำหนดคืน (Due Date)</p>
+                    <p className="font-semibold">{borrowing.dueDate ? new Date(borrowing.dueDate).toLocaleDateString('th-TH') : 'N/A'}</p>
+                    <p className="text-slate-600">ผู้อนุมัติ (Approved By)</p>
+                    <p className="font-semibold">{borrowing.approvedBy?.name || 'N/A'}</p>
+                </div>
+            </div>
+            {borrowing.notes && (
+                <div className="mt-4">
+                    <p className="font-semibold text-xs">หมายเหตุ (Notes):</p>
+                    <p className="whitespace-pre-wrap text-xs text-slate-700 border p-2 rounded-md bg-slate-50">{borrowing.notes}</p>
+                </div>
+            )}
+        </CardHeader>
+    </Card>
+);
+
+const PrintableItemsCard = ({ borrowing }) => (
+    <Card className="hidden print:block mt-0 font-sarabun border-black rounded-t-none">
+        <CardHeader className="p-2 border-t border-black">
+            <CardTitle className="text-sm">รายการที่ยืม ({borrowing.items.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+            <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                    <thead>
+                        <tr className="border-b bg-muted/40">
+                            <th className="p-2 text-left">Category</th>
+                            <th className="p-2 text-left">Brand</th>
+                            <th className="p-2 text-left">Product Model</th>
+                            <th className="p-2 text-left">Serial Number</th>
+                            <th className="p-2 text-left">MAC Address</th>
+                            <th className="p-2 text-left">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {borrowing.items.map(boi => (
+                            <tr key={boi.inventoryItemId} className="border-b">
+                                <td className="p-2">{boi.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
+                                <td className="p-2">{boi.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
+                                <td className="p-2">{boi.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
+                                <td className="p-2">{boi.inventoryItem?.serialNumber || 'N/A'}</td>
+                                <td className="p-2">{boi.inventoryItem?.macAddress || 'N/A'}</td>
+                                <td className="p-2">
+                                    {boi.returnedAt ? `Returned (${new Date(boi.returnedAt).toLocaleDateString('th-TH')})` : 'Borrowed'}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </CardContent>
+    </Card>
+);
+
+
 export default function BorrowingDetailPage() {
     const { borrowingId } = useParams();
     const navigate = useNavigate();
@@ -111,83 +189,87 @@ export default function BorrowingDetailPage() {
             </div>
 
             <div className="printable-area font-sarabun">
-                <div className="print-header hidden">
-                    <h1 className="text-xl font-bold">ใบยืม-คืนสินค้า / Borrowing Note</h1>
+                <div className="no-print space-y-6">
+                    <Card className="p-4 sm:p-6 md:p-8">
+                        <CardHeader className="p-0 mb-6">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-1">
+                                    <p className="text-sm text-muted-foreground">ผู้ยืม (Borrower)</p>
+                                    <p className="font-semibold">{borrowing.customer?.name || 'N/A'}</p>
+                                    <p className="text-sm text-muted-foreground">{borrowing.customer?.address || "No address provided"}</p>
+                                    <p className="text-sm text-muted-foreground">โทร. {borrowing.customer?.phone || 'N/A'}</p>
+                                </div>
+                                <div className="space-y-1 text-right">
+                                     <p className="text-sm text-muted-foreground">เลขที่ (Record ID)</p>
+                                     <p className="font-semibold">#{formattedBorrowingId}</p>
+                                     <p className="text-sm text-muted-foreground">วันที่ยืม (Borrow Date)</p>
+                                     <p className="font-semibold">{new Date(borrowing.borrowDate).toLocaleString('th-TH')}</p>
+                                     <p className="text-sm text-muted-foreground">กำหนดคืน (Due Date)</p>
+                                     <p className="font-semibold">{borrowing.dueDate ? new Date(borrowing.dueDate).toLocaleDateString('th-TH') : 'N/A'}</p>
+                                     <p className="text-sm text-muted-foreground">ผู้อนุมัติ (Approved By)</p>
+                                     <p className="font-semibold">{borrowing.approvedBy?.name || 'N/A'}</p>
+                                </div>
+                            </div>
+                             <div className="mt-4 flex justify-end">
+                                <StatusBadge status={borrowing.status} className="w-28 text-base" />
+                            </div>
+                             {borrowing.notes && (
+                                <div className="mt-6">
+                                    <p className="font-semibold">หมายเหตุ (Notes):</p>
+                                    <p className="whitespace-pre-wrap text-sm text-muted-foreground border p-3 rounded-md bg-muted/30">{borrowing.notes}</p>
+                                </div>
+                            )}
+                        </CardHeader>
+                    </Card>
+                    
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>รายการที่ยืม ({borrowing.items.length})</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="border rounded-lg overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b bg-muted/40">
+                                            <th className="p-2 text-left">Category</th>
+                                            <th className="p-2 text-left">Brand</th>
+                                            <th className="p-2 text-left">รุ่นสินค้า (Product Model)</th>
+                                            <th className="p-2 text-left">Serial Number</th>
+                                            <th className="p-2 text-left">MAC Address</th>
+                                            <th className="p-2 text-left">สถานะ (Status)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {borrowing.items.map(boi => (
+                                            <tr key={boi.inventoryItemId} className="border-b">
+                                                <td className="p-2">{boi.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
+                                                <td className="p-2">{boi.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
+                                                <td className="p-2">{boi.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
+                                                <td className="p-2">{boi.inventoryItem?.serialNumber || 'N/A'}</td>
+                                                <td className="p-2">{boi.inventoryItem?.macAddress || 'N/A'}</td>
+                                                <td className="p-2">
+                                                    <StatusBadge status={boi.returnedAt ? 'RETURNED' : 'BORROWED'} />
+                                                    {boi.returnedAt && (
+                                                        <span className="text-xs text-muted-foreground ml-2">
+                                                            (เมื่อ {new Date(boi.returnedAt).toLocaleDateString('th-TH')})
+                                                        </span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+                
+                <div className="hidden print:block">
+                    <PrintableTitleCard />
+                    <PrintableHeaderCard borrowing={borrowing} formattedBorrowingId={formattedBorrowingId} />
+                    <PrintableItemsCard borrowing={borrowing} />
                 </div>
 
-                <Card className="p-4 sm:p-6 md:p-8">
-                    <CardHeader className="p-0 mb-6">
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-1">
-                                <p className="text-sm text-muted-foreground">ผู้ยืม (Borrower)</p>
-                                <p className="font-semibold">{borrowing.customer?.name || 'N/A'}</p>
-                                <p className="text-sm text-muted-foreground">{borrowing.customer?.address || "No address provided"}</p>
-                                <p className="text-sm text-muted-foreground">โทร. {borrowing.customer?.phone || 'N/A'}</p>
-                            </div>
-                            <div className="space-y-1 text-right">
-                                 <p className="text-sm text-muted-foreground">เลขที่ (Record ID)</p>
-                                 <p className="font-semibold">#{formattedBorrowingId}</p>
-                                 <p className="text-sm text-muted-foreground">วันที่ยืม (Borrow Date)</p>
-                                 <p className="font-semibold">{new Date(borrowing.borrowDate).toLocaleString('th-TH')}</p>
-                                 <p className="text-sm text-muted-foreground">กำหนดคืน (Due Date)</p>
-                                 <p className="font-semibold">{borrowing.dueDate ? new Date(borrowing.dueDate).toLocaleDateString('th-TH') : 'N/A'}</p>
-                                 <p className="text-sm text-muted-foreground">ผู้อนุมัติ (Approved By)</p>
-                                 <p className="font-semibold">{borrowing.approvedBy?.name || 'N/A'}</p>
-                            </div>
-                        </div>
-                         <div className="mt-4 flex justify-end no-print">
-                            <StatusBadge status={borrowing.status} className="w-28 text-base" />
-                        </div>
-                         {borrowing.notes && (
-                            <div className="mt-6">
-                                <p className="font-semibold">หมายเหตุ (Notes):</p>
-                                <p className="whitespace-pre-wrap text-sm text-muted-foreground border p-3 rounded-md bg-muted/30">{borrowing.notes}</p>
-                            </div>
-                        )}
-                    </CardHeader>
-                </Card>
-                
-                <Card className="mt-6">
-                    <CardHeader>
-                        <CardTitle>รายการที่ยืม ({borrowing.items.length})</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <div className="border rounded-lg overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b bg-muted/40">
-                                        <th className="p-2 text-left">Category</th>
-                                        <th className="p-2 text-left">Brand</th>
-                                        <th className="p-2 text-left">รุ่นสินค้า (Product Model)</th>
-                                        <th className="p-2 text-left">Serial Number</th>
-                                        <th className="p-2 text-left">MAC Address</th>
-                                        <th className="p-2 text-left">สถานะ (Status)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {borrowing.items.map(boi => (
-                                        <tr key={boi.inventoryItemId} className="border-b">
-                                            <td className="p-2">{boi.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
-                                            <td className="p-2">{boi.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
-                                            <td className="p-2">{boi.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
-                                            <td className="p-2">{boi.inventoryItem?.serialNumber || 'N/A'}</td>
-                                            <td className="p-2">{boi.inventoryItem?.macAddress || 'N/A'}</td>
-                                            <td className="p-2">
-                                                <StatusBadge status={boi.returnedAt ? 'RETURNED' : 'BORROWED'} />
-                                                {boi.returnedAt && (
-                                                    <span className="text-xs text-muted-foreground ml-2">
-                                                        (เมื่อ {new Date(boi.returnedAt).toLocaleDateString('th-TH')})
-                                                    </span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
-                
                 <div className="signature-section hidden">
                     <div className="signature-box">
                         <div className="signature-line"></div>

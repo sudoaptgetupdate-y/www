@@ -232,13 +232,15 @@ saleController.voidSale = async (req, res, next) => {
             const itemIdsToUpdate = saleToVoid.itemsSold.map(item => item.id);
 
             if (itemIdsToUpdate.length > 0) {
+                // *** START: CORRECTED LOGIC ***
+                // We ONLY update the status, but keep the saleId for historical tracking.
                 await tx.inventoryItem.updateMany({
                     where: { id: { in: itemIdsToUpdate } },
                     data: {
-                        status: 'IN_STOCK',
-                        saleId: null
+                        status: 'IN_STOCK' 
                     },
                 });
+                // *** END: CORRECTED LOGIC ***
 
                 for (const itemId of itemIdsToUpdate) {
                     await createEventLog(
