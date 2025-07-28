@@ -261,6 +261,7 @@ export default function InventoryPage() {
                             <SelectItem value="BORROWED">{t('status_borrowed')}</SelectItem>
                             <SelectItem value="RESERVED">{t('status_reserved')}</SelectItem>
                             <SelectItem value="DEFECTIVE">{t('status_defective')}</SelectItem>
+                            <SelectItem value="REPAIRING">{t('status_repairing')}</SelectItem>
                             <SelectItem value="DECOMMISSIONED">{t('status_decommissioned')}</SelectItem>
                             <SelectItem value="RETURNED_TO_CUSTOMER">{t('status_serviced_customer')}</SelectItem>
                         </SelectContent>

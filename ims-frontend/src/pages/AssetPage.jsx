@@ -183,11 +183,9 @@ export default function AssetPage() {
                                 <SortableHeader sortKey="serialNumber" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
                                     {t('tableHeader_serialNumber')}
                                 </SortableHeader>
-                                {/* --- START: เพิ่มหัวตาราง Mac Address --- */}
                                 <SortableHeader sortKey="macAddress" currentSortBy={sortBy} sortOrder={sortOrder} onSort={handleSortChange}>
                                     {t('tableHeader_macAddress')}
                                 </SortableHeader>
-                                {/* --- END: เพิ่มหัวตาราง Mac Address --- */}
                                 <TableHead className="text-center">{t('tableHeader_status')}</TableHead>
                                 <TableHead>{t('tableHeader_assignedTo')}</TableHead>
                                 <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
@@ -207,9 +205,7 @@ export default function AssetPage() {
                                     <TableCell>{asset.productModel.brand.name}</TableCell>
                                     <TableCell>{asset.productModel?.modelNumber || 'N/A'}</TableCell>
                                     <TableCell>{asset.serialNumber || 'N/A'}</TableCell>
-                                    {/* --- START: เพิ่มข้อมูล Mac Address --- */}
                                     <TableCell>{asset.macAddress || 'N/A'}</TableCell>
-                                    {/* --- END: เพิ่มข้อมูล Mac Address --- */}
                                     <TableCell className="text-center">
                                         <StatusBadge
                                             status={asset.status}
@@ -219,12 +215,11 @@ export default function AssetPage() {
                                                     navigate(`/asset-assignments/${asset.assignmentId}`);
                                                 } else if (asset.status === 'REPAIRING' && asset.repairId) {
                                                     navigate(`/repairs/${asset.repairId}`);
+                                                } else {
+                                                    navigate(`/assets/${asset.id}/history`);
                                                 }
                                             }}
-                                            interactive={
-                                                (asset.status === 'ASSIGNED' && asset.assignmentId) ||
-                                                (asset.status === 'REPAIRING' && asset.repairId)
-                                            }
+                                            interactive={true}
                                         />
                                     </TableCell>
                                     <TableCell>{asset.assignedTo?.name || '-'}</TableCell>
