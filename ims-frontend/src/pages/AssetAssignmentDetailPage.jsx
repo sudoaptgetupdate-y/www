@@ -80,8 +80,11 @@ const PrintableItemsCard = ({ assignment, t }) => (
                     <thead>
                         <tr className="border-b bg-muted/40">
                             <th className="p-2 text-left">{t('tableHeader_assetCode')}</th>
+                            <th className="p-2 text-left">{t('tableHeader_category')}</th>
+                            <th className="p-2 text-left">{t('tableHeader_brand')}</th>
                             <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
                             <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
+                            <th className="p-2 text-left">{t('tableHeader_macAddress')}</th>
                             <th className="p-2 text-left">สถานะ (Status)</th>
                         </tr>
                     </thead>
@@ -89,8 +92,11 @@ const PrintableItemsCard = ({ assignment, t }) => (
                         {assignment.items.map(item => (
                             <tr key={item.inventoryItem.id} className="border-b">
                                 <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
+                                <td className="p-2">{item.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
+                                <td className="p-2">{item.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
                                 <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
                                 <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
+                                <td className="p-2">{item.inventoryItem?.macAddress || 'N/A'}</td>
                                 <td className="p-2">
                                     {item.returnedAt ? `Returned (${new Date(item.returnedAt).toLocaleDateString('th-TH')})` : 'Assigned'}
                                 </td>
@@ -243,6 +249,7 @@ export default function AssetAssignmentDetailPage() {
                                             <th className="p-2 text-left">Product Model</th>
                                             <th className="p-2 text-left">Asset Code</th>
                                             <th className="p-2 text-left">Serial Number</th>
+                                            <th className="p-2 text-left">MAC Address</th>
                                             <th className="p-2 text-left">สถานะ (Status)</th>
                                         </tr>
                                     </thead>
@@ -254,6 +261,7 @@ export default function AssetAssignmentDetailPage() {
                                                 <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
                                                 <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
                                                 <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
+                                                <td className="p-2">{item.inventoryItem?.macAddress || 'N/A'}</td>
                                                 <td className="p-2">
                                                     <StatusBadge status={item.returnedAt ? 'RETURNED' : 'ASSIGNED'} />
                                                     {item.returnedAt && (
@@ -292,7 +300,7 @@ export default function AssetAssignmentDetailPage() {
             </div>
 
             <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
-                 <DialogContent className="max-w-3xl">
+                 <DialogContent className="max-w-4xl">
                     <DialogHeader>
                         <DialogTitle>Receive Returned Assets</DialogTitle>
                         <DialogDescription>Select assets that the employee is returning.</DialogDescription>
@@ -308,6 +316,7 @@ export default function AssetAssignmentDetailPage() {
                                         <th className="p-2 text-left">Brand</th>
                                         <th className="p-2 text-left">Product</th>
                                         <th className="p-2 text-left">Serial Number</th>
+                                        <th className="p-2 text-left">MAC Address</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -328,6 +337,7 @@ export default function AssetAssignmentDetailPage() {
                                             <td className="p-2">{item.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
                                             <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
                                             <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
+                                            <td className="p-2">{item.inventoryItem?.macAddress || 'N/A'}</td>
                                         </tr>
                                     ))}
                                 </tbody>

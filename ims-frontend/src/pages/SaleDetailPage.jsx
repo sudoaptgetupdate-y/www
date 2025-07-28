@@ -17,7 +17,6 @@ import {
 const PrintableHeaderCard = ({ profile, sale, formattedSaleId }) => (
     <Card className="hidden print:block mb-0 border-black rounded-b-none border-b-0">
         <CardHeader className="text-center p-4">
-            <h1 className="text-lg font-bold">{profile.name}</h1>
             <p className="text-xs">{profile.addressLine1}</p>
             <p className="text-xs">{profile.addressLine2}</p>
             <p className="text-xs mt-2">โทรศัพท์ (Tel): {profile.phone} เลขประจำตัวผู้เสียภาษี (Tax ID): {profile.taxId}</p>
@@ -53,35 +52,37 @@ const PrintableItemsCard = ({ sale }) => (
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b bg-muted/40">
-                            <th className="p-2 text-left">รายการ (Product)</th>
                             <th className="p-2 text-left">หมวดหมู่ (Category)</th>
                             <th className="p-2 text-left">ยี่ห้อ (Brand)</th>
+                            <th className="p-2 text-left">รายการ (Product)</th>
                             <th className="p-2 text-left">Serial Number</th>
+                            <th className="p-2 text-left">MAC Address</th>
                             <th className="p-2 text-right">ราคา (Price)</th>
                         </tr>
                     </thead>
                     <tbody>
                         {sale.itemsSold.map(item => (
                             <tr key={item.id} className="border-b">
-                                <td className="p-2">{item.productModel.modelNumber}</td>
                                 <td className="p-2">{item.productModel.category.name}</td>
                                 <td className="p-2">{item.productModel.brand.name}</td>
+                                <td className="p-2">{item.productModel.modelNumber}</td>
                                 <td className="p-2">{item.serialNumber || 'N/A'}</td>
+                                <td className="p-2">{item.macAddress || 'N/A'}</td>
                                 <td className="p-2 text-right">{item.productModel.sellingPrice.toFixed(2)}</td>
                             </tr>
                         ))}
                     </tbody>
                     <tfoot>
                         <tr className="border-t font-semibold">
-                            <td colSpan="4" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
+                            <td colSpan="5" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
                             <td className="p-2 text-right">{sale.subtotal.toFixed(2)}</td>
                         </tr>
                         <tr className="border-t">
-                            <td colSpan="4" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
+                            <td colSpan="5" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
                             <td className="p-2 text-right">{sale.vatAmount.toFixed(2)}</td>
                         </tr>
                         <tr className="border-t text-base font-bold bg-muted/40">
-                            <td colSpan="4" className="p-2 text-right">ยอดสุทธิ (Total)</td>
+                            <td colSpan="5" className="p-2 text-right">ยอดสุทธิ (Total)</td>
                             <td className="p-2 text-right">{sale.total.toFixed(2)} THB</td>
                         </tr>
                     </tfoot>
@@ -227,35 +228,37 @@ export default function SaleDetailPage() {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b bg-muted/40">
-                                            <th className="p-2 text-left">รายการ (Product)</th>
                                             <th className="p-2 text-left">หมวดหมู่ (Category)</th>
                                             <th className="p-2 text-left">ยี่ห้อ (Brand)</th>
+                                            <th className="p-2 text-left">รายการ (Product)</th>
                                             <th className="p-2 text-left">Serial Number</th>
+                                            <th className="p-2 text-left">MAC Address</th>
                                             <th className="p-2 text-right">ราคา (Price)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {sale.itemsSold.map(item => (
                                             <tr key={item.id} className="border-b">
-                                                <td className="p-2">{item.productModel.modelNumber}</td>
                                                 <td className="p-2">{item.productModel.category.name}</td>
                                                 <td className="p-2">{item.productModel.brand.name}</td>
+                                                <td className="p-2">{item.productModel.modelNumber}</td>
                                                 <td className="p-2">{item.serialNumber || 'N/A'}</td>
+                                                <td className="p-2">{item.macAddress || 'N/A'}</td>
                                                 <td className="p-2 text-right">{item.productModel.sellingPrice.toFixed(2)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                     <tfoot>
                                         <tr className="border-t font-semibold">
-                                            <td colSpan="4" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
+                                            <td colSpan="5" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
                                             <td className="p-2 text-right">{sale.subtotal.toFixed(2)}</td>
                                         </tr>
                                         <tr className="border-t">
-                                            <td colSpan="4" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
+                                            <td colSpan="5" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
                                             <td className="p-2 text-right">{sale.vatAmount.toFixed(2)}</td>
                                         </tr>
                                         <tr className="border-t text-base font-bold bg-muted/40">
-                                            <td colSpan="4" className="p-2 text-right">ยอดสุทธิ (Total)</td>
+                                            <td colSpan="5" className="p-2 text-right">ยอดสุทธิ (Total)</td>
                                             <td className="p-2 text-right">{sale.total.toFixed(2)} THB</td>
                                         </tr>
                                     </tfoot>
