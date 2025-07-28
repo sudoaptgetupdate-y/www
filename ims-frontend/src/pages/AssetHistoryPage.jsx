@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import {
     ArrowLeft, PlusCircle, Edit, ArchiveRestore, ArchiveX,
-    ArrowRightLeft, CornerUpLeft, Wrench, ShieldCheck, ShieldAlert, History as HistoryIcon, Package
+    ArrowRightLeft, CornerUpLeft, Wrench, ShieldCheck, ShieldAlert, History as HistoryIcon, Package, Printer
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { getStatusProperties } from "@/lib/statusUtils";
@@ -95,118 +95,130 @@ export default function AssetHistoryPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center no-print">
                 <h1 className="text-2xl font-bold flex items-center gap-2">
                     <HistoryIcon className="h-6 w-6" />
                     {t('asset_history_title')}
                 </h1>
-                <Button variant="outline" onClick={() => navigate('/assets')}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    {t('asset_history_back_button')}
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => navigate('/assets')}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        {t('asset_history_back_button')}
+                    </Button>
+                    <Button variant="outline" onClick={() => window.print()}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        {t('print')}
+                    </Button>
+                </div>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-3">
-                        <Package className="h-6 w-6" />
-                        <span>{asset.productModel.modelNumber}</span>
-                    </CardTitle>
-                    <CardDescription>
-                        {t('asset_history_description')} {asset.assetCode}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Separator />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-6 mt-4 text-sm">
-                        <div>
-                            <p className="text-muted-foreground">{t('tableHeader_serialNumber')}</p>
-                            <p className="font-semibold text-foreground">{asset.serialNumber || 'N/A'}</p>
-                        </div>
-                        <div>
-                            <p className="text-muted-foreground">{t('tableHeader_macAddress')}</p>
-                            <p className="font-semibold text-foreground">{asset.macAddress || 'N/A'}</p>
-                        </div>
-                        {asset.supplier && (
-                            <div>
-                                <p className="text-muted-foreground">{t('purchased_from')}</p>
-                                <p className="font-semibold text-foreground">{asset.supplier.name}</p>
-                            </div>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="printable-area">
+                <div className="print-header hidden">
+                    <h1 className="text-xl font-bold">{t('asset_history_title')}</h1>
+                </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>{t('asset_history_log_title')}</CardTitle>
-                    <CardDescription>{t('asset_history_log_description')}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="border rounded-lg overflow-x-auto">
-                        <table className="w-full text-sm whitespace-nowrap">
-                            <thead>
-                                <tr className="border-b bg-muted/50 hover:bg-muted/50">
-                                    <th className="p-2 text-left">{t('tableHeader_date')}</th>
-                                    <th className="p-2 text-left">{t('tableHeader_details')}</th>
-                                    <th className="p-2 text-left">{t('tableHeader_handledBy')}</th>
-                                    <th className="p-2 text-center w-40">{t('tableHeader_event')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {paginatedHistory.length > 0 ? paginatedHistory.map((event) => {
-                                    const link = getTransactionLink(event.eventType, event.details);
-                                    const getDisplayInfo = (historyEvent) => {
-                                         if (historyEvent.eventType === 'REPAIR_RETURNED') {
-                                            if (historyEvent.details.outcome === 'REPAIRED_SUCCESSFULLY') return { status: 'REPAIR_SUCCESS' };
-                                            if (historyEvent.details.outcome === 'UNREPAIRABLE') return { status: 'REPAIR_FAILED' };
-                                        }
-                                        return { status: historyEvent.eventType };
-                                    };
-                                    const { status: displayStatus } = getDisplayInfo(event);
-                                    const eventIcon = eventConfig[displayStatus]?.icon;
-                                    const { label: eventLabel } = getStatusProperties(displayStatus);
-                                    return (
-                                        <tr key={event.id} className="border-b">
-                                            <td className="p-2">{new Date(event.createdAt).toLocaleString()}</td>
-                                            <td className="p-2">{event.details?.details || 'N/A'}</td>
-                                            <td className="p-2">{event.user?.name || 'System'}</td>
-                                            <td className="p-2 text-center">
-                                                <StatusBadge status={displayStatus} className="w-36" {...(link && { onClick: () => navigate(link) })}>
-                                                    {eventIcon}
-                                                    <span className="ml-1.5">{eventLabel}</span>
-                                                </StatusBadge>
-                                            </td>
-                                        </tr>
-                                    );
-                                }) : (
-                                    <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">{t('asset_history_no_history')}</td></tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </CardContent>
-                {history.length > 0 && (
-                    <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
-                            <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
-                                <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
-                                </SelectContent>
-                            </Select>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-3">
+                            <Package className="h-6 w-6" />
+                            <span>{asset.productModel.modelNumber}</span>
+                        </CardTitle>
+                        <CardDescription>
+                            {t('asset_history_description')} {asset.assetCode}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Separator />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-6 mt-4 text-sm">
+                            <div>
+                                <p className="text-muted-foreground">{t('tableHeader_serialNumber')}</p>
+                                <p className="font-semibold text-foreground">{asset.serialNumber || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground">{t('tableHeader_macAddress')}</p>
+                                <p className="font-semibold text-foreground">{asset.macAddress || 'N/A'}</p>
+                            </div>
+                            {asset.supplier && (
+                                <div>
+                                    <p className="text-muted-foreground">{t('purchased_from')}</p>
+                                    <p className="font-semibold text-foreground">{asset.supplier.name}</p>
+                                </div>
+                            )}
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                            {t('pagination_info', { currentPage, totalPages, totalItems: history.length })}
+                    </CardContent>
+                </Card>
+
+                <Card className="mt-6">
+                    <CardHeader>
+                        <CardTitle>{t('asset_history_log_title')}</CardTitle>
+                        <CardDescription>{t('asset_history_log_description')}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="border rounded-lg overflow-x-auto">
+                            <table className="w-full text-sm whitespace-nowrap">
+                                <thead>
+                                    <tr className="border-b bg-muted/50 hover:bg-muted/50">
+                                        <th className="p-2 text-left">{t('tableHeader_date')}</th>
+                                        <th className="p-2 text-left">{t('tableHeader_details')}</th>
+                                        <th className="p-2 text-left print-hide">{t('tableHeader_handledBy')}</th>
+                                        <th className="p-2 text-center w-40 print-hide">{t('tableHeader_event')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {paginatedHistory.length > 0 ? paginatedHistory.map((event) => {
+                                        const link = getTransactionLink(event.eventType, event.details);
+                                        const getDisplayInfo = (historyEvent) => {
+                                             if (historyEvent.eventType === 'REPAIR_RETURNED') {
+                                                if (historyEvent.details.outcome === 'REPAIRED_SUCCESSFULLY') return { status: 'REPAIR_SUCCESS' };
+                                                if (historyEvent.details.outcome === 'UNREPAIRABLE') return { status: 'REPAIR_FAILED' };
+                                            }
+                                            return { status: historyEvent.eventType };
+                                        };
+                                        const { status: displayStatus } = getDisplayInfo(event);
+                                        const eventIcon = eventConfig[displayStatus]?.icon;
+                                        const { label: eventLabel } = getStatusProperties(displayStatus);
+                                        return (
+                                            <tr key={event.id} className="border-b">
+                                                <td className="p-2">{new Date(event.createdAt).toLocaleString()}</td>
+                                                <td className="p-2">{event.details?.details || 'N/A'}</td>
+                                                <td className="p-2 print-hide">{event.user?.name || 'System'}</td>
+                                                <td className="p-2 text-center print-hide">
+                                                    <StatusBadge status={displayStatus} className="w-36" {...(link && { onClick: () => navigate(link) })}>
+                                                        {eventIcon}
+                                                        <span className="ml-1.5">{eventLabel}</span>
+                                                    </StatusBadge>
+                                                </td>
+                                            </tr>
+                                        );
+                                    }) : (
+                                        <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">{t('asset_history_no_history')}</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage <= 1}>{t('previous')}</Button>
-                            <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages}>{t('next')}</Button>
-                        </div>
-                    </CardFooter>
-                )}
-            </Card>
+                    </CardContent>
+                    {history.length > 0 && (
+                        <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 no-print">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Label htmlFor="rows-per-page">{t('rows_per_page')}</Label>
+                                <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                                    <SelectTrigger id="rows-per-page" className="w-20"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {[10, 20, 50, 100].map(size => (<SelectItem key={size} value={String(size)}>{size}</SelectItem>))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                                {t('pagination_info', { currentPage, totalPages, totalItems: history.length })}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage <= 1}>{t('previous')}</Button>
+                                <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages}>{t('next')}</Button>
+                            </div>
+                        </CardFooter>
+                    )}
+                </Card>
+            </div>
         </div>
     );
 }
