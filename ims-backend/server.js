@@ -25,6 +25,7 @@ const inventoryRoute = require('./routes/inventoryRoute');
 const brandRoute = require('./routes/brandRoute');
 const saleRoute = require('./routes/saleRoute');
 const dashboardRoute = require('./routes/dashboardRoute');
+const reportRoute = require('./routes/reportRoute');
 const userRoute = require('./routes/userRoute');
 const borrowingRoute = require('./routes/borrowingRoute');
 const supplierRoute = require('./routes/supplierRoute');
@@ -49,6 +50,7 @@ app.use('/api/product-models', productModelRoute);
 app.use('/api/brands', brandRoute);
 app.use('/api/sales', saleRoute);
 app.use('/api/dashboard', dashboardRoute);
+app.use('/api/reports', reportRoute);
 app.use('/api/users', userRoute);
 app.use('/api/borrowings', borrowingRoute);
 

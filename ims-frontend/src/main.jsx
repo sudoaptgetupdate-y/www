@@ -35,7 +35,6 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
 const AssetPage = lazy(() => import('./pages/AssetPage.jsx'));
 const CreateAssetPage = lazy(() => import('./pages/CreateAssetPage.jsx'));
 const AssetDetailPage = lazy(() => import('./pages/AssetDetailPage.jsx'));
-// --- REMOVED EditAssetPage IMPORT ---
 const AssetAssignmentPage = lazy(() => import('./pages/AssetAssignmentPage.jsx'));
 const CreateAssetAssignmentPage = lazy(() => import('./pages/CreateAssetAssignmentPage.jsx'));
 const AssetAssignmentDetailPage = lazy(() => import('./pages/AssetAssignmentDetailPage.jsx'));
@@ -49,6 +48,7 @@ const CreateRepairPage = lazy(() => import('./pages/CreateRepairPage.jsx'));
 const RepairDetailPage = lazy(() => import('./pages/RepairDetailPage.jsx'));
 const SupplierPage = lazy(() => import('./pages/SupplierPage.jsx'));
 const CompanyProfilePage = lazy(() => import('./pages/CompanyProfilePage.jsx'));
+const SalesReportPage = lazy(() => import('./pages/SalesReportPage.jsx')); // <-- เพิ่ม import
 
 // Fallback component to show while lazy components are loading
 const Loading = () => (
@@ -72,6 +72,8 @@ const routes = [
   { path: 'customers/:id/active-borrowings', Page: ActiveBorrowingsPage },
   { path: 'customers/:id/returned-history', Page: CustomerReturnedHistoryPage },
   { path: 'customers/:id/purchase-history', Page: CustomerPurchaseHistoryPage },
+  // Reports
+  { path: 'reports/sales', Page: SalesReportPage }, // <-- เพิ่ม Route
   // Assets (Transaction Based)
   { path: 'asset-assignments', Page: AssetAssignmentPage },
   { path: 'asset-assignments/new', Page: CreateAssetAssignmentPage },
@@ -82,7 +84,6 @@ const routes = [
   { path: 'assets', Page: AssetPage },
   { path: 'assets/new', Page: CreateAssetPage },
   { path: 'assets/:assetId/history', Page: AssetHistoryPage },
-  // --- REMOVED EditAssetPage ROUTE ---
   { path: 'product-models', Page: ProductModelPage },
   { path: 'brands', Page: BrandPage },
   { path: 'categories', Page: CategoryPage },

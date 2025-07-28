@@ -24,8 +24,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"; // <-- เพิ่ม Import
 
+const DESCRIPTION_MAX_LENGTH = 255;
 
 const SkeletonRow = () => (
     <TableRow>
@@ -72,6 +73,8 @@ export default function ProductModelPage() {
     const [formData, setFormData] = useState(initialFormData);
     const [editingModelId, setEditingModelId] = useState(null);
     const [modelToDelete, setModelToDelete] = useState(null);
+    const [initialCategory, setInitialCategory] = useState(null);
+    const [initialBrand, setInitialBrand] = useState(null);
 
     const openDialog = (model = null) => {
         if (model) {
@@ -80,13 +83,17 @@ export default function ProductModelPage() {
             setFormData({
                 modelNumber: model.modelNumber,
                 description: model.description || "",
-                sellingPrice: model.sellingPrice.toString(),
+                sellingPrice: model.sellingPrice.toLocaleString('en-US'),
                 categoryId: model.categoryId,
                 brandId: model.brandId
             });
+            setInitialCategory(model.category);
+            setInitialBrand(model.brand);
         } else {
             setIsEditMode(false);
             setFormData(initialFormData);
+            setInitialCategory(null);
+            setInitialBrand(null);
         }
         setIsDialogOpen(true);
     };
@@ -96,12 +103,27 @@ export default function ProductModelPage() {
         setFormData({ ...formData, [id]: value });
     };
 
+    const handlePriceInputChange = (e) => {
+        const { value } = e.target;
+        const cleanValue = value.replace(/[^0-9.]/g, '');
+        const parts = cleanValue.split('.');
+        if (parts.length > 2) return;
+        const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        const formattedValue = parts[1] !== undefined ? `${integerPart}.${parts[1]}` : integerPart;
+        setFormData({ ...formData, sellingPrice: formattedValue });
+    };
+
     const handleComboboxSelect = (type, value) => {
         setFormData(prev => ({ ...prev, [type]: value }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (formData.description && formData.description.length > DESCRIPTION_MAX_LENGTH) {
+            toast.error(`Description cannot exceed ${DESCRIPTION_MAX_LENGTH} characters.`);
+            return;
+        }
 
         if (!formData.categoryId || !formData.brandId) {
             toast.error("Please select both a Category and a Brand.");
@@ -110,9 +132,12 @@ export default function ProductModelPage() {
 
         const url = isEditMode ? `/product-models/${editingModelId}` : "/product-models";
         const method = isEditMode ? 'put' : 'post';
+        
+        const cleanPrice = formData.sellingPrice.replace(/,/g, '');
+
         const payload = {
             ...formData,
-            sellingPrice: parseFloat(formData.sellingPrice),
+            sellingPrice: parseFloat(cleanPrice),
             categoryId: parseInt(formData.categoryId, 10),
             brandId: parseInt(formData.brandId, 10),
         };
@@ -207,19 +232,17 @@ export default function ProductModelPage() {
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <div className="max-w-xs truncate">
-                                                        {model.description || '-'}
-                                                    </div>
+                                                    <p className="truncate max-w-[200px]">{model.description || '-'}</p>
                                                 </TooltipTrigger>
                                                 {model.description && (
                                                     <TooltipContent>
-                                                        <p className="max-w-md">{model.description}</p>
+                                                        <p className="max-w-xs">{model.description}</p>
                                                     </TooltipContent>
                                                 )}
                                             </Tooltip>
                                         </TooltipProvider>
                                     </TableCell>
-                                    <TableCell className="text-right">{model.sellingPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">{model.sellingPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                     {canManage && (
                                         <TableCell className="text-center">
                                             <div className="flex items-center justify-center gap-2">
@@ -270,10 +293,13 @@ export default function ProductModelPage() {
                         <div className="space-y-2">
                             <Label htmlFor="description">{t('product_model_form_description')}</Label>
                             <Input id="description" value={formData.description} onChange={handleInputChange} />
+                            <p className={`text-xs text-right ${formData.description.length > DESCRIPTION_MAX_LENGTH ? 'text-red-500' : 'text-muted-foreground'}`}>
+                                {formData.description.length} / {DESCRIPTION_MAX_LENGTH}
+                            </p>
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="sellingPrice">{t('product_model_form_selling_price')}</Label>
-                            <Input id="sellingPrice" type="number" step="0.01" value={formData.sellingPrice} onChange={handleInputChange} required />
+                            <Input id="sellingPrice" type="text" value={formData.sellingPrice} onChange={handlePriceInputChange} required />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
@@ -281,6 +307,7 @@ export default function ProductModelPage() {
                                 <CategoryCombobox
                                     selectedValue={formData.categoryId}
                                     onSelect={(value) => handleComboboxSelect('categoryId', value)}
+                                    initialCategory={initialCategory}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -288,6 +315,7 @@ export default function ProductModelPage() {
                                 <BrandCombobox
                                     selectedValue={formData.brandId}
                                     onSelect={(value) => handleComboboxSelect('brandId', value)}
+                                    initialBrand={initialBrand}
                                 />
                             </div>
                         </div>
