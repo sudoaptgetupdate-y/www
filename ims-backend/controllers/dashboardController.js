@@ -8,7 +8,7 @@ exports.getDashboardStats = async (req, res, next) => {
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
         const [
-            soldItems,
+            totalRevenueResult, // << Query ใหม่
             itemsInStock,
             totalAssets,
             assignedAssets,
@@ -20,10 +20,16 @@ exports.getDashboardStats = async (req, res, next) => {
             activeBorrowings,
             activeRepairs
         ] = await Promise.all([
-            prisma.inventoryItem.findMany({
-                where: { status: 'SOLD', itemType: ItemType.SALE },
-                include: { productModel: { select: { sellingPrice: true } } },
+            // --- START: แก้ไข Logic การคำนวณรายได้ ---
+            prisma.sale.aggregate({
+                _sum: {
+                    total: true,
+                },
+                where: {
+                    status: 'COMPLETED',
+                },
             }),
+            // --- END: แก้ไข Logic ---
             prisma.inventoryItem.count({
                 where: { status: 'IN_STOCK', itemType: ItemType.SALE },
             }),
@@ -52,13 +58,11 @@ exports.getDashboardStats = async (req, res, next) => {
                 by: ['status'],
                 _count: { id: true },
             }),
-            // --- START: แก้ไขส่วนนี้ ---
             prisma.borrowing.findMany({
                 take: 5,
                 orderBy: { borrowDate: 'desc' },
-                include: { customer: { select: { name: true } } } // แก้จาก borrower เป็น customer
+                include: { customer: { select: { name: true } } }
             }),
-            // --- END ---
             prisma.repair.findMany({
                 take: 5,
                 orderBy: { repairDate: 'desc' },
@@ -72,9 +76,9 @@ exports.getDashboardStats = async (req, res, next) => {
             })
         ]);
         
-        const totalRevenue = soldItems.reduce((sum, item) => {
-            return sum + (item.productModel?.sellingPrice || 0);
-        }, 0);
+        // --- START: แก้ไข Logic การคำนวณรายได้ ---
+        const totalRevenue = totalRevenueResult._sum.total || 0;
+        // --- END: แก้ไข Logic ---
 
         const salesChartData = dailySales.map(day => ({
             name: new Date(day.saleDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
