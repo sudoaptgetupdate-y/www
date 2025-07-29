@@ -1,6 +1,6 @@
 // src/components/layout/MainLayout.jsx
 
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
 import { NavLink, Outlet, useNavigate, Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
+import { toast } from 'sonner';
+import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 
 
 const Footer = () => {
@@ -84,7 +86,20 @@ const MainLayout = () => {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const navRef = useRef(null);
-    const scrollPos = useRef(0);
+    const scrollPos = useRef(null);
+
+    // --- START: โค้ดส่วนจัดการ Idle Timeout ---
+    const handleIdle = useCallback(() => {
+        console.log("handleIdle function called. Logging out...");
+        toast.warning("You have been logged out due to inactivity.");
+        logout();
+        navigate('/login');
+    }, [navigate, logout]);
+
+    // ตั้งเวลา 10 นาที (10 * 60 * 1000 = 600000 ms)
+    // หากต้องการทดสอบ ให้เปลี่ยนเป็น 60000 (1 นาที)
+    useIdleTimeout(handleIdle, 600000); 
+    // --- END: โค้ดส่วนจัดการ Idle Timeout ---
 
     const handleNavLinkClick = () => {
         if (navRef.current) {
