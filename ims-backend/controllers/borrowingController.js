@@ -17,12 +17,12 @@ const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
 
 borrowingController.createBorrowing = async (req, res, next) => {
     // --- START: CORRECTED FIX ---
-    const { customerId, inventoryItemIds, dueDate, notes } = req.body; // Changed customerId to borrowerId
+    const { customerId, inventoryItemIds, dueDate, notes } = req.body;
     const approvedById = req.user.id;
 
     const parsedCustomerId = parseInt(customerId, 10);
     if (isNaN(parsedCustomerId)) {
-        const err = new Error('Customer ID must be a valid number.'); // Updated error message
+        const err = new Error('Customer ID must be a valid number.');
         err.statusCode = 400;
         return next(err);
     }

@@ -82,7 +82,7 @@ export default function CreateBorrowingPage() {
         }
 
         const payload = {
-            customerId: parseInt(selectedCustomerId), // <-- แก้ไข
+            customerId: parseInt(selectedCustomerId),
             inventoryItemIds: selectedItems.map(item => item.id),
             dueDate: dueDate || null,
             notes: notes || null,
