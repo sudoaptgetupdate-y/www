@@ -16,6 +16,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+// --- 1. Import Table Components ---
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 
 const calculatePercentageChange = (current, previous) => {
@@ -52,33 +61,48 @@ const StatCard = ({ title, value, icon: Icon, details, percentageChange, periodT
     </Card>
 );
 
-const TopListCard = ({ title, data, icon: Icon, nameKey, valueKey, countKey }) => (
-     <Card className="h-full">
+// --- 2. Refactor TopListCard to use a proper Table ---
+const TopListCard = ({ title, data, icon: Icon, columns }) => (
+     <Card className="h-full flex flex-col">
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
                 <Icon className="h-5 w-5" />
                 {title}
             </CardTitle>
         </CardHeader>
-        <CardContent>
-            {data.length > 0 ? (
-                <div className="space-y-4">
-                    {data.map((item, index) => (
-                        <div key={item[nameKey] + index} className="flex items-center">
-                            <div className="ml-4 space-y-1">
-                                <p className="text-sm font-medium leading-none">{item[nameKey]}</p>
-                                {countKey && <p className="text-sm text-muted-foreground">{item[countKey]} units sold</p>}
-                            </div>
-                            <div className="ml-auto font-medium">฿{item[valueKey].toLocaleString()}</div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">No data for this period.</p>
-            )}
+        <CardContent className="flex-1 p-0">
+             <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            {columns.map((col) => (
+                                <TableHead key={col.key} className={col.className}>{col.header}</TableHead>
+                            ))}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {data && data.length > 0 ? data.map((row, index) => (
+                            <TableRow key={index}>
+                                {columns.map((col) => (
+                                    <TableCell key={`${index}-${col.key}`} className={col.className}>
+                                        {col.render(row)}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        )) : (
+                            <TableRow>
+                                <TableCell colSpan={columns.length} className="h-24 text-center">
+                                    No data for this period.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
         </CardContent>
     </Card>
 );
+
 
 export default function SalesReportPage() {
     const token = useAuthStore((state) => state.token);
@@ -129,6 +153,23 @@ export default function SalesReportPage() {
     const revenueChange = reportData ? calculatePercentageChange(reportData.summary.totalRevenue, reportData.comparison.prevTotalRevenue) : 0;
     const itemsSoldCount = reportData ? calculatePercentageChange(reportData.summary.totalItemsSoldCount, reportData.comparison.prevTotalItemsSoldCount) : 0;
     const periodText = recentFilterOptions.find(o => o.value === period)?.periodText || 'year';
+
+    // --- 3. Define columns for each table, similar to DashboardPage ---
+    const topProductsColumns = [
+        { key: 'product', header: 'Product', render: (row) => (
+            <div>
+                <p className="font-medium">{row.modelNumber}</p>
+                <p className="text-xs text-muted-foreground">{row.count} units sold</p>
+            </div>
+        ), className: ""},
+        { key: 'revenue', header: 'Revenue', render: (row) => `฿${row.revenue.toLocaleString()}`, className: "text-right font-medium" },
+    ];
+
+    const topCustomersColumns = [
+        { key: 'customer', header: 'Customer', render: (row) => row.name, className: "font-medium" },
+        { key: 'revenue', header: 'Total Spent', render: (row) => `฿${row.totalRevenue.toLocaleString()}`, className: "text-right font-medium" },
+    ];
+
 
     return (
         <div className="space-y-6">
@@ -228,17 +269,13 @@ export default function SalesReportPage() {
                             title="Top 10 Selling Products"
                             data={reportData.top10Products}
                             icon={TrendingUp}
-                            nameKey="modelNumber"
-                            valueKey="revenue"
-                            countKey="count"
+                            columns={topProductsColumns}
                          />
                          <TopListCard 
                             title="Top 10 Customers"
                             data={reportData.top10Customers}
                             icon={Crown}
-                            nameKey="name"
-                            valueKey="totalRevenue"
-                            countKey={null}
+                            columns={topCustomersColumns}
                          />
                     </div>
                 </>
