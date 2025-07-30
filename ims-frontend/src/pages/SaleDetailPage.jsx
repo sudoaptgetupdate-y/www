@@ -13,11 +13,14 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useTranslation } from "react-i18next"; // --- 1. Import useTranslation ---
+import { useTranslation } from "react-i18next";
 
+// --- แก้ไข PrintableHeaderCard ---
 const PrintableHeaderCard = ({ profile, sale, formattedSaleId, t }) => (
     <Card className="hidden print:block mb-0 border-black rounded-b-none border-b-0">
         <CardHeader className="text-center p-4">
+            {/* --- เพิ่มชื่อบริษัทตรงนี้ --- */}
+            <h1 className="text-lg font-bold">{profile.name}</h1> 
             <p className="text-xs">{profile.addressLine1}</p>
             <p className="text-xs">{profile.addressLine2}</p>
             <p className="text-xs mt-2">{t('company_phone_label')}: {profile.phone} {t('company_tax_id_label')}: {profile.taxId}</p>
@@ -47,6 +50,7 @@ const PrintableHeaderCard = ({ profile, sale, formattedSaleId, t }) => (
 );
 
 const PrintableItemsCard = ({ sale, t }) => (
+    // ... (ไม่มีการเปลี่ยนแปลงในส่วนนี้) ...
     <Card className="hidden print:block mt-0 font-sarabun border-black rounded-t-none">
         <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -95,9 +99,10 @@ const PrintableItemsCard = ({ sale, t }) => (
 
 
 export default function SaleDetailPage() {
+    // ... (ไม่มีการเปลี่ยนแปลงในส่วนนี้) ...
     const { saleId } = useParams();
     const navigate = useNavigate();
-    const { t } = useTranslation(); // --- 2. เรียกใช้ useTranslation ---
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const currentUser = useAuthStore((state) => state.user);
     const [sale, setSale] = useState(null);
@@ -157,7 +162,6 @@ export default function SaleDetailPage() {
 
     return (
         <div className="space-y-6">
-             {/* --- 3. แปลข้อความ --- */}
              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
