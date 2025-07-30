@@ -194,10 +194,21 @@ inventoryController.getAllInventoryItems = async (req, res, next) => {
         const brandIdFilter = req.query.brandId || 'All';
         const sortBy = req.query.sortBy || 'updatedAt';
         const sortOrder = req.query.sortOrder || 'desc';
+        // --- START: รับ excludeIds จาก query string ---
+        const excludeIds = req.query.excludeIds ? req.query.excludeIds.split(',').map(id => parseInt(id.trim())) : [];
+        // --- END ---
         
         let where = { 
             itemType: ItemType.SALE
         };
+
+        // --- START: เพิ่มเงื่อนไขการกรอง excludeIds ---
+        if (excludeIds.length > 0) {
+            where.id = {
+                notIn: excludeIds
+            };
+        }
+        // --- END ---
 
         if (statusFilter && statusFilter !== 'All') {
             where.status = statusFilter;
