@@ -38,6 +38,10 @@ export default function CreateAssetAssignmentPage() {
     const [selectedAssets, setSelectedAssets] = useState([]);
     const [notes, setNotes] = useState("");
     
+    // --- START: สร้าง excludeIds จาก selectedAssets ---
+    const excludeIds = selectedAssets.map(item => item.id);
+    // --- END ---
+
     const {
         data: availableAssets,
         pagination,
@@ -48,11 +52,12 @@ export default function CreateAssetAssignmentPage() {
         handlePageChange,
         handleItemsPerPageChange,
         handleFilterChange
-    } = usePaginatedFetch("/assets", 10, {
-        status: "IN_WAREHOUSE",
-        categoryId: "All",
-        brandId: "All"
-    });
+    } = usePaginatedFetch(
+        "/assets", 
+        10, 
+        { status: "IN_WAREHOUSE", categoryId: "All", brandId: "All" },
+        excludeIds // --- START: ส่ง excludeIds ไปให้ Hook ---
+    );
 
     useEffect(() => {
         const initialItems = location.state?.initialItems || [];
@@ -99,9 +104,9 @@ export default function CreateAssetAssignmentPage() {
         }
     };
     
-    const displayedAvailableAssets = availableAssets.filter(
-        asset => !selectedAssets.some(selected => selected.id === asset.id)
-    );
+    // --- START: ไม่ต้องกรองข้อมูลซ้ำซ้อนใน Frontend ---
+    const displayedAvailableAssets = availableAssets;
+    // --- END ---
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

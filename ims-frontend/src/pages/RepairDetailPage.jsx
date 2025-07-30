@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const RepairItemReturnDialog = ({ items, onReturn, repairId, repairStatus }) => {
     const { t } = useTranslation();
@@ -36,14 +37,37 @@ const RepairItemReturnDialog = ({ items, onReturn, repairId, repairStatus }) => 
     const [selectedItems, setSelectedItems] = useState([]);
     const [itemOutcomes, setItemOutcomes] = useState({});
 
+    const unreturnedItems = items.filter(i => !i.returnedAt);
+    const allItemIdsToReturn = unreturnedItems.map(item => item.inventoryItemId);
+
     const handleSelect = (item) => {
+        const itemId = item.inventoryItemId;
+        const isSelected = selectedItems.some(i => i.inventoryItemId === itemId);
+        
         setSelectedItems(prev =>
-            prev.some(i => i.inventoryItemId === item.inventoryItemId)
-                ? prev.filter(i => i.inventoryItemId !== item.inventoryItemId)
+            isSelected
+                ? prev.filter(i => i.inventoryItemId !== itemId)
                 : [...prev, item]
         );
-        if (!itemOutcomes[item.inventoryItemId]) {
-            handleOutcomeChange(item.inventoryItemId, 'REPAIRED_SUCCESSFULLY');
+        
+        if (!isSelected && !itemOutcomes[itemId]) {
+            handleOutcomeChange(itemId, 'REPAIRED_SUCCESSFULLY');
+        }
+    };
+
+    const handleSelectAll = () => {
+        const isAllSelected = selectedItems.length === unreturnedItems.length;
+        if (isAllSelected) {
+            setSelectedItems([]);
+        } else {
+            setSelectedItems(unreturnedItems);
+            const newOutcomes = { ...itemOutcomes };
+            unreturnedItems.forEach(item => {
+                if (!newOutcomes[item.inventoryItemId]) {
+                    newOutcomes[item.inventoryItemId] = 'REPAIRED_SUCCESSFULLY';
+                }
+            });
+            setItemOutcomes(newOutcomes);
         }
     };
 
@@ -76,7 +100,7 @@ const RepairItemReturnDialog = ({ items, onReturn, repairId, repairStatus }) => 
         }
     };
 
-    const unreturnedItems = items.filter(i => !i.returnedAt);
+    const isAllSelected = selectedItems.length > 0 && selectedItems.length === unreturnedItems.length;
 
     return (
         <>
@@ -89,53 +113,62 @@ const RepairItemReturnDialog = ({ items, onReturn, repairId, repairStatus }) => 
                         <DialogTitle>{t('repairDetail_return_items')}</DialogTitle>
                     </DialogHeader>
                     <div className="max-h-[60vh] overflow-y-auto pr-2">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[50px]"></TableHead>
-                                    <TableHead>{t('tableHeader_category')}</TableHead>
-                                    <TableHead>{t('tableHeader_brand')}</TableHead>
-                                    <TableHead>{t('tableHeader_productModel')}</TableHead>
-                                    <TableHead>{t('tableHeader_serialNumber')}</TableHead>
-                                    <TableHead>{t('repairDetail_outcome')}</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            
-                            <TableBody>
-                                {unreturnedItems.map(item => (
-                                    <TableRow key={item.inventoryItemId}>
-                                        <TableCell>
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedItems.some(i => i.inventoryItemId === item.inventoryItemId)}
-                                                onChange={() => handleSelect(item)}
-                                                className="h-4 w-4"
+                        {/* --- START: แก้ไขโดยใช้ Table Component --- */}
+                        <div className="border rounded-md">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-12 text-center px-2">
+                                             <Checkbox
+                                                checked={isAllSelected}
+                                                onCheckedChange={handleSelectAll}
+                                                aria-label="Select all"
                                             />
-                                        </TableCell>
-                                        <TableCell>{item.inventoryItem.productModel.category.name}</TableCell>
-                                        <TableCell>{item.inventoryItem.productModel.brand.name}</TableCell>
-                                        <TableCell>{item.inventoryItem.productModel.modelNumber}</TableCell>
-                                        <TableCell>{item.inventoryItem.serialNumber}</TableCell>
-                                        <TableCell>
-                                            <RadioGroup
-                                                value={itemOutcomes[item.inventoryItemId] || ''}
-                                                onValueChange={(value) => handleOutcomeChange(item.inventoryItemId, value)}
-                                                disabled={!selectedItems.some(i => i.inventoryItemId === item.inventoryItemId)}
-                                            >
-                                                <div className="flex items-center space-x-2">
-                                                    <RadioGroupItem value="REPAIRED_SUCCESSFULLY" id={`repaired-${item.inventoryItemId}`} />
-                                                    <Label htmlFor={`repaired-${item.inventoryItemId}`}>{t('repairDetail_outcome_success')}</Label>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <RadioGroupItem value="UNREPAIRABLE" id={`unrepairable-${item.inventoryItemId}`} />
-                                                    <Label htmlFor={`unrepairable-${item.inventoryItemId}`}>{t('repairDetail_outcome_failed')}</Label>
-                                                </div>
-                                            </RadioGroup>
-                                        </TableCell>
+                                        </TableHead>
+                                        <TableHead>{t('tableHeader_category')}</TableHead>
+                                        <TableHead>{t('tableHeader_brand')}</TableHead>
+                                        <TableHead>{t('tableHeader_productModel')}</TableHead>
+                                        <TableHead>{t('tableHeader_serialNumber')}</TableHead>
+                                        <TableHead>{t('repairDetail_outcome')}</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                
+                                <TableBody>
+                                    {unreturnedItems.map(item => (
+                                        <TableRow key={item.inventoryItemId}>
+                                            <TableCell className="text-center">
+                                                <Checkbox
+                                                    checked={selectedItems.some(i => i.inventoryItemId === item.inventoryItemId)}
+                                                    onCheckedChange={() => handleSelect(item)}
+                                                    aria-label={`Select item ${item.inventoryItem.serialNumber}`}
+                                                />
+                                            </TableCell>
+                                            <TableCell>{item.inventoryItem.productModel.category.name}</TableCell>
+                                            <TableCell>{item.inventoryItem.productModel.brand.name}</TableCell>
+                                            <TableCell>{item.inventoryItem.productModel.modelNumber}</TableCell>
+                                            <TableCell>{item.inventoryItem.serialNumber}</TableCell>
+                                            <TableCell>
+                                                <RadioGroup
+                                                    value={itemOutcomes[item.inventoryItemId] || ''}
+                                                    onValueChange={(value) => handleOutcomeChange(item.inventoryItemId, value)}
+                                                    disabled={!selectedItems.some(i => i.inventoryItemId === item.inventoryItemId)}
+                                                >
+                                                    <div className="flex items-center space-x-2">
+                                                        <RadioGroupItem value="REPAIRED_SUCCESSFULLY" id={`repaired-${item.inventoryItemId}`} />
+                                                        <Label htmlFor={`repaired-${item.inventoryItemId}`}>{t('repairDetail_outcome_success')}</Label>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <RadioGroupItem value="UNREPAIRABLE" id={`unrepairable-${item.inventoryItemId}`} />
+                                                        <Label htmlFor={`unrepairable-${item.inventoryItemId}`}>{t('repairDetail_outcome_failed')}</Label>
+                                                    </div>
+                                                </RadioGroup>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                         {/* --- END --- */}
                     </div>
                     <DialogFooter>
                         <DialogClose asChild><Button type="button" variant="ghost">{t('cancel')}</Button></DialogClose>

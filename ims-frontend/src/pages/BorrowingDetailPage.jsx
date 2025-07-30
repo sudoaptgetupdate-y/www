@@ -21,6 +21,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Checkbox } from "@/components/ui/checkbox";
+// --- START: 1. Import Table components ---
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+// --- END ---
 
 const PrintableTitleCard = () => (
     <Card className="hidden print:block mb-0 border-black rounded-b-none border-b-0">
@@ -160,6 +171,17 @@ export default function BorrowingDetailPage() {
 
     const itemsToReturn = borrowing.items.filter(item => !item.returnedAt && item.inventoryItem);
     const formattedBorrowingId = borrowing.id.toString().padStart(6, '0');
+    
+    const allItemIdsToReturn = itemsToReturn.map(item => item.inventoryItemId);
+    const isAllSelected = allItemIdsToReturn.length > 0 && selectedToReturn.length === allItemIdsToReturn.length;
+
+    const handleSelectAll = () => {
+        if (isAllSelected) {
+            setSelectedToReturn([]);
+        } else {
+            setSelectedToReturn(allItemIdsToReturn);
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -291,39 +313,48 @@ export default function BorrowingDetailPage() {
                         <DialogDescription>Select items that the customer is returning now.</DialogDescription>
                     </DialogHeader>
                     <div className="py-4 max-h-[60vh] overflow-y-auto">
+                        {/* --- START: 2. Replace native table with shadcn Table components --- */}
                          <div className="border rounded-md">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b">
-                                        <th className="p-2 w-12 text-center">Return</th>
-                                        <th className="p-2 text-left">Category</th>
-                                        <th className="p-2 text-left">Brand</th>
-                                        <th className="p-2 text-left">Product</th>
-                                        <th className="p-2 text-left">Serial Number</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-12 text-center px-2">
+                                            <Checkbox
+                                                checked={isAllSelected}
+                                                onCheckedChange={handleSelectAll}
+                                                aria-label="Select all"
+                                            />
+                                        </TableHead>
+                                        <TableHead>Category</TableHead>
+                                        <TableHead>Brand</TableHead>
+                                        <TableHead>Product</TableHead>
+                                        <TableHead>Serial Number</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
                                     {itemsToReturn.map(item => (
-                                        <tr
+                                        <TableRow
                                             key={item.inventoryItemId}
-                                            className="border-b cursor-pointer hover:bg-slate-50"
+                                            className="cursor-pointer"
                                             onClick={() => handleToggleReturnItem(item.inventoryItemId)}
                                         >
-                                            <td className="p-2 text-center">
-                                                {selectedToReturn.includes(item.inventoryItemId)
-                                                    ? <CheckSquare className="h-5 w-5 text-primary mx-auto" />
-                                                    : <Square className="h-5 w-5 text-muted-foreground mx-auto" />
-                                                }
-                                            </td>
-                                            <td className="p-2">{item.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
-                                            <td className="p-2">{item.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
-                                            <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
-                                            <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
-                                        </tr>
+                                            <TableCell className="text-center">
+                                                <Checkbox
+                                                    checked={selectedToReturn.includes(item.inventoryItemId)}
+                                                    onCheckedChange={() => handleToggleReturnItem(item.inventoryItemId)}
+                                                    aria-label={`Select item ${item.inventoryItem.serialNumber}`}
+                                                />
+                                            </TableCell>
+                                            <TableCell>{item.inventoryItem?.productModel?.category?.name || 'N/A'}</TableCell>
+                                            <TableCell>{item.inventoryItem?.productModel?.brand?.name || 'N/A'}</TableCell>
+                                            <TableCell>{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</TableCell>
+                                            <TableCell>{item.inventoryItem?.serialNumber || 'N/A'}</TableCell>
+                                        </TableRow>
                                     ))}
-                                </tbody>
-                            </table>
+                                </TableBody>
+                            </Table>
                         </div>
+                         {/* --- END --- */}
                     </div>
                     <DialogFooter>
                         <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>

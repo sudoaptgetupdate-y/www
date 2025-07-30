@@ -7,7 +7,7 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, CheckSquare, Square, Printer, CornerDownLeft, HardDrive } from "lucide-react";
+import { ArrowLeft, User, Printer, CornerDownLeft } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { useTranslation } from "react-i18next";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -30,95 +30,125 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Label } from "@/components/ui/label";
 
+const ReturnItemsDialog = ({ isOpen, onOpenChange, itemsToReturn, onConfirm }) => {
+    const [selectedToReturn, setSelectedToReturn] = useState([]);
 
-const PrintableTitleCard = () => (
-    <Card className="hidden print:block mb-0 border-black rounded-b-none border-b-0">
-        <CardContent className="p-2">
-            <h1 className="text-xl font-bold text-center">ใบเบิกจ่ายทรัพย์สิน / Asset Assignment Note</h1>
-        </CardContent>
-    </Card>
-);
+    const handleToggleReturnItem = (itemId) => {
+        setSelectedToReturn(prev =>
+            prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
+        );
+    };
 
-const PrintableHeaderCard = ({ assignment, formattedAssignmentId, t }) => (
-    <Card className="hidden print:block mt-0 border-black rounded-none border-b-0">
-        <CardHeader className="p-4 border-t border-black">
-            <div className="grid grid-cols-2 gap-6 text-xs">
-                <div className="space-y-1">
-                    <p className="text-slate-600">ผู้เบิก (Assignee)</p>
-                    <p className="font-semibold">{assignment.assignee?.name || 'N/A'}</p>
-                    <p className="text-slate-600">{assignment.assignee?.username || 'N/A'}</p>
+    const allItemIdsToReturn = itemsToReturn.map(item => item.inventoryItemId);
+    const isAllSelected = allItemIdsToReturn.length > 0 && selectedToReturn.length === allItemIdsToReturn.length;
+
+    const handleSelectAll = () => {
+        if (isAllSelected) {
+            setSelectedToReturn([]);
+        } else {
+            setSelectedToReturn(allItemIdsToReturn);
+        }
+    };
+    
+    const handleConfirm = () => {
+        onConfirm(selectedToReturn);
+        setSelectedToReturn([]);
+    };
+
+    // Reset state when dialog closes
+    useEffect(() => {
+        if (!isOpen) {
+            setSelectedToReturn([]);
+        }
+    }, [isOpen]);
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Receive Returned Assets</DialogTitle>
+                    <DialogDescription>Select assets that the employee is returning.</DialogDescription>
+                </DialogHeader>
+                <div className="py-4 max-h-[60vh] overflow-y-auto">
+                    <div className="border rounded-md">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-12 text-center px-2">
+                                        <Checkbox
+                                            checked={isAllSelected}
+                                            onCheckedChange={handleSelectAll}
+                                            aria-label="Select all"
+                                        />
+                                    </TableHead>
+                                    <TableHead>Asset Code</TableHead>
+                                    <TableHead>Category</TableHead>
+                                    <TableHead>Product</TableHead>
+                                    <TableHead>Serial Number</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {itemsToReturn.map(item => (
+                                    <TableRow
+                                        key={item.inventoryItemId}
+                                        className="cursor-pointer"
+                                        onClick={() => handleToggleReturnItem(item.inventoryItemId)}
+                                    >
+                                        <TableCell className="text-center">
+                                            <Checkbox
+                                                checked={selectedToReturn.includes(item.inventoryItemId)}
+                                                onCheckedChange={() => handleToggleReturnItem(item.inventoryItemId)}
+                                                aria-label={`Select item ${item.inventoryItem.serialNumber}`}
+                                            />
+                                        </TableCell>
+                                        <TableCell>{item.inventoryItem.assetCode}</TableCell>
+                                        <TableCell>{item.inventoryItem.productModel.category.name}</TableCell>
+                                        <TableCell>{item.inventoryItem.productModel.modelNumber}</TableCell>
+                                        <TableCell>{item.inventoryItem.serialNumber || 'N/A'}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </div>
-                <div className="space-y-1 text-right">
-                     <p className="text-slate-600">เลขที่ (Assignment ID)</p>
-                     <p className="font-semibold">#{formattedAssignmentId}</p>
-                     <p className="text-slate-600">วันที่เบิก (Assigned Date)</p>
-                     <p className="font-semibold">{new Date(assignment.assignedDate).toLocaleString('th-TH')}</p>
-                     <p className="text-slate-600">ผู้อนุมัติ (Approved By)</p>
-                     <p className="font-semibold">{assignment.approvedBy?.name || 'N/A'}</p>
-                </div>
-            </div>
-            {assignment.notes && (
-                <div className="mt-4">
-                    <p className="font-semibold text-xs">{t('createBorrowing_notes_label')}:</p>
-                    <p className="whitespace-pre-wrap text-xs text-slate-700 border p-2 rounded-md bg-slate-50">{assignment.notes}</p>
-                </div>
-            )}
-        </CardHeader>
-    </Card>
-);
+                <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                     <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button disabled={selectedToReturn.length === 0}>
+                                    Confirm Return ({selectedToReturn.length} items)
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirm Return</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        You are about to return {selectedToReturn.length} asset(s). This will change their status back to "IN_WAREHOUSE". Are you sure?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleConfirm}>
+                                        Continue
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
-const PrintableItemsCard = ({ assignment, t }) => (
-    <Card className="hidden print:block mt-0 font-sarabun border-black rounded-t-none">
-        <CardHeader className="p-2 border-t border-black">
-            <CardTitle className="text-sm">รายการทรัพย์สินที่เบิก ({assignment.items.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-            <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                    <thead>
-                        <tr className="border-b bg-muted/40">
-                            <th className="p-2 text-left">{t('tableHeader_assetCode')}</th>
-                            <th className="p-2 text-left">{t('tableHeader_category')}</th>
-                            <th className="p-2 text-left">{t('tableHeader_brand')}</th>
-                            <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
-                            <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
-                            <th className="p-2 text-left">{t('tableHeader_macAddress')}</th>
-                            <th className="p-2 text-left">สถานะ (Status)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {assignment.items.map(item => (
-                            <tr key={item.inventoryItem.id} className="border-b">
-                                <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
-                                <td className="p-2">{item.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
-                                <td className="p-2">{item.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
-                                <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
-                                <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
-                                <td className="p-2">{item.inventoryItem?.macAddress || 'N/A'}</td>
-                                <td className="p-2">
-                                    {item.returnedAt ? `Returned (${new Date(item.returnedAt).toLocaleDateString('th-TH')})` : 'Assigned'}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </CardContent>
-    </Card>
-);
 
 export default function AssetAssignmentDetailPage() {
     const { assignmentId } = useParams();
     const navigate = useNavigate();
-    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
     const [assignment, setAssignment] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [selectedToReturn, setSelectedToReturn] = useState([]);
     const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
-
 
     const fetchDetails = async () => {
         if (!assignmentId || !token) return;
@@ -139,237 +169,192 @@ export default function AssetAssignmentDetailPage() {
         fetchDetails();
     }, [assignmentId, token]);
 
-    const handleToggleReturnItem = (itemId) => {
-        setSelectedToReturn(prev =>
-            prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
-        );
-    };
-
-    const handleReturnItems = async () => {
-        if (selectedToReturn.length === 0) {
-            toast.error("Please select at least one asset to return.");
+    const handleReturnItems = async (itemIdsToReturn) => {
+        if (itemIdsToReturn.length === 0) {
+            toast.error("Please select at least one item to return.");
             return;
         }
         try {
             await axiosInstance.patch(`/asset-assignments/${assignmentId}/return`,
-                { itemIdsToReturn: selectedToReturn },
+                { itemIdsToReturn },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             toast.success("Assets have been returned successfully.");
             setIsReturnDialogOpen(false);
             fetchDetails();
-            setSelectedToReturn([]);
         } catch (error) {
             toast.error(error.response?.data?.error || "Failed to process return.");
         }
     };
 
-    if (loading) return <p>Loading assignment details...</p>;
+    if (loading) return <p>Loading details...</p>;
     if (!assignment) return <p>Record not found.</p>;
 
-    const itemsToReturn = assignment.items.filter(item => !item.returnedAt);
+    const itemsToReturn = assignment.items.filter(item => !item.returnedAt && item.inventoryItem);
     const formattedAssignmentId = assignment.id.toString().padStart(6, '0');
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <HardDrive className="h-6 w-6" />
-                        Assignment Details
+                        <User className="h-6 w-6" />
+                        Asset Assignment Details
                     </h1>
-                    <p className="text-muted-foreground mt-1">Viewing details for Assignment ID #{formattedAssignmentId}</p>
+                    <p className="text-muted-foreground">Viewing details for Assignment ID #{formattedAssignmentId}</p>
                 </div>
-                 <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={() => navigate(-1)}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to List
                     </Button>
-                     <Button variant="outline" onClick={() => window.print()}>
+                    <Button variant="outline" onClick={() => window.print()}>
                         <Printer className="mr-2 h-4 w-4" />
                         Print / PDF
                     </Button>
                     {itemsToReturn.length > 0 && (
                         <Button onClick={() => setIsReturnDialogOpen(true)}>
-                            <CornerDownLeft className="mr-2"/> Receive Returned Assets
+                            <CornerDownLeft className="mr-2" /> Receive Returned Assets
                         </Button>
                     )}
                 </div>
             </div>
 
-            <div className="printable-area font-sarabun">
-                <div className="no-print space-y-6">
-                    <Card className="p-4 sm:p-6 md:p-8">
-                        <CardHeader className="p-0 mb-6">
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">ผู้เบิก (Assignee)</p>
-                                    <p className="font-semibold">{assignment.assignee?.name || 'N/A'}</p>
-                                    <p className="text-sm text-muted-foreground">{assignment.assignee?.username || 'N/A'}</p>
-                                    <p className="text-sm text-muted-foreground">อีเมล: {assignment.assignee?.email || 'N/A'}</p>
-                                </div>
-                                <div className="space-y-1 text-right">
-                                     <p className="text-sm text-muted-foreground">เลขที่ (Assignment ID)</p>
-                                     <p className="font-semibold">#{formattedAssignmentId}</p>
-                                     <p className="text-sm text-muted-foreground">วันที่เบิก (Assigned Date)</p>
-                                     <p className="font-semibold">{new Date(assignment.assignedDate).toLocaleString('th-TH')}</p>
-                                     <p className="text-sm text-muted-foreground">ผู้อนุมัติ (Approved By)</p>
-                                     <p className="font-semibold">{assignment.approvedBy?.name || 'N/A'}</p>
-                                     {assignment.returnDate && (
-                                        <>
-                                        <p className="text-sm text-muted-foreground">วันที่คืนครบ (Completion Date)</p>
-                                        <p className="font-semibold">{new Date(assignment.returnDate).toLocaleString('th-TH')}</p>
-                                        </>
-                                    )}
-                                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                 <Card className="lg:col-span-3">
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                             <div>
+                                <CardTitle>Assignment Details</CardTitle>
+                                <CardDescription>Record ID #{formattedAssignmentId}</CardDescription>
                             </div>
-                            <div className="mt-4 flex justify-end">
-                                <StatusBadge status={assignment.status} className="w-32 text-base" />
+                             <StatusBadge status={assignment.status} className="w-28 text-base"/>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div>
+                                <h4 className="font-semibold">Assignee</h4>
+                                <p>{assignment.assignee.name}</p>
                             </div>
-                            {assignment.notes && (
-                                <div className="mt-6">
-                                    <p className="font-semibold">หมายเหตุ (Notes):</p>
-                                    <p className="whitespace-pre-wrap text-sm text-muted-foreground border p-3 rounded-md bg-muted/30">{assignment.notes}</p>
-                                </div>
-                            )}
-                        </CardHeader>
-                    </Card>
-                    
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>รายการทรัพย์สินที่เบิก ({assignment.items.length})</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="border rounded-lg overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b bg-muted/40">
-                                            <th className="p-2 text-left">Category</th>
-                                            <th className="p-2 text-left">Brand</th>
-                                            <th className="p-2 text-left">Product Model</th>
-                                            <th className="p-2 text-left">Asset Code</th>
-                                            <th className="p-2 text-left">Serial Number</th>
-                                            <th className="p-2 text-left">MAC Address</th>
-                                            <th className="p-2 text-left">สถานะ (Status)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {assignment.items.map(item => (
-                                            <tr key={item.inventoryItem.id} className="border-b">
-                                                <td className="p-2">{item.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
-                                                <td className="p-2">{item.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
-                                                <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
-                                                <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
-                                                <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
-                                                <td className="p-2">{item.inventoryItem?.macAddress || 'N/A'}</td>
-                                                <td className="p-2">
-                                                    <StatusBadge status={item.returnedAt ? 'RETURNED' : 'ASSIGNED'} />
-                                                    {item.returnedAt && (
-                                                        <span className="text-xs text-muted-foreground ml-2">
-                                                            (เมื่อ {new Date(item.returnedAt).toLocaleDateString('th-TH')})
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            <div>
+                                <h4 className="font-semibold">Assignment Date</h4>
+                                <p>{new Date(assignment.assignmentDate).toLocaleString()}</p>
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
-                
-                <div className="hidden print:block">
-                    <PrintableTitleCard />
-                    <PrintableHeaderCard assignment={assignment} formattedAssignmentId={formattedAssignmentId} t={t} />
-                    <PrintableItemsCard assignment={assignment} t={t} />
-                </div>
+                             <div>
+                                <h4 className="font-semibold">Assigned By</h4>
+                                {/* --- START: แก้ไขโดยใช้ Optional Chaining --- */}
+                                <p>{assignment.assignedBy?.name || 'N/A'}</p>
+                                {/* --- END --- */}
+                            </div>
+                        </div>
+                         {assignment.notes && (
+                            <div>
+                                <h4 className="font-semibold">Notes</h4>
+                                <p className="whitespace-pre-wrap text-sm text-muted-foreground border p-3 rounded-md bg-muted/30">{assignment.notes}</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
-                <div className="signature-section hidden">
-                    <div className="signature-box">
-                        <div className="signature-line"></div>
-                        <p>( {assignment.approvedBy?.name || '.....................................................'} )</p>
-                        <p>เจ้าหน้าที่ผู้จ่ายทรัพย์สิน</p>
-                    </div>
-                    <div className="signature-box">
-                        <div className="signature-line"></div>
-                        <p>( {assignment.assignee?.name || '.....................................................'} )</p>
-                        <p>พนักงานผู้รับทรัพย์สิน</p>
-                    </div>
-                </div>
-            </div>
-
-            <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
-                 <DialogContent className="max-w-4xl">
-                    <DialogHeader>
-                        <DialogTitle>Receive Returned Assets</DialogTitle>
-                        <DialogDescription>Select assets that the employee is returning.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 max-h-[60vh] overflow-y-auto">
-                        <div className="border rounded-md">
+                <Card className="lg:col-span-3">
+                    <CardHeader>
+                        <CardTitle>Assigned Assets ({assignment.items.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                         <div className="border rounded-lg overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
-                                    <tr className="border-b">
-                                        <th className="p-2 w-12 text-center">Return</th>
+                                    <tr className="border-b bg-muted/40">
                                         <th className="p-2 text-left">Asset Code</th>
                                         <th className="p-2 text-left">Category</th>
                                         <th className="p-2 text-left">Brand</th>
-                                        <th className="p-2 text-left">Product</th>
+                                        <th className="p-2 text-left">Product Model</th>
                                         <th className="p-2 text-left">Serial Number</th>
-                                        <th className="p-2 text-left">MAC Address</th>
+                                        <th className="p-2 text-left">Status</th>
+                                        <th className="p-2 text-left">Returned Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {itemsToReturn.map(item => (
-                                        <tr
-                                            key={item.inventoryItem.id}
-                                            className="border-b cursor-pointer hover:bg-slate-50"
-                                            onClick={() => handleToggleReturnItem(item.inventoryItem.id)}
-                                        >
-                                            <td className="p-2 text-center">
-                                                {selectedToReturn.includes(item.inventoryItem.id)
-                                                    ? <CheckSquare className="h-5 w-5 text-primary mx-auto" />
-                                                    : <Square className="h-5 w-5 text-muted-foreground mx-auto" />
-                                                }
-                                            </td>
-                                            <td className="p-2">{item.inventoryItem?.assetCode || 'N/A'}</td>
-                                            <td className="p-2">{item.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
-                                            <td className="p-2">{item.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
-                                            <td className="p-2">{item.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
-                                            <td className="p-2">{item.inventoryItem?.serialNumber || 'N/A'}</td>
-                                            <td className="p-2">{item.inventoryItem?.macAddress || 'N/A'}</td>
+                                    {assignment.items.map(record => (
+                                        <tr key={record.inventoryItemId} className="border-b">
+                                            <td className="p-2">{record.inventoryItem?.assetCode || 'N/A'}</td>
+                                            <td className="p-2">{record.inventoryItem?.productModel?.category?.name || 'N/A'}</td>
+                                            <td className="p-2">{record.inventoryItem?.productModel?.brand?.name || 'N/A'}</td>
+                                            <td className="p-2">{record.inventoryItem?.productModel?.modelNumber || 'N/A'}</td>
+                                            <td className="p-2">{record.inventoryItem?.serialNumber || 'N/A'}</td>
+                                            <td className="p-2"><StatusBadge status={record.returnedAt ? 'RETURNED' : 'ASSIGNED'} /></td>
+                                            <td className="p-2">{record.returnedAt ? new Date(record.returnedAt).toLocaleString() : 'N/A'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <ReturnItemsDialog
+                isOpen={isReturnDialogOpen}
+                onOpenChange={setIsReturnDialogOpen}
+                itemsToReturn={itemsToReturn}
+                onConfirm={handleReturnItems}
+            />
+
+            {/* Printable Section */}
+            <div className="hidden print:block font-sarabun">
+                <h1 className="text-2xl font-bold text-center mb-4">ใบเบิก-จ่ายทรัพย์สิน</h1>
+                <div className="border border-black p-4 text-sm">
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p><strong>ผู้เบิก:</strong> {assignment.assignee.name}</p>
+                            <p><strong>แผนก:</strong> {assignment.assignee.department || 'N/A'}</p>
+                        </div>
+                         <div className="text-right">
+                             <p><strong>เลขที่เอกสาร:</strong> ASSIGN-{formattedAssignmentId}</p>
+                            <p><strong>วันที่เบิก:</strong> {new Date(assignment.assignmentDate).toLocaleDateString('th-TH')}</p>
+                        </div>
                     </div>
-                    <DialogFooter>
-                        <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button disabled={selectedToReturn.length === 0}>
-                                    Confirm Return ({selectedToReturn.length} items)
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Confirm Return</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        You are about to return {selectedToReturn.length} asset(s). This will change their status back to "IN_WAREHOUSE". Are you sure?
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleReturnItems}>
-                                        Continue
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                     <table className="w-full border-collapse border border-black text-sm">
+                        <thead>
+                            <tr className="bg-gray-200">
+                                <th className="border border-black p-1">ลำดับ</th>
+                                <th className="border border-black p-1">รหัสทรัพย์สิน</th>
+                                <th className="border border-black p-1">รายการ</th>
+                                <th className="border border-black p-1">Serial Number</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {assignment.items.map((record, index) => (
+                                <tr key={record.inventoryItemId}>
+                                    <td className="border border-black p-1 text-center">{index + 1}</td>
+                                    <td className="border border-black p-1">{record.inventoryItem?.assetCode}</td>
+                                    <td className="border border-black p-1">{record.inventoryItem?.productModel?.modelNumber}</td>
+                                    <td className="border border-black p-1">{record.inventoryItem?.serialNumber}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                     <div className="mt-4">
+                         <strong>หมายเหตุ:</strong>
+                        <p className="whitespace-pre-wrap">{assignment.notes || 'ไม่มี'}</p>
+                    </div>
+                     <div className="grid grid-cols-2 gap-4 mt-16 text-center">
+                        <div>
+                            <p>....................................................</p>
+                            <p>({assignment.assignee.name})</p>
+                            <p>ผู้เบิก</p>
+                        </div>
+                        <div>
+                            <p>....................................................</p>
+                            {/* --- START: แก้ไขโดยใช้ Optional Chaining --- */}
+                            <p>({assignment.assignedBy?.name || '...................................'})</p>
+                            {/* --- END --- */}
+                            <p>ผู้อนุมัติ</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

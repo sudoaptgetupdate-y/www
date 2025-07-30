@@ -36,6 +36,10 @@ export default function CreateSalePage() {
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
     const [selectedItems, setSelectedItems] = useState([]);
 
+    // --- START: สร้าง excludeIds จาก selectedItems ---
+    const excludeIds = selectedItems.map(item => item.id);
+    // --- END ---
+
     const {
         data: availableItems,
         pagination,
@@ -46,11 +50,12 @@ export default function CreateSalePage() {
         handlePageChange,
         handleItemsPerPageChange,
         handleFilterChange
-    } = usePaginatedFetch("/inventory", 10, {
-        status: "IN_STOCK", 
-        categoryId: "All",
-        brandId: "All"
-    });
+    } = usePaginatedFetch(
+        "/inventory", 
+        10, 
+        { status: "IN_STOCK", categoryId: "All", brandId: "All" },
+        excludeIds // --- START: ส่ง excludeIds ไปให้ Hook ---
+    );
 
     useEffect(() => {
         const initialItems = location.state?.initialItems || [];
@@ -99,9 +104,9 @@ export default function CreateSalePage() {
     const vat = subtotal * 0.07;
     const total = subtotal + vat;
 
-    const displayedAvailableItems = availableItems.filter(
-        item => !selectedItems.some(selected => selected.id === item.id)
-    );
+    // --- START: ไม่ต้องกรองข้อมูลซ้ำซ้อนใน Frontend ---
+    const displayedAvailableItems = availableItems;
+    // --- END ---
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

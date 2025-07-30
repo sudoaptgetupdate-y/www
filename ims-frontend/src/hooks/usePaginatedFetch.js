@@ -19,7 +19,7 @@ function useDebounce(value, delay) {
     return debouncedValue;
 }
 
-export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, defaultFilters = {}) {
+export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, defaultFilters = {}, excludeIds = []) {
     const token = useAuthStore((state) => state.token);
     const location = useLocation();
     const navigate = useNavigate();
@@ -68,6 +68,9 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, defaultFilt
                 ...filters,
                 sortBy,
                 sortOrder,
+                // --- START: เพิ่ม excludeIds เข้าไปใน params ---
+                excludeIds: excludeIds.join(','),
+                // --- END ---
             };
             
             const response = await axiosInstance.get(apiPath, {
@@ -82,7 +85,7 @@ export function usePaginatedFetch(apiPath, initialItemsPerPage = 10, defaultFilt
         } finally {
             setIsLoading(false);
         }
-    }, [token, apiPath, pagination.currentPage, pagination.itemsPerPage, debouncedSearchTerm, JSON.stringify(filters), sortBy, sortOrder]);
+    }, [token, apiPath, pagination.currentPage, pagination.itemsPerPage, debouncedSearchTerm, JSON.stringify(filters), sortBy, sortOrder, JSON.stringify(excludeIds)]); // <-- เพิ่ม excludeIds ใน dependency array
 
     useEffect(() => {
         fetchData();
