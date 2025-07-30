@@ -15,7 +15,6 @@ import { toast } from 'sonner';
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { PlusCircle, XCircle } from "lucide-react";
-// import { translateThaiToEnglish } from "@/lib/keyboardUtils"; // --- 1. ลบการ import ---
 import { useTranslation } from "react-i18next";
 
 const MAX_ASSETS_MANUAL = 10;
@@ -24,6 +23,11 @@ const formatMacAddress = (value) => {
     const cleaned = (value || '').replace(/[^0-9a-fA-F]/g, '').toUpperCase();
     if (cleaned.length === 0) return '';
     return cleaned.match(/.{1,2}/g)?.slice(0, 6).join(':') || cleaned;
+};
+
+const validateMacAddress = (mac) => {
+  const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+  return macRegex.test(mac);
 };
 
 export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
@@ -37,6 +41,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
 
     const inputRefs = useRef([]);
     const firstInputRef = useRef(null);
+    const scannerTimeoutRefs = useRef([]);
 
     useEffect(() => {
         if (isOpen && selectedModel) {
@@ -50,7 +55,6 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
         setSelectedModel(model);
     };
 
-    // --- START: 2. แก้ไขฟังก์ชัน handleInputChange ---
     const handleInputChange = (e, index, field) => {
         const { value } = e.target;
         let processedValue = value;
@@ -58,15 +62,35 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
         if (field === 'macAddress') {
             processedValue = formatMacAddress(value);
         } else {
-            // Asset Code และ Serial Number ยังคงแปลงเป็นตัวพิมพ์ใหญ่
             processedValue = value.toUpperCase();
         }
 
         const newItems = [...manualItems];
         newItems[index][field] = processedValue;
         setManualItems(newItems);
+
+        // --- START: แก้ไข Logic ให้ทำงานเฉพาะช่อง SN ---
+        if (field === 'serialNumber') {
+            if (scannerTimeoutRefs.current[index]) {
+                clearTimeout(scannerTimeoutRefs.current[index]);
+            }
+            scannerTimeoutRefs.current[index] = setTimeout(() => {
+                const isMacRequired = selectedModel?.category?.requiresMacAddress;
+                if (isMacRequired) {
+                    const macInputIndex = index * 3 + 2;
+                    inputRefs.current[macInputIndex]?.focus();
+                } else {
+                    if (index === manualItems.length - 1) {
+                        addManualItemRow();
+                    } else {
+                        const nextAssetCodeIndex = (index + 1) * 3;
+                        inputRefs.current[nextAssetCodeIndex]?.focus();
+                    }
+                }
+            }, 100);
+        }
+        // --- END ---
     };
-    // --- END: 2. แก้ไขฟังก์ชัน handleInputChange ---
 
     const addManualItemRow = () => {
         if (manualItems.length < MAX_ASSETS_MANUAL) {
@@ -88,16 +112,35 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
     const handleKeyDown = (e, index, field) => {
         if (e.key === 'Enter') {
             e.preventDefault();
+            const isMacRequired = selectedModel?.category?.requiresMacAddress;
             const snIndex = index * 3 + 1;
             const macIndex = index * 3 + 2;
 
             if (field === 'assetCode') {
                 inputRefs.current[snIndex]?.focus();
             } else if (field === 'serialNumber') {
-                inputRefs.current[macIndex]?.focus();
+                if (isMacRequired) {
+                    inputRefs.current[macIndex]?.focus();
+                } else {
+                    if (index === manualItems.length - 1) {
+                        addManualItemRow();
+                    } else {
+                        const nextAssetCodeIndex = (index + 1) * 3;
+                        inputRefs.current[nextAssetCodeIndex]?.focus();
+                    }
+                }
             } else if (field === 'macAddress') {
+                const currentItem = manualItems[index];
+                
+                if (isMacRequired && currentItem.macAddress.trim() !== '' && !validateMacAddress(currentItem.macAddress)) {
+                    toast.error("Invalid MAC Address format. Please use XX:XX:XX:XX:XX:XX format.");
+                    return;
+                }
+
                 if (index === manualItems.length - 1) {
-                    addManualItemRow();
+                    if (!isMacRequired || (isMacRequired && currentItem.macAddress.trim() !== '')) {
+                        addManualItemRow();
+                    }
                 } else {
                     const nextAssetCodeIndex = (index + 1) * 3;
                     inputRefs.current[nextAssetCodeIndex]?.focus();
@@ -128,6 +171,10 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                     if (!item.assetCode.trim()) hasError = true;
                     if (requiresSerialNumber && !item.serialNumber?.trim()) hasError = true;
                     if (requiresMacAddress && !item.macAddress?.trim()) hasError = true;
+                    if (requiresMacAddress && item.macAddress && !validateMacAddress(item.macAddress)) {
+                        toast.error(`Invalid MAC address format for Asset Code: ${item.assetCode}. Please fix it before saving.`);
+                        hasError = true;
+                    }
                     return {
                         assetCode: item.assetCode.trim(),
                         serialNumber: item.serialNumber.trim() || null,
@@ -145,6 +192,10 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                     if (!assetCode) hasError = true;
                     if (requiresSerialNumber && !parts[1]) hasError = true;
                     if (requiresMacAddress && !parts[2]) hasError = true;
+                    if (requiresMacAddress && parts[2] && !validateMacAddress(parts[2])) {
+                        toast.error(`Invalid MAC address format for Asset Code: ${assetCode}. Please fix it before saving.`);
+                        hasError = true;
+                    }
                     return {
                         assetCode: assetCode,
                         serialNumber: parts[1] || null,
@@ -164,7 +215,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
             } else if (requiresMacAddress) {
                 errorMessage = "MAC Address is required for all items.";
             }
-            toast.error(errorMessage);
+            if (!toast.length) toast.error(errorMessage);
             setIsLoading(false);
             return;
         }

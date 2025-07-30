@@ -15,7 +15,6 @@ import { toast } from 'sonner';
 import axiosInstance from '@/api/axiosInstance';
 import useAuthStore from "@/store/authStore";
 import { PlusCircle, XCircle } from "lucide-react";
-// import { translateThaiToEnglish } from "@/lib/keyboardUtils"; // --- 1. ลบการ import ---
 import { useTranslation } from "react-i18next";
 
 const MAX_ITEMS_MANUAL = 10;
@@ -24,6 +23,11 @@ const formatMacAddress = (value) => {
     const cleaned = (value || '').replace(/[^0-9a-fA-F]/g, '').toUpperCase();
     if (cleaned.length === 0) return '';
     return cleaned.match(/.{1,2}/g)?.slice(0, 6).join(':') || cleaned;
+};
+
+const validateMacAddress = (mac) => {
+  const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+  return macRegex.test(mac);
 };
 
 export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
@@ -50,7 +54,6 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
         setSelectedModel(model);
     };
 
-    // --- START: 2. แก้ไขฟังก์ชัน handleInputChange ---
     const handleInputChange = (e, index, field) => {
         const { value } = e.target;
         let processedValue = value;
@@ -65,7 +68,6 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
         newItems[index][field] = processedValue;
         setManualItems(newItems);
     };
-    // --- END: 2. แก้ไขฟังก์ชัน handleInputChange ---
 
     const addManualItemRow = () => {
         if (manualItems.length < MAX_ITEMS_MANUAL) {
@@ -87,12 +89,32 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
     const handleKeyDown = (e, index, field) => {
         if (e.key === 'Enter') {
             e.preventDefault();
+            const isMacRequired = selectedModel?.category?.requiresMacAddress;
+
             if (field === 'serialNumber') {
-                const macInputIndex = index * 2 + 1;
-                inputRefs.current[macInputIndex]?.focus();
+                if (isMacRequired) {
+                    const macInputIndex = index * 2 + 1;
+                    inputRefs.current[macInputIndex]?.focus();
+                } else {
+                     if (index === manualItems.length - 1) {
+                        addManualItemRow();
+                    } else {
+                        const nextSnInputIndex = (index + 1) * 2;
+                        inputRefs.current[nextSnInputIndex]?.focus();
+                    }
+                }
             } else if (field === 'macAddress') {
+                const currentItem = manualItems[index];
+                
+                if (isMacRequired && currentItem.macAddress.trim() !== '' && !validateMacAddress(currentItem.macAddress)) {
+                    toast.error("Invalid MAC Address format. Please use XX:XX:XX:XX:XX:XX format.");
+                    return; 
+                }
+
                 if (index === manualItems.length - 1) {
-                    addManualItemRow();
+                    if (!isMacRequired || (isMacRequired && currentItem.macAddress.trim() !== '')) {
+                        addManualItemRow();
+                    }
                 } else {
                     const nextSnInputIndex = (index + 1) * 2;
                     inputRefs.current[nextSnInputIndex]?.focus();
@@ -124,6 +146,10 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
                 .map(item => {
                     if (requiresSerialNumber && !item.serialNumber?.trim()) hasError = true;
                     if (requiresMacAddress && !item.macAddress?.trim()) hasError = true;
+                    if (requiresMacAddress && item.macAddress && !validateMacAddress(item.macAddress)) {
+                        toast.error(`Invalid MAC address format for S/N: ${item.serialNumber || '(empty)'}. Please fix it before saving.`);
+                        hasError = true;
+                    }
                     return {
                         serialNumber: item.serialNumber || null,
                         macAddress: item.macAddress || null,
@@ -138,6 +164,10 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
                     const parts = line.split(/[,\t]/).map(part => part.trim());
                     if (requiresSerialNumber && !parts[0]) hasError = true;
                     if (requiresMacAddress && !parts[1]) hasError = true;
+                    if (requiresMacAddress && parts[1] && !validateMacAddress(parts[1])) {
+                        toast.error(`Invalid MAC address format for S/N: ${parts[0]}. Please fix it before saving.`);
+                        hasError = true;
+                    }
                     return {
                         serialNumber: parts[0] || null,
                         macAddress: parts[1] || null,
@@ -154,7 +184,7 @@ export default function BatchAddInventoryDialog({ isOpen, setIsOpen, onSave }) {
             } else if (requiresMacAddress) {
                 errorMessage = "MAC Address is required for all items.";
             }
-            toast.error(errorMessage);
+            if(!toast.length) toast.error(errorMessage);
             setIsLoading(false);
             return;
         }
@@ -283,7 +313,7 @@ SN-FROM-TEXT,DD:EE:FF:44:55:66
                                  <DialogFooter className="mt-6">
                                     <DialogClose asChild><Button type="button" variant="ghost">{t('cancel')}</Button></DialogClose>
                                     <Button onClick={() => handleSubmit('list')} disabled={isLoading}>
-                                        {isLoading ? t('saving') : t('batch_add_save_button', { count: listItemCount })}
+                                        {isLoading ? t('saving') : `Save ${listItemCount} Items`}
                                     </Button>
                                 </DialogFooter>
                             </TabsContent>
