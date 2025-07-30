@@ -69,7 +69,6 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
         newItems[index][field] = processedValue;
         setManualItems(newItems);
 
-        // --- START: แก้ไข Logic ให้ทำงานเฉพาะช่อง SN ---
         if (field === 'serialNumber') {
             if (scannerTimeoutRefs.current[index]) {
                 clearTimeout(scannerTimeoutRefs.current[index]);
@@ -89,7 +88,6 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                 }
             }, 100);
         }
-        // --- END ---
     };
 
     const addManualItemRow = () => {
@@ -100,7 +98,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                 inputRefs.current[nextIndex]?.focus();
             }, 100);
         } else {
-            toast.info(`You can add a maximum of ${MAX_ASSETS_MANUAL} assets at a time.`);
+            toast.info(t('max_assets_info', { max: MAX_ASSETS_MANUAL }));
         }
     };
 
@@ -133,7 +131,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                 const currentItem = manualItems[index];
                 
                 if (isMacRequired && currentItem.macAddress.trim() !== '' && !validateMacAddress(currentItem.macAddress)) {
-                    toast.error("Invalid MAC Address format. Please use XX:XX:XX:XX:XX:XX format.");
+                    toast.error(t('error_invalid_mac'));
                     return;
                 }
 
@@ -151,11 +149,11 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
 
     const handleSubmit = async (activeTab) => {
         if (!selectedModel) {
-            toast.error("Please select a Product Model first.");
+            toast.error(t('error_select_model'));
             return;
         }
         if (!selectedSupplierId) {
-            toast.error("Please select a Supplier.");
+            toast.error(t('error_select_supplier'));
             return;
         }
         setIsLoading(true);
@@ -172,7 +170,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                     if (requiresSerialNumber && !item.serialNumber?.trim()) hasError = true;
                     if (requiresMacAddress && !item.macAddress?.trim()) hasError = true;
                     if (requiresMacAddress && item.macAddress && !validateMacAddress(item.macAddress)) {
-                        toast.error(`Invalid MAC address format for Asset Code: ${item.assetCode}. Please fix it before saving.`);
+                        toast.error(`${t('error_invalid_mac')} (${item.assetCode})`);
                         hasError = true;
                     }
                     return {
@@ -193,7 +191,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                     if (requiresSerialNumber && !parts[1]) hasError = true;
                     if (requiresMacAddress && !parts[2]) hasError = true;
                     if (requiresMacAddress && parts[2] && !validateMacAddress(parts[2])) {
-                        toast.error(`Invalid MAC address format for Asset Code: ${assetCode}. Please fix it before saving.`);
+                        toast.error(`${t('error_invalid_mac')} (${assetCode})`);
                         hasError = true;
                     }
                     return {
@@ -207,7 +205,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
         let errorMessage = "An error occurred.";
         if (hasError) {
             if (itemsPayload.some(item => !item.assetCode)) {
-                errorMessage = "Asset Code is required for all items.";
+                errorMessage = t('asset_code_required_error');
             } else if (requiresSerialNumber && requiresMacAddress) {
                 errorMessage = "Serial Number and MAC Address are required for all items.";
             } else if (requiresSerialNumber) {
@@ -261,17 +259,17 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="max-w-4xl">
                 <DialogHeader>
-                    <DialogTitle>Add Multiple Company Assets</DialogTitle>
-                    <DialogDescription>Select a product model, then add assets using one of the methods below.</DialogDescription>
+                    <DialogTitle>{t('batch_add_asset_title')}</DialogTitle>
+                    <DialogDescription>{t('batch_add_asset_description')}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label>Product Model <span className="text-red-500">*</span></Label>
+                            <Label>{t('product_model_label')} <span className="text-red-500">*</span></Label>
                             <ProductModelCombobox onSelect={handleModelSelect} />
                         </div>
                         <div className="space-y-2">
-                            <Label>{t('suppliers')} <span className="text-red-500">*</span></Label>
+                            <Label>{t('supplier_label')} <span className="text-red-500">*</span></Label>
                             <SupplierCombobox
                                 selectedValue={selectedSupplierId}
                                 onSelect={(value) => setSelectedSupplierId(value)}
@@ -281,15 +279,15 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                     {selectedModel && (
                         <Tabs defaultValue="manual" className="w-full">
                             <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="manual">Add Manually</TabsTrigger>
-                                <TabsTrigger value="list">Add from List</TabsTrigger>
+                                <TabsTrigger value="manual">{t('manual_add_tab')}</TabsTrigger>
+                                <TabsTrigger value="list">{t('list_add_tab')}</TabsTrigger>
                             </TabsList>
                             <TabsContent value="manual" className="mt-4">
                                 <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2">
                                     <div className="flex items-center gap-2 px-1 text-xs font-medium text-muted-foreground">
-                                        <Label className="flex-1">Asset Code*</Label>
-                                        <Label className="flex-1">Serial Number</Label>
-                                        <Label className="flex-1">MAC Address</Label>
+                                        <Label className="flex-1">{t('asset_code_label')}*</Label>
+                                        <Label className="flex-1">{t('serial_number_label')}</Label>
+                                        <Label className="flex-1">{t('mac_address_label')}</Label>
                                         <div className="w-9"></div>
                                     </div>
                                     {manualItems.map((item, index) => (
@@ -299,7 +297,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                                                     inputRefs.current[index * 3] = el;
                                                     if (index === 0) firstInputRef.current = el;
                                                 }}
-                                                placeholder="Asset Code"
+                                                placeholder={t('asset_code_placeholder')}
                                                 value={item.assetCode}
                                                 onChange={(e) => handleInputChange(e, index, 'assetCode')}
                                                 onKeyDown={(e) => handleKeyDown(e, index, 'assetCode')}
@@ -307,7 +305,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                                             />
                                             <Input
                                                 ref={el => inputRefs.current[index * 3 + 1] = el}
-                                                placeholder="Serial Number"
+                                                placeholder={t('serial_number_label')}
                                                 value={item.serialNumber}
                                                 onChange={(e) => handleInputChange(e, index, 'serialNumber')}
                                                 onKeyDown={(e) => handleKeyDown(e, index, 'serialNumber')}
@@ -315,7 +313,7 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                                             />
                                             <Input
                                                 ref={el => inputRefs.current[index * 3 + 2] = el}
-                                                placeholder="MAC Address"
+                                                placeholder={t('mac_address_label')}
                                                 value={item.macAddress}
                                                 onChange={(e) => handleInputChange(e, index, 'macAddress')}
                                                 onKeyDown={(e) => handleKeyDown(e, index, 'macAddress')}
@@ -328,20 +326,18 @@ export default function BatchAddAssetDialog({ isOpen, setIsOpen, onSave }) {
                                     ))}
                                 </div>
                                 <Button variant="outline" size="sm" onClick={addManualItemRow} className="mt-3">
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Row
+                                    <PlusCircle className="mr-2 h-4 w-4" /> {t('add_row_button')}
                                 </Button>
                                 <DialogFooter className="mt-6">
-                                    <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                                    <DialogClose asChild><Button type="button" variant="ghost">{t('cancel')}</Button></DialogClose>
                                     <Button onClick={() => handleSubmit('manual')} disabled={isLoading}>
-                                        {isLoading ? 'Saving...' : `Save ${manualItemCount} Assets`}
+                                        {isLoading ? t('saving') : t('save_assets_button', { count: manualItemCount })}
                                     </Button>
                                 </DialogFooter>
                             </TabsContent>
                             <TabsContent value="list" className="mt-4">
-                               <Label htmlFor="list-input">Paste from Excel or Text file</Label>
-                                <p className="text-xs text-muted-foreground mb-2">
-                                    Each item must be on a new line. Use a **Tab** (from Excel) or a **comma (,)** to separate Asset Code, Serial Number, and MAC Address.
-                                </p>
+                               <Label htmlFor="list-input">{t('list_add_label')}</Label>
+                                <p className="text-xs text-muted-foreground mb-2" dangerouslySetInnerHTML={{ __html: t('list_add_description') }} />
                                 <Textarea
                                     id="list-input"
                                     className="h-48 font-mono text-sm"
@@ -358,9 +354,9 @@ ASSET-004,,EE:FF:AA:44:44:44`
                                     onChange={(e) => setListText(e.target.value)}
                                 />
                                  <DialogFooter className="mt-6">
-                                    <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                                    <DialogClose asChild><Button type="button" variant="ghost">{t('cancel')}</Button></DialogClose>
                                     <Button onClick={() => handleSubmit('list')} disabled={isLoading}>
-                                        {isLoading ? 'Saving...' : `Save ${listItemCount} Assets`}
+                                        {isLoading ? t('saving') : t('save_assets_button', { count: listItemCount })}
                                     </Button>
                                 </DialogFooter>
                             </TabsContent>

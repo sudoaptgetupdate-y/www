@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// --- 1. Import Table Components ---
 import {
   Table,
   TableBody,
@@ -25,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTranslation } from 'react-i18next'; // --- 1. Import useTranslation ---
 
 
 const calculatePercentageChange = (current, previous) => {
@@ -34,7 +34,9 @@ const calculatePercentageChange = (current, previous) => {
     return ((current - previous) / previous) * 100;
 };
 
-const StatCard = ({ title, value, icon: Icon, details, percentageChange, periodText, className }) => (
+const StatCard = ({ title, value, icon: Icon, details, percentageChange, periodText, className }) => {
+    const { t } = useTranslation(); // --- 2. เรียกใช้ useTranslation ใน StatCard ---
+    return(
     <Card className={cn("shadow-sm transition-all hover:shadow-md hover:-translate-y-1", className)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
@@ -52,17 +54,19 @@ const StatCard = ({ title, value, icon: Icon, details, percentageChange, periodT
                     )}>
                         {percentageChange.toFixed(1)}%
                     </span>
-                    <span className="ml-1">from last {periodText}</span>
+                    {/* --- 3. แปลข้อความ --- */}
+                    <span className="ml-1">{t('comparison_from_last', { periodText })}</span>
                 </div>
             ) : (
                 <p className="text-xs text-muted-foreground">{details}</p>
             )}
         </CardContent>
     </Card>
-);
+)};
 
-// --- 2. Refactor TopListCard to use a proper Table ---
-const TopListCard = ({ title, data, icon: Icon, columns }) => (
+const TopListCard = ({ title, data, icon: Icon, columns }) => {
+    const { t } = useTranslation(); // --- 2. เรียกใช้ useTranslation ใน TopListCard ---
+    return(
      <Card className="h-full flex flex-col">
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -92,7 +96,8 @@ const TopListCard = ({ title, data, icon: Icon, columns }) => (
                         )) : (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No data for this period.
+                                    {/* --- 3. แปลข้อความ --- */}
+                                    {t('no_data_period')}
                                 </TableCell>
                             </TableRow>
                         )}
@@ -101,10 +106,11 @@ const TopListCard = ({ title, data, icon: Icon, columns }) => (
             </div>
         </CardContent>
     </Card>
-);
+)};
 
 
 export default function SalesReportPage() {
+    const { t } = useTranslation(); // --- 2. เรียกใช้ useTranslation ---
     const token = useAuthStore((state) => state.token);
     const [reportData, setReportData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -144,30 +150,30 @@ export default function SalesReportPage() {
         fetchReport();
     }, [token, period, selectedYear, filterMode]);
     
+    // --- 3. แปลข้อความ ---
     const recentFilterOptions = [
-        { label: "This Month", value: "this_month", periodText: "month" },
-        { label: "Last 3 Months", value: "last_3_months", periodText: "3 months" },
-        { label: "Last 6 Months", value: "last_6_months", periodText: "6 months" },
+        { label: t('filter_this_month'), value: "this_month", periodText: "month" },
+        { label: t('filter_last_3_months'), value: "last_3_months", periodText: "3 months" },
+        { label: t('filter_last_6_months'), value: "last_6_months", periodText: "6 months" },
     ];
 
     const revenueChange = reportData ? calculatePercentageChange(reportData.summary.totalRevenue, reportData.comparison.prevTotalRevenue) : 0;
     const itemsSoldCount = reportData ? calculatePercentageChange(reportData.summary.totalItemsSoldCount, reportData.comparison.prevTotalItemsSoldCount) : 0;
     const periodText = recentFilterOptions.find(o => o.value === period)?.periodText || 'year';
 
-    // --- 3. Define columns for each table, similar to DashboardPage ---
     const topProductsColumns = [
-        { key: 'product', header: 'Product', render: (row) => (
+        { key: 'product', header: t('tableHeader_product'), render: (row) => (
             <div>
                 <p className="font-medium">{row.modelNumber}</p>
-                <p className="text-xs text-muted-foreground">{row.count} units sold</p>
+                <p className="text-xs text-muted-foreground">{t('units_sold', { count: row.count })}</p>
             </div>
         ), className: ""},
-        { key: 'revenue', header: 'Revenue', render: (row) => `฿${row.revenue.toLocaleString()}`, className: "text-right font-medium" },
+        { key: 'revenue', header: t('tableHeader_revenue'), render: (row) => `฿${row.revenue.toLocaleString()}`, className: "text-right font-medium" },
     ];
 
     const topCustomersColumns = [
-        { key: 'customer', header: 'Customer', render: (row) => row.name, className: "font-medium" },
-        { key: 'revenue', header: 'Total Spent', render: (row) => `฿${row.totalRevenue.toLocaleString()}`, className: "text-right font-medium" },
+        { key: 'customer', header: t('tableHeader_customer'), render: (row) => row.name, className: "font-medium" },
+        { key: 'revenue', header: t('tableHeader_total_spent'), render: (row) => `฿${row.totalRevenue.toLocaleString()}`, className: "text-right font-medium" },
     ];
 
 
@@ -175,13 +181,13 @@ export default function SalesReportPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold">Sales Overview</h1>
-                    <p className="text-muted-foreground">Track and analyze your sales performance.</p>
+                    <h1 className="text-2xl font-bold">{t('sales_report_title')}</h1>
+                    <p className="text-muted-foreground">{t('sales_report_description')}</p>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="bg-slate-100 p-1 rounded-full flex items-center shadow-inner">
-                        <Button variant={filterMode === 'recent' ? 'secondary' : 'ghost'} size="sm" className="rounded-full" onClick={() => setFilterMode('recent')}>Recent</Button>
-                        <Button variant={filterMode === 'by_year' ? 'secondary' : 'ghost'} size="sm" className="rounded-full" onClick={() => setFilterMode('by_year')}>By Year</Button>
+                        <Button variant={filterMode === 'recent' ? 'secondary' : 'ghost'} size="sm" className="rounded-full" onClick={() => setFilterMode('recent')}>{t('filter_recent')}</Button>
+                        <Button variant={filterMode === 'by_year' ? 'secondary' : 'ghost'} size="sm" className="rounded-full" onClick={() => setFilterMode('by_year')}>{t('filter_by_year')}</Button>
                     </div>
                     {filterMode === 'recent' ? (
                         <div className="flex items-center gap-2">
@@ -198,7 +204,7 @@ export default function SalesReportPage() {
                     ) : (
                         <Select value={selectedYear} onValueChange={setSelectedYear}>
                             <SelectTrigger className="w-[120px]">
-                                <SelectValue placeholder="Year" />
+                                <SelectValue placeholder={t('filter_year_placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
@@ -208,15 +214,15 @@ export default function SalesReportPage() {
                 </div>
             </div>
 
-            {isLoading && <p>Loading report...</p>}
+            {isLoading && <p>{t('loading_report')}</p>}
             
-            {!isLoading && !reportData && <p>No data available for the selected period.</p>}
+            {!isLoading && !reportData && <p>{t('no_data_period')}</p>}
 
             {!isLoading && reportData && (
                 <>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <StatCard 
-                            title="Total Revenue" 
+                            title={t('stat_total_revenue')} 
                             value={reportData.summary.totalRevenue.toLocaleString('en-US', { style: 'currency', currency: 'THB' })} 
                             icon={DollarSign} 
                             percentageChange={revenueChange}
@@ -224,13 +230,13 @@ export default function SalesReportPage() {
                             className="bg-sky-50"
                         />
                         <StatCard 
-                            title="Sales Transactions" 
+                            title={t('stat_sales_transactions')} 
                             value={reportData.summary.totalSales.toLocaleString()} 
                             icon={ShoppingCart}
                             className="bg-fuchsia-50"
                         />
                         <StatCard 
-                            title="Items Sold" 
+                            title={t('stat_items_sold')}
                             value={reportData.summary.totalItemsSoldCount.toLocaleString()} 
                             icon={Package}
                             percentageChange={itemsSoldCount}
@@ -238,7 +244,7 @@ export default function SalesReportPage() {
                             className="bg-amber-50"
                         />
                         <StatCard 
-                            title="Unique Customers" 
+                            title={t('stat_unique_customers')}
                             value={reportData.summary.totalUniqueCustomers.toLocaleString()} 
                             icon={Users}
                             className="bg-emerald-50"
@@ -248,7 +254,7 @@ export default function SalesReportPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Sales Revenue</CardTitle>
+                                <CardTitle>{t('chart_sales_revenue_title')}</CardTitle>
                             </CardHeader>
                             <CardContent className="h-[350px] w-full pl-0">
                                 <ResponsiveContainer>
@@ -266,13 +272,13 @@ export default function SalesReportPage() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                          <TopListCard 
-                            title="Top 10 Selling Products"
+                            title={t('top_10_products_title')}
                             data={reportData.top10Products}
                             icon={TrendingUp}
                             columns={topProductsColumns}
                          />
                          <TopListCard 
-                            title="Top 10 Customers"
+                            title={t('top_10_customers_title')}
                             data={reportData.top10Customers}
                             icon={Crown}
                             columns={topCustomersColumns}

@@ -69,18 +69,18 @@ export default function CustomerReturnedHistoryPage() {
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <Package className="h-6 w-6" />
-                        Returned Items History
+                        {t('returned_history_page_title')}
                     </h1>
-                    <p className="text-muted-foreground mt-1">For Customer: {customerName}</p>
+                    <p className="text-muted-foreground mt-1">{t('returned_history_page_description', { name: customerName })}</p>
                 </div>
                 <Button variant="outline" onClick={() => navigate(`/customers/${customerId}/history`)}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Summary
+                    {t('returned_history_back_button')}
                 </Button>
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>All Returned Items ({items.length})</CardTitle>
+                    <CardTitle>{t('returned_history_all_items_title', { count: items.length })}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="border rounded-md">
@@ -91,8 +91,8 @@ export default function CustomerReturnedHistoryPage() {
                                     <th className="p-2 text-left">{t('tableHeader_brand')}</th>
                                     <th className="p-2 text-left">{t('tableHeader_productModel')}</th>
                                     <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
-                                    <th className="p-2 text-left">Returned On</th>
-                                    <th className="p-2 text-left">From Borrowing ID</th>
+                                    <th className="p-2 text-left">{t('tableHeader_returned_on')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_borrowing_id')}</th>
                                 </tr>
                             </thead>
                             <tbody>

@@ -10,9 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Layers, Eye, EyeOff, Loader2 } from 'lucide-react'; 
+import { useTranslation } from 'react-i18next'; // --- 1. Import useTranslation ---
 
 export default function LoginPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation(); // --- 2. เรียกใช้ useTranslation ---
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -32,12 +34,12 @@ export default function LoginPage() {
             
             const { token, user } = response.data;
             login(token, user);
-            toast.success(`ยินดีต้อนรับคุณ ${user.name}!`);
+            toast.success(t('welcome_message', { name: user.name })); // --- 3. แปลข้อความ ---
             navigate('/dashboard');
 
         } catch (error) {
             console.error("Login failed:", error);
-            const errorMessage = error.response?.data?.error || "Login failed. Please check your credentials.";
+            const errorMessage = error.response?.data?.error || t('login_failed_error'); // --- 3. แปลข้อความ ---
             toast.error(errorMessage);
         } finally {
             setIsLoading(false);
@@ -50,47 +52,46 @@ export default function LoginPage() {
 
     return (
         <div className="flex items-center justify-center min-h-screen relative p-4">
-             {/* Background Image */}
-            <img 
+             <img 
                 src="/my-backgroud.jpg"
                 alt="Background"
                 className="absolute inset-0 h-full w-full object-cover z-0"
             />
             
-            {/* Login Card with translucent background and backdrop blur */}
+            {/* --- 3. แปลข้อความ --- */}
             <Card className="mx-auto w-full max-w-sm z-20 shadow-xl bg-white/80 backdrop-blur-lg border border-white/20">
                 <CardHeader className="text-center">
                     <Layers className="mx-auto h-10 w-10 text-primary" />
                     <CardTitle className="text-2xl font-bold mt-4">
-                        Inventory Management
+                        {t('login_title')}
                     </CardTitle>
                     <CardDescription>
-                        กรุณากรอกชื่อผู้ใช้และรหัสผ่านเพื่อเข้าสู่ระบบ
+                        {t('login_description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit}>
                         <div className="grid gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="username">Username</Label>
+                                <Label htmlFor="username">{t('username_label')}</Label>
                                 <Input 
                                     id="username" 
                                     value={username} 
                                     onChange={(e) => setUsername(e.target.value)} 
                                     required
                                     autoFocus
-                                    placeholder="ชื่อผู้ใช้ของคุณ"
+                                    placeholder={t('username_placeholder')}
                                 />
                             </div>
                             <div className="grid gap-2 relative">
-                                <Label htmlFor="password">Password</Label>
+                                <Label htmlFor="password">{t('password_label')}</Label>
                                 <Input 
                                     id="password" 
                                     type={showPassword ? 'text' : 'password'}
                                     value={password} 
                                     onChange={(e) => setPassword(e.target.value)} 
                                     required
-                                    placeholder="รหัสผ่าน"
+                                    placeholder={t('password_placeholder')}
                                     className="pr-10"
                                 />
                                 <Button 
@@ -101,12 +102,12 @@ export default function LoginPage() {
                                     onClick={() => setShowPassword(prev => !prev)}
                                 >
                                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                    <span className="sr-only">Toggle password visibility</span>
+                                    <span className="sr-only">{t('toggle_password_visibility')}</span>
                                 </Button>
                             </div>
                             <Button type="submit" className="w-full mt-2" disabled={isLoading}>
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {isLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
+                                {isLoading ? t('logging_in_button') : t('login_button')}
                             </Button>
                         </div>
                     </form>

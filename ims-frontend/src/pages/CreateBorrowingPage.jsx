@@ -198,8 +198,12 @@ export default function CreateBorrowingPage() {
                         <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                        <Label>{t('createBorrowing_notes_label')}</Label>
-                        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
+                        <Label htmlFor="notes">{t('notes')}</Label>
+                        <Textarea 
+                            id="notes" 
+                            value={notes} 
+                            onChange={(e) => setNotes(e.target.value)}
+                        />
                     </div>
                     <Separator />
                     <div className="space-y-2">

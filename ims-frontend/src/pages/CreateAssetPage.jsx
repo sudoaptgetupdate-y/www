@@ -10,9 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ProductModelCombobox } from "@/components/ui/ProductModelCombobox";
-// --- START: 1. Import ไอคอน ---
 import { ArrowLeft, PackagePlus } from "lucide-react";
-// --- END ---
+import { useTranslation } from "react-i18next"; // --- 1. Import useTranslation ---
 
 const formatMacAddress = (value) => {
   const cleaned = (value || '').replace(/[^0-9a-fA-F]/g, '').toUpperCase();
@@ -34,6 +33,7 @@ const initialFormData = {
 
 export default function CreateAssetPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation(); // --- 2. เรียกใช้ useTranslation ---
     const token = useAuthStore((state) => state.token);
     const [formData, setFormData] = useState(initialFormData);
     
@@ -69,16 +69,16 @@ export default function CreateAssetPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isMacRequired && formData.macAddress && !validateMacAddress(formData.macAddress)) {
-            toast.error("Invalid MAC Address format. Please use XX:XX:XX:XX:XX:XX format.");
+            toast.error(t('error_invalid_mac')); // --- 3. แปลข้อความ ---
             return;
         }
 
         if (!formData.productModelId) {
-            toast.error("Please select a Product Model.");
+            toast.error(t('error_select_model')); // --- 3. แปลข้อความ ---
             return;
         }
         if (!formData.assetCode) {
-            toast.error("Asset Code is required.");
+            toast.error(t('error_asset_code_required')); // --- 3. แปลข้อความ ---
             return;
         }
         
@@ -95,42 +95,41 @@ export default function CreateAssetPage() {
 
     return (
         <div className="max-w-2xl mx-auto">
+             {/* --- 3. แปลข้อความ --- */}
              <Button variant="outline" onClick={() => navigate(-1)} className="mb-4">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Asset List
+                {t('create_asset_back_button')}
             </Button>
             <Card>
                 <CardHeader>
-                    {/* --- START: 2. ปรับปรุง CardHeader --- */}
                     <CardTitle className="flex items-center gap-2">
                         <PackagePlus className="h-6 w-6" />
-                        Add New Company Asset
+                        {t('create_asset_title')}
                     </CardTitle>
-                    <CardDescription className="mt-1">Enter the details of the new asset to add it to the warehouse.</CardDescription>
-                    {/* --- END --- */}
+                    <CardDescription className="mt-1">{t('create_asset_description')}</CardDescription>
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                             <Label>Product Model <span className="text-red-500">*</span></Label>
+                             <Label>{t('product_model_label')} <span className="text-red-500">{t('required_field')}</span></Label>
                              <ProductModelCombobox onSelect={handleModelSelect} />
                         </div>
                         {selectedModelInfo && (
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2"><Label>Category</Label><Input value={selectedModelInfo.category.name} disabled /></div>
-                                <div className="space-y-2"><Label>Brand</Label><Input value={selectedModelInfo.brand.name} disabled /></div>
+                                <div className="space-y-2"><Label>{t('category_label')}</Label><Input value={selectedModelInfo.category.name} disabled /></div>
+                                <div className="space-y-2"><Label>{t('brand_label')}</Label><Input value={selectedModelInfo.brand.name} disabled /></div>
                             </div>
                         )}
                         <div className="space-y-2">
-                            <Label htmlFor="assetCode">Asset Code <span className="text-red-500">*</span></Label>
+                            <Label htmlFor="assetCode">{t('asset_code_label')} <span className="text-red-500">{t('required_field')}</span></Label>
                             <Input id="assetCode" value={formData.assetCode} onChange={handleInputChange} required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="serialNumber">Serial Number {!isSerialRequired && <span className="text-xs text-slate-500 ml-2">(Not Required)</span>}</Label>
+                            <Label htmlFor="serialNumber">{t('serial_number_label')} {!isSerialRequired && <span className="text-xs text-slate-500 ml-2">{t('not_required_label')}</span>}</Label>
                             <Input id="serialNumber" value={formData.serialNumber || ''} onChange={handleInputChange} required={isSerialRequired} disabled={!isSerialRequired} />
                         </div>
                         <div className="space-y-2">
-                             <Label htmlFor="macAddress">MAC Address {!isMacRequired && <span className="text-xs text-slate-500 ml-2">(Not Required)</span>}</Label>
+                             <Label htmlFor="macAddress">{t('mac_address_label')} {!isMacRequired && <span className="text-xs text-slate-500 ml-2">{t('not_required_label')}</span>}</Label>
                              <Input 
                                 id="macAddress" 
                                 value={formData.macAddress} 
@@ -138,12 +137,12 @@ export default function CreateAssetPage() {
                                 required={isMacRequired} 
                                 disabled={!isMacRequired}
                                 maxLength={17}
-                                placeholder="AA:BB:CC:DD:EE:FF"
+                                placeholder={t('mac_address_placeholder')}
                              />
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button type="submit">Add Asset</Button>
+                        <Button type="submit">{t('add_asset_button')}</Button>
                     </CardFooter>
                 </form>
             </Card>

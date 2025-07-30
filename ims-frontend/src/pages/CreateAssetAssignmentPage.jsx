@@ -201,10 +201,10 @@ export default function CreateAssetAssignmentPage() {
                         />
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="notes">{t('createBorrowing_notes_label')}</Label>
-                        <Textarea
-                            id="notes"
-                            value={notes}
+                        <Label htmlFor="notes">{t('notes')}</Label>
+                        <Textarea 
+                            id="notes" 
+                            value={notes} 
                             onChange={(e) => setNotes(e.target.value)}
                         />
                     </div>

@@ -7,10 +7,9 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-// --- START: 1. Import ไอคอน ---
 import { ArrowLeft, Edit, CornerUpLeft, Archive, User, Calendar, Hash, Package } from "lucide-react";
-// --- END ---
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next"; // --- 1. Import useTranslation ---
 
 const StatCard = ({ title, value, icon, description }) => (
     <Card>
@@ -28,6 +27,7 @@ const StatCard = ({ title, value, icon, description }) => (
 export default function AssetDetailPage() {
     const { assetId } = useParams();
     const navigate = useNavigate();
+    const { t } = useTranslation(); // --- 2. เรียกใช้ useTranslation ---
     const token = useAuthStore((state) => state.token);
     const [asset, setAsset] = useState(null);
     const [history, setHistory] = useState([]);
@@ -83,72 +83,70 @@ export default function AssetDetailPage() {
 
     return (
         <div className="space-y-6">
+            {/* --- 3. แปลข้อความ --- */}
             <div className="flex justify-between items-center">
-                {/* --- START: 2. ปรับปรุง Header --- */}
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <Package className="h-6 w-6" />
-                        Asset Details
+                        {t('asset_detail_title')}
                     </h1>
-                    <p className="text-muted-foreground mt-1">Asset Code: {asset.assetCode}</p>
+                    <p className="text-muted-foreground mt-1">{t('asset_detail_description', { code: asset.assetCode })}</p>
                 </div>
-                {/* --- END --- */}
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={() => navigate('/assets')}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to List
+                        {t('back_to_list')}
                     </Button>
                      <Button variant="outline" onClick={() => navigate(`/assets/edit/${asset.id}`)}>
                         <Edit className="mr-2 h-4 w-4" />
-                        Edit
+                        {t('asset_detail_edit_button')}
                     </Button>
                 </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <StatCard 
-                    title="Current Status"
+                    title={t('stat_current_status')}
                     value={<Badge variant={getStatusVariant(asset.status)}>{asset.status}</Badge>}
                     icon={<User className="h-4 w-4 text-muted-foreground" />}
-                    description={asset.assignedTo ? `Assigned to ${asset.assignedTo.name}`: "Available in warehouse"}
+                    description={asset.assignedTo ? t('stat_current_status_desc_assigned', { name: asset.assignedTo.name }) : t('stat_current_status_desc_available')}
                 />
                 <StatCard 
-                    title="Total Assignments"
+                    title={t('stat_total_assignments')}
                     value={summary.totalAssignments}
                     icon={<Hash className="h-4 w-4 text-muted-foreground" />}
-                    description="How many times this asset has been assigned."
+                    description={t('stat_total_assignments_desc')}
                 />
                  <StatCard 
-                    title="Last Assigned Date"
+                    title={t('stat_last_assigned_date')}
                     value={summary.lastAssignedDate ? new Date(summary.lastAssignedDate).toLocaleDateString() : 'N/A'}
                     icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
-                    description="The most recent assignment date."
+                    description={t('stat_last_assigned_date_desc')}
                 />
             </div>
             
             <div className="flex gap-4">
                 {asset.status === 'ASSIGNED' && (
-                    <Button onClick={() => handleAction('return')}><CornerUpLeft className="mr-2 h-4 w-4" />Return to Warehouse</Button>
+                    <Button onClick={() => handleAction('return')}><CornerUpLeft className="mr-2 h-4 w-4" />{t('return_to_warehouse_button')}</Button>
                 )}
                 {asset.status === 'IN_WAREHOUSE' && (
-                    <Button variant="destructive" onClick={() => handleAction('decommission')}><Archive className="mr-2 h-4 w-4" />Decommission</Button>
+                    <Button variant="destructive" onClick={() => handleAction('decommission')}><Archive className="mr-2 h-4 w-4" />{t('decommission_button')}</Button>
                 )}
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Assignment History</CardTitle>
-                    <CardDescription>A log of who has been assigned this asset.</CardDescription>
+                    <CardTitle>{t('assignment_history_title')}</CardTitle>
+                    <CardDescription>{t('assignment_history_description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
                     <div className="border rounded-md">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b bg-muted/50 hover:bg-muted/50">
-                                    <th className="p-2 text-left">Assigned To</th>
-                                    <th className="p-2 text-left">Assigned Date</th>
-                                    <th className="p-2 text-left">Returned Date</th>
+                                    <th className="p-2 text-left">{t('tableHeader_assignedTo')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_assignedDate')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_returnedDate')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -156,15 +154,14 @@ export default function AssetDetailPage() {
                                     <tr key={h.id} className="border-b">
                                         <td className="p-2">{h.assignedTo.name}</td>
                                         <td className="p-2">{new Date(h.assignedAt).toLocaleString()}</td>
-                                        <td className="p-2">{h.returnedAt ? new Date(h.returnedAt).toLocaleString() : <span className="italic text-muted-foreground">In Possession</span>}</td>
+                                        <td className="p-2">{h.returnedAt ? new Date(h.returnedAt).toLocaleString() : <span className="italic text-muted-foreground">{t('status_in_possession')}</span>}</td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan="3" className="p-4 text-center text-muted-foreground">No assignment history.</td></tr>
+                                    <tr><td colSpan="3" className="p-4 text-center text-muted-foreground">{t('no_assignment_history')}</td></tr>
                                 )}
                             </tbody>
                         </table>
                     </div>
-                    {/* --- END --- */}
                 </CardContent>
             </Card>
         </div>

@@ -6,9 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePaginatedFetch } from "@/hooks/usePaginatedFetch";
-// --- START: 1. Import ไอคอน ---
 import { PlusCircle, Edit, Trash2, Truck } from "lucide-react";
-// --- END ---
 import {
  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -77,7 +75,6 @@ export default function SupplierPage() {
  return (
   <Card>
    <CardHeader>
-    {/* --- START: 2. ปรับปรุง CardHeader --- */}
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
      <div>
       <CardTitle className="flex items-center gap-2">
@@ -92,7 +89,6 @@ export default function SupplierPage() {
       </Button>
      }
     </div>
-    {/* --- END --- */}
    </CardHeader>
    <CardContent>
     <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -103,16 +99,13 @@ export default function SupplierPage() {
       className="flex-grow"
      />
     </div>
-    {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
     <div className="border rounded-md">
      <Table>
       <TableHeader>
        <TableRow className="bg-muted/50 hover:bg-muted/50">
         <TableHead>{t('tableHeader_code')}</TableHead>
         <TableHead>{t('tableHeader_name')}</TableHead>
-        {/* --- START: Add Address Header --- */}
         <TableHead>{t('tableHeader_address')}</TableHead>
-        {/* --- END --- */}
         <TableHead>{t('tableHeader_contactPerson')}</TableHead>
         <TableHead>{t('tableHeader_phone')}</TableHead>
         {canManage && <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>}
@@ -120,13 +113,11 @@ export default function SupplierPage() {
       </TableHeader>
       <TableBody>
        {isLoading ? (
-        // @ts-ignore
         Array.from({ length: pagination?.itemsPerPage || 10 }).map((_, i) => <SkeletonRow key={i} />)
        ) : suppliers.map((supplier) => (
         <TableRow key={supplier.id}>
-         <TableCell>{supplier.code}</TableCell>
+         <TableCell>{supplier.supplierCode}</TableCell>
          <TableCell>{supplier.name}</TableCell>
-         {/* --- START: Add Address Cell with Tooltip --- */}
          <TableCell>
           <TooltipProvider>
            <Tooltip>
@@ -143,7 +134,6 @@ export default function SupplierPage() {
            </Tooltip>
           </TooltipProvider>
          </TableCell>
-         {/* --- END --- */}
          <TableCell>{supplier.contactPerson || '-'}</TableCell>
          <TableCell>{supplier.phone || '-'}</TableCell>
          {canManage && (
@@ -163,7 +153,6 @@ export default function SupplierPage() {
       </TableBody>
      </Table>
     </div>
-    {/* --- END --- */}
    </CardContent>
 
    <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
@@ -197,10 +186,8 @@ export default function SupplierPage() {
    <AlertDialog open={!!supplierToDelete} onOpenChange={(isOpen) => !isOpen && setSupplierToDelete(null)}>
     <AlertDialogContent>
      <AlertDialogHeader>
-      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-      <AlertDialogDescription>
-       This will permanently delete the supplier: <strong>{supplierToDelete?.name}</strong>.
-      </AlertDialogDescription>
+      <AlertDialogTitle>{t('supplier_delete_dialog_title')}</AlertDialogTitle>
+      <AlertDialogDescription dangerouslySetInnerHTML={{ __html: t('supplier_delete_dialog_description', { name: supplierToDelete?.name }) }} />
      </AlertDialogHeader>
      <AlertDialogFooter>
       <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>

@@ -69,18 +69,18 @@ export default function CustomerPurchaseHistoryPage() {
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <ShoppingCart className="h-6 w-6" />
-                        Full Purchase History
+                        {t('purchase_history_title')}
                     </h1>
-                    <p className="text-muted-foreground mt-1">For Customer: {customerName}</p>
+                    <p className="text-muted-foreground mt-1">{t('purchase_history_description', { name: customerName })}</p>
                 </div>
                 <Button variant="outline" onClick={() => navigate(`/customers/${customerId}/history`)}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Summary
+                    {t('purchase_history_back_button')}
                 </Button>
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>All Purchased Items ({items.length})</CardTitle>
+                    <CardTitle>{t('purchase_history_all_items', { count: items.length })}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="border rounded-md">

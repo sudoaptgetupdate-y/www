@@ -9,8 +9,10 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import axiosInstance from '@/api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next'; // --- 1. Import useTranslation ---
 
 export default function ChangePasswordPage() {
+    const { t } = useTranslation(); // --- 2. เรียกใช้ useTranslation ---
     const token = useAuthStore((state) => state.token);
     const navigate = useNavigate();
     
@@ -24,11 +26,11 @@ export default function ChangePasswordPage() {
         
         // Client-side validation
         if (newPassword !== confirmPassword) {
-            toast.error("New password and confirmation do not match.");
+            toast.error(t('password_mismatch_error')); // --- 3. แปลข้อความ ---
             return;
         }
         if (newPassword.length < 6) {
-             toast.error("New password must be at least 6 characters long.");
+             toast.error(t('password_length_error')); // --- 3. แปลข้อความ ---
             return;
         }
 
@@ -40,7 +42,7 @@ export default function ChangePasswordPage() {
             );
 
             toast.success(response.data.message);
-            navigate('/profile'); // กลับไปหน้า Profile หลังเปลี่ยนสำเร็จ
+            navigate('/profile'); 
 
         } catch (error) {
             toast.error(error.response?.data?.error || "Failed to change password.");
@@ -53,13 +55,14 @@ export default function ChangePasswordPage() {
         <div className="max-w-2xl mx-auto">
             <Card>
                 <CardHeader>
-                    <CardTitle>Change Password</CardTitle>
-                    <CardDescription>Enter your current password and a new password.</CardDescription>
+                    {/* --- 3. แปลข้อความ --- */}
+                    <CardTitle>{t('change_password_title')}</CardTitle>
+                    <CardDescription>{t('change_password_description')}</CardDescription>
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="currentPassword">Current Password</Label>
+                            <Label htmlFor="currentPassword">{t('change_password_current_label')}</Label>
                             <Input 
                                 id="currentPassword" 
                                 type="password"
@@ -69,7 +72,7 @@ export default function ChangePasswordPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="newPassword">New Password</Label>
+                            <Label htmlFor="newPassword">{t('change_password_new_label')}</Label>
                             <Input 
                                 id="newPassword" 
                                 type="password"
@@ -79,7 +82,7 @@ export default function ChangePasswordPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                            <Label htmlFor="confirmPassword">{t('change_password_confirm_label')}</Label>
                             <Input 
                                 id="confirmPassword" 
                                 type="password"
@@ -91,7 +94,7 @@ export default function ChangePasswordPage() {
                     </CardContent>
                     <CardFooter>
                         <Button type="submit" disabled={isLoading}>
-                            {isLoading ? 'Saving...' : 'Change Password'}
+                            {isLoading ? t('saving') : t('change_password_button')}
                         </Button>
                     </CardFooter>
                 </form>

@@ -10,9 +10,7 @@ import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { CustomerCombobox } from "@/components/ui/CustomerCombobox";
-// --- START: 1. Import ไอคอน ---
 import { Trash2, Edit } from "lucide-react";
-// --- END ---
 import {
   Table,
   TableBody,
@@ -21,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTranslation } from "react-i18next"; // --- 1. Import useTranslation ---
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -34,6 +33,7 @@ function useDebounce(value, delay) {
 export default function EditSalePage() {
     const { saleId } = useParams();
     const navigate = useNavigate();
+    const { t } = useTranslation(); // --- 2. เรียกใช้ useTranslation ---
     const token = useAuthStore((state) => state.token);
 
     const [initialCustomer, setInitialCustomer] = useState(null);
@@ -65,21 +65,20 @@ export default function EditSalePage() {
                 const selectedIds = new Set(saleData.itemsSold.map(i => i.id));
                 const allAvailable = inventoryRes.data.data || [];
                 
-                // Add current items back to the available pool for display logic, then filter out selected ones
                 const currentAndAvailable = [...saleData.itemsSold, ...allAvailable];
                 const uniqueAvailable = Array.from(new Map(currentAndAvailable.map(item => [item.id, item])).values());
 
                 setAvailableItems(uniqueAvailable.filter(item => !selectedIds.has(item.id)));
 
             } catch (error) {
-                toast.error("Failed to fetch initial sale data.");
+                toast.error(t('error_fetch_initial_data')); // --- 3. แปลข้อความ ---
                 navigate("/sales");
             } finally {
                 setLoading(false);
             }
         };
         fetchInitialData();
-    }, [saleId, token, navigate]);
+    }, [saleId, token, navigate, t]);
     
     useEffect(() => {
         if (loading || !token) return;
@@ -92,11 +91,11 @@ export default function EditSalePage() {
                 const selectedIds = new Set(selectedItems.map(i => i.id));
                 setAvailableItems((inventoryRes.data.data || []).filter(item => !selectedIds.has(item.id)));
             } catch (error) {
-                toast.error("Failed to fetch inventory items.");
+                toast.error(t('error_fetch_inventory')); // --- 3. แปลข้อความ ---
             }
         };
         fetchInventoryOnSearch();
-    }, [debouncedItemSearch, loading, token, selectedItems]);
+    }, [debouncedItemSearch, loading, token, selectedItems, t]);
 
     const handleAddItem = (itemToAdd) => {
         setSelectedItems(prev => [...prev, itemToAdd]);
@@ -109,8 +108,8 @@ export default function EditSalePage() {
     };
 
     const handleSubmit = async () => {
-        if (!selectedCustomerId) { toast.error("Please select a customer."); return; }
-        if (selectedItems.length === 0) { toast.error("Please add at least one item to the sale."); return; }
+        if (!selectedCustomerId) { toast.error(t('error_select_customer')); return; } // --- 3. แปลข้อความ ---
+        if (selectedItems.length === 0) { toast.error(t('error_add_item')); return; } // --- 3. แปลข้อความ ---
         
         const payload = {
             customerId: parseInt(selectedCustomerId),
@@ -118,14 +117,14 @@ export default function EditSalePage() {
         };
         try {
             await axiosInstance.put(`/sales/${saleId}`, payload, { headers: { Authorization: `Bearer ${token}` } });
-            toast.success("Sale updated successfully!");
+            toast.success(t('success_sale_updated')); // --- 3. แปลข้อความ ---
             navigate(`/sales/${saleId}`);
         } catch (error) {
-            toast.error(error.response?.data?.error || "Failed to update sale.");
+            toast.error(error.response?.data?.error || t('error_update_sale')); // --- 3. แปลข้อความ ---
         }
     };
     
-    if (loading) return <p>Loading sale data...</p>;
+    if (loading) return <p>{t('loading_sale_data')}</p>; // --- 3. แปลข้อความ ---
 
     const subtotal = selectedItems.reduce((total, item) => total + (item.productModel?.sellingPrice || 0), 0);
     const vatAmount = subtotal * 0.07;
@@ -135,27 +134,27 @@ export default function EditSalePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2">
                 <CardHeader>
-                    <CardTitle>Select Items</CardTitle>
-                    <CardDescription>Add or remove items for this sale.</CardDescription>
+                    {/* --- 3. แปลข้อความ --- */}
+                    <CardTitle>{t('edit_sale_select_items_title')}</CardTitle>
+                    <CardDescription>{t('edit_sale_select_items_description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Input 
-                        placeholder="Search available items..." 
+                        placeholder={t('edit_sale_search_placeholder')}
                         value={itemSearch} 
                         onChange={(e) => setItemSearch(e.target.value)} 
                         className="mb-4" 
                     />
-                    {/* --- START: 4. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
                     <div className="border rounded-md">
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                    <TableHead>Category</TableHead>
-                                    <TableHead>Brand</TableHead>
-                                    <TableHead>Product</TableHead>
-                                    <TableHead>Serial No.</TableHead>
-                                    <TableHead className="text-right">Price</TableHead>
-                                    <TableHead className="text-center">Action</TableHead>
+                                    <TableHead>{t('tableHeader_category')}</TableHead>
+                                    <TableHead>{t('tableHeader_brand')}</TableHead>
+                                    <TableHead>{t('tableHeader_product')}</TableHead>
+                                    <TableHead>{t('tableHeader_serialNumber')}</TableHead>
+                                    <TableHead className="text-right">{t('tableHeader_price')}</TableHead>
+                                    <TableHead className="text-center">{t('tableHeader_actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -166,27 +165,24 @@ export default function EditSalePage() {
                                     <td className="p-2">{item.productModel.modelNumber}</td>
                                     <td className="p-2">{item.serialNumber || '-'}</td>
                                     <td className="p-2 text-right">{item.productModel.sellingPrice.toLocaleString()}</td>
-                                    <td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>Add</Button></td>
+                                    <td className="p-2 text-center"><Button size="sm" onClick={() => handleAddItem(item)}>{t('add')}</Button></td>
                                 </tr>
                                 ))}
                             </TableBody>
                         </Table>
                     </div>
-                    {/* --- END --- */}
                 </CardContent>
             </Card>
             <Card>
-                {/* --- START: 5. ปรับปรุง CardHeader --- */}
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Edit className="h-6 w-6" />
-                        Edit Sale (ID: {saleId})
+                        {t('edit_sale_card_title', { saleId: saleId })}
                     </CardTitle>
                 </CardHeader>
-                {/* --- END --- */}
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label>Customer</Label>
+                        <Label>{t('customer_label')}</Label>
                         <CustomerCombobox
                              selectedValue={selectedCustomerId}
                              onSelect={setSelectedCustomerId}
@@ -195,13 +191,13 @@ export default function EditSalePage() {
                     </div>
                     <Separator />
                     <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Selected Items ({selectedItems.length})</h4>
+                        <h4 className="text-sm font-medium">{t('selected_items_label', { count: selectedItems.length })}</h4>
                         <div className="h-48 overflow-y-auto space-y-2 pr-2">
                             {selectedItems.map(item => (
                                 <div key={item.id} className="flex justify-between items-center bg-slate-50 p-2 rounded-md">
                                     <div>
                                         <p className="font-semibold">{item.productModel.modelNumber}</p>
-                                        <p className="text-xs text-slate-500">{item.serialNumber || 'No S/N'}</p>
+                                        <p className="text-xs text-slate-500">{item.serialNumber || t('no_serial_number')}</p>
                                     </div>
                                     <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleRemoveItem(item)}><Trash2 className="h-4 w-4" /></Button>
                                 </div>
@@ -212,18 +208,18 @@ export default function EditSalePage() {
                 <CardFooter className="flex-col items-stretch space-y-4">
                     <Separator />
                     <div className="flex justify-between text-sm text-slate-600">
-                        <span>Subtotal</span>
+                        <span>{t('createSale_subtotal')}</span>
                         <span>{subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })} THB</span>
                     </div>
                     <div className="flex justify-between text-sm text-slate-600">
-                        <span>VAT (7%)</span>
+                        <span>{t('createSale_vat')}</span>
                         <span>{vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} THB</span>
                     </div>
                     <div className="flex justify-between font-bold text-lg">
-                        <span>Total Price</span>
+                        <span>{t('createSale_total_price')}</span>
                         <span>{total.toLocaleString('en-US', { minimumFractionDigits: 2 })} THB</span>
                     </div>
-                    <Button size="lg" onClick={handleSubmit}>Save Changes</Button>
+                    <Button size="lg" onClick={handleSubmit}>{t('save_changes_button')}</Button>
                 </CardFooter>
             </Card>
         </div>

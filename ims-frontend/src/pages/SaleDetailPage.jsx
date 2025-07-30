@@ -13,31 +13,32 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTranslation } from "react-i18next"; // --- 1. Import useTranslation ---
 
-const PrintableHeaderCard = ({ profile, sale, formattedSaleId }) => (
+const PrintableHeaderCard = ({ profile, sale, formattedSaleId, t }) => (
     <Card className="hidden print:block mb-0 border-black rounded-b-none border-b-0">
         <CardHeader className="text-center p-4">
             <p className="text-xs">{profile.addressLine1}</p>
             <p className="text-xs">{profile.addressLine2}</p>
-            <p className="text-xs mt-2">โทรศัพท์ (Tel): {profile.phone} เลขประจำตัวผู้เสียภาษี (Tax ID): {profile.taxId}</p>
+            <p className="text-xs mt-2">{t('company_phone_label')}: {profile.phone} {t('company_tax_id_label')}: {profile.taxId}</p>
         </CardHeader>
         <CardContent className="p-2 border-y border-black">
-            <h2 className="text-md font-bold text-center tracking-widest">ใบกำกับภาษีอย่างย่อ / RECEIPT (TAX INVOICE)</h2>
+            <h2 className="text-md font-bold text-center tracking-widest">{t('printable_receipt_header')}</h2>
         </CardContent>
         <CardContent className="p-4">
              <div className="grid grid-cols-2 gap-6 text-xs">
                 <div className="space-y-1">
-                    <p className="text-slate-600">ลูกค้า (Customer)</p>
+                    <p className="text-slate-600">{t('customer_label')}</p>
                     <p className="font-semibold">{sale.customer.name}</p>
                     <p className="text-slate-600">{sale.customer.address || ""}</p>
-                    <p className="text-slate-600">โทร. {sale.customer.phone || "-"}</p>
+                    <p className="text-slate-600">{t('phone')}. {sale.customer.phone || "-"}</p>
                 </div>
                 <div className="space-y-1 text-right">
-                    <p className="text-slate-600">เลขที่ (Sale ID)</p>
+                    <p className="text-slate-600">{t('tableHeader_saleId')}</p>
                     <p className="font-semibold">#{formattedSaleId}</p>
-                    <p className="text-slate-600">วันที่ (Date)</p>
+                    <p className="text-slate-600">{t('tableHeader_date')}</p>
                     <p className="font-semibold">{new Date(sale.saleDate).toLocaleString('th-TH')}</p>
-                    <p className="text-slate-600">พนักงานขาย (Sold By)</p>
+                    <p className="text-slate-600">{t('sold_by_label')}</p>
                     <p className="font-semibold">{sale.soldBy.name}</p>
                 </div>
             </div>
@@ -45,19 +46,19 @@ const PrintableHeaderCard = ({ profile, sale, formattedSaleId }) => (
     </Card>
 );
 
-const PrintableItemsCard = ({ sale }) => (
+const PrintableItemsCard = ({ sale, t }) => (
     <Card className="hidden print:block mt-0 font-sarabun border-black rounded-t-none">
         <CardContent className="p-0">
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b bg-muted/40">
-                            <th className="p-2 text-left">หมวดหมู่ (Category)</th>
-                            <th className="p-2 text-left">ยี่ห้อ (Brand)</th>
-                            <th className="p-2 text-left">รายการ (Product)</th>
-                            <th className="p-2 text-left">Serial Number</th>
-                            <th className="p-2 text-left">MAC Address</th>
-                            <th className="p-2 text-right">ราคา (Price)</th>
+                            <th className="p-2 text-left">{t('tableHeader_category')}</th>
+                            <th className="p-2 text-left">{t('tableHeader_brand')}</th>
+                            <th className="p-2 text-left">{t('tableHeader_product')}</th>
+                            <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
+                            <th className="p-2 text-left">{t('tableHeader_macAddress')}</th>
+                            <th className="p-2 text-right">{t('tableHeader_price')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -74,15 +75,15 @@ const PrintableItemsCard = ({ sale }) => (
                     </tbody>
                     <tfoot>
                         <tr className="border-t font-semibold">
-                            <td colSpan="5" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
+                            <td colSpan="5" className="p-2 text-right">{t('subtotal_label')}</td>
                             <td className="p-2 text-right">{sale.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         </tr>
                         <tr className="border-t">
-                            <td colSpan="5" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
+                            <td colSpan="5" className="p-2 text-right">{t('vat_label')}</td>
                             <td className="p-2 text-right">{sale.vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         </tr>
                         <tr className="border-t text-base font-bold bg-muted/40">
-                            <td colSpan="5" className="p-2 text-right">ยอดสุทธิ (Total)</td>
+                            <td colSpan="5" className="p-2 text-right">{t('total_label')}</td>
                             <td className="p-2 text-right">{sale.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} THB</td>
                         </tr>
                     </tfoot>
@@ -96,6 +97,7 @@ const PrintableItemsCard = ({ sale }) => (
 export default function SaleDetailPage() {
     const { saleId } = useParams();
     const navigate = useNavigate();
+    const { t } = useTranslation(); // --- 2. เรียกใช้ useTranslation ---
     const token = useAuthStore((state) => state.token);
     const currentUser = useAuthStore((state) => state.user);
     const [sale, setSale] = useState(null);
@@ -155,53 +157,54 @@ export default function SaleDetailPage() {
 
     return (
         <div className="space-y-6">
+             {/* --- 3. แปลข้อความ --- */}
              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 no-print">
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <FileText className="h-6 w-6" /> 
-                        Sale Details
+                        {t('sale_detail_title')}
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Viewing details for Sale ID #{formattedSaleId}
+                        {t('sale_detail_description', { id: formattedSaleId })}
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                     <Button variant="outline" onClick={() => navigate('/sales')}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Sales List
+                        {t('back_to_sales_list')}
                     </Button>
                     <Button variant="outline" onClick={handlePrint}>
                         <Printer className="mr-2 h-4 w-4" />
-                        Print / PDF
+                        {t('print_pdf')}
                     </Button>
                     {canVoid && sale.status === 'COMPLETED' && (
                         <Button variant="destructive" onClick={() => setIsAlertOpen(true)}>
                             <AlertTriangle className="mr-2 h-4 w-4" />
-                            Void Sale
+                            {t('void_sale_button')}
                         </Button>
                     )}
                 </div>
             </div>
 
             <div className="printable-area font-sarabun">
-                <PrintableHeaderCard profile={companyProfile} sale={sale} formattedSaleId={formattedSaleId} />
-                <PrintableItemsCard sale={sale} />
+                <PrintableHeaderCard profile={companyProfile} sale={sale} formattedSaleId={formattedSaleId} t={t} />
+                <PrintableItemsCard sale={sale} t={t} />
                 
                 <div className="no-print space-y-6">
                     <Card className="p-4 sm:p-6 md:p-8">
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-1">
-                                <p className="text-sm text-muted-foreground">ลูกค้า (Customer)</p>
+                                <p className="text-sm text-muted-foreground">{t('customer_label')}</p>
                                 <p className="font-semibold">{sale.customer.name}</p>
                                 <p className="text-sm text-muted-foreground">{sale.customer.address || ""}</p>
-                                <p className="text-sm text-muted-foreground">โทร. {sale.customer.phone || "-"}</p>
+                                <p className="text-sm text-muted-foreground">{t('phone')}. {sale.customer.phone || "-"}</p>
                             </div>
                             <div className="space-y-1 text-right">
-                                <p className="text-sm text-muted-foreground">เลขที่ (Sale ID)</p>
+                                <p className="text-sm text-muted-foreground">{t('tableHeader_saleId')}</p>
                                 <p className="font-semibold">#{formattedSaleId}</p>
-                                <p className="text-sm text-muted-foreground">วันที่ (Date)</p>
+                                <p className="text-sm text-muted-foreground">{t('tableHeader_date')}</p>
                                 <p className="font-semibold">{new Date(sale.saleDate).toLocaleString('th-TH')}</p>
-                                <p className="text-sm text-muted-foreground">พนักงานขาย (Sold By)</p>
+                                <p className="text-sm text-muted-foreground">{t('sold_by_label')}</p>
                                 <p className="font-semibold">{sale.soldBy.name}</p>
                             </div>
                         </div>
@@ -213,11 +216,11 @@ export default function SaleDetailPage() {
                     {sale.status === 'VOIDED' && (
                         <Card className="border-red-500 bg-red-50/50">
                             <CardHeader>
-                                <CardTitle className="text-red-600 text-base">Void Information</CardTitle>
+                                <CardTitle className="text-red-600 text-base">{t('void_info_title')}</CardTitle>
                             </CardHeader>
                             <CardContent className="grid grid-cols-2 gap-4 text-sm pb-4">
-                                <div><p className="font-semibold">Voided By</p><p>{sale.voidedBy?.name || 'N/A'}</p></div>
-                                <div><p className="font-semibold">Voided Date</p><p>{new Date(sale.voidedAt).toLocaleString()}</p></div>
+                                <div><p className="font-semibold">{t('voided_by_label')}</p><p>{sale.voidedBy?.name || 'N/A'}</p></div>
+                                <div><p className="font-semibold">{t('voided_date_label')}</p><p>{new Date(sale.voidedAt).toLocaleString()}</p></div>
                             </CardContent>
                         </Card>
                     )}
@@ -228,12 +231,12 @@ export default function SaleDetailPage() {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b bg-muted/40">
-                                            <th className="p-2 text-left">หมวดหมู่ (Category)</th>
-                                            <th className="p-2 text-left">ยี่ห้อ (Brand)</th>
-                                            <th className="p-2 text-left">รายการ (Product)</th>
-                                            <th className="p-2 text-left">Serial Number</th>
-                                            <th className="p-2 text-left">MAC Address</th>
-                                            <th className="p-2 text-right">ราคา (Price)</th>
+                                            <th className="p-2 text-left">{t('tableHeader_category')}</th>
+                                            <th className="p-2 text-left">{t('tableHeader_brand')}</th>
+                                            <th className="p-2 text-left">{t('tableHeader_product')}</th>
+                                            <th className="p-2 text-left">{t('tableHeader_serialNumber')}</th>
+                                            <th className="p-2 text-left">{t('tableHeader_macAddress')}</th>
+                                            <th className="p-2 text-right">{t('tableHeader_price')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -250,15 +253,15 @@ export default function SaleDetailPage() {
                                     </tbody>
                                     <tfoot>
                                         <tr className="border-t font-semibold">
-                                            <td colSpan="5" className="p-2 text-right">รวมเป็นเงิน (Subtotal)</td>
+                                            <td colSpan="5" className="p-2 text-right">{t('subtotal_label')}</td>
                                             <td className="p-2 text-right">{sale.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                         </tr>
                                         <tr className="border-t">
-                                            <td colSpan="5" className="p-2 text-right">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
+                                            <td colSpan="5" className="p-2 text-right">{t('vat_label')}</td>
                                             <td className="p-2 text-right">{sale.vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                         </tr>
                                         <tr className="border-t text-base font-bold bg-muted/40">
-                                            <td colSpan="5" className="p-2 text-right">ยอดสุทธิ (Total)</td>
+                                            <td colSpan="5" className="p-2 text-right">{t('total_label')}</td>
                                             <td className="p-2 text-right">{sale.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} THB</td>
                                         </tr>
                                     </tfoot>
@@ -272,32 +275,32 @@ export default function SaleDetailPage() {
                     <div className="signature-box">
                         <div className="signature-line"></div>
                         <p>( {sale.soldBy.name} )</p>
-                        <p>ผู้ขาย</p>
+                        <p>{t('signature_seller')}</p>
                     </div>
                     <div className="signature-box">
                         <div className="signature-line"></div>
                         <p>( {sale.customer.name} )</p>
-                        <p>ผู้ซื้อ</p>
+                        <p>{t('signature_buyer')}</p>
                     </div>
                 </div>
 
                 <div className="print-footer hidden text-center text-xs text-muted-foreground mt-8">
-                     <p>ขอบคุณที่ใช้บริการ</p>
-                     <p>Thank you for your business!</p>
+                     <p>{t('thank_you_message_1')}</p>
+                     <p>{t('thank_you_message_2')}</p>
                 </div>
             </div>
 
             <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('void_dialog_title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action will void Sale ID #{sale.id}. The items in this sale will be returned to stock. This cannot be undone.
+                            {t('void_dialog_description', { id: sale.id })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleVoidSale}>Continue</AlertDialogAction>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleVoidSale}>{t('continue')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

@@ -7,10 +7,9 @@ import useAuthStore from "@/store/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-// --- START: 1. Import ไอคอน ---
 import { ArrowLeft, Package, History, User } from "lucide-react";
-// --- END ---
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next"; // --- 1. Import useTranslation ---
 
 const StatCard = ({ title, value, icon, description, onClick }) => (
     <Card onClick={onClick} className={onClick ? "cursor-pointer hover:border-primary transition-colors" : ""}>
@@ -28,6 +27,7 @@ const StatCard = ({ title, value, icon, description, onClick }) => (
 export default function UserAssetHistoryPage() {
     const { userId } = useParams();
     const navigate = useNavigate();
+    const { t } = useTranslation(); // --- 2. เรียกใช้ useTranslation ---
     const token = useAuthStore((state) => state.token);
     const [user, setUser] = useState(null);
     const [history, setHistory] = useState([]);
@@ -59,53 +59,51 @@ export default function UserAssetHistoryPage() {
 
     return (
         <div className="space-y-6">
+            {/* --- 3. แปลข้อความ --- */}
             <div className="flex justify-between items-center">
-                {/* --- START: 2. ปรับปรุง Header --- */}
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <User className="h-6 w-6" /> 
-                        User Asset Details
+                        {t('user_asset_details_title')}
                     </h1>
-                    <p className="text-muted-foreground mt-1">Showing asset history for: {user?.name || '...'}</p>
+                    <p className="text-muted-foreground mt-1">{t('user_asset_description', { name: user?.name || '...' })}</p>
                 </div>
-                {/* --- END --- */}
                 <Button variant="outline" onClick={() => navigate('/users')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to User List
+                    {t('back_to_user_list_button')}
                 </Button>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <StatCard 
-                    title="Currently Assigned"
+                    title={t('stat_currently_assigned')}
                     value={summary.currentlyAssigned}
                     icon={<Package className="h-4 w-4 text-muted-foreground" />}
-                    description="Assets currently in possession."
+                    description={t('stat_currently_assigned_desc')}
                     onClick={() => navigate(`/users/${userId}/active-assets`)}
                 />
                 <StatCard 
-                    title="Total Ever Assigned"
+                    title={t('stat_total_ever_assigned')}
                     value={summary.totalEverAssigned}
                     icon={<History className="h-4 w-4 text-muted-foreground" />}
-                    description="Total number of assets ever assigned."
+                    description={t('stat_total_ever_assigned_desc')}
                     onClick={() => navigate(`/users/${userId}/assets`)}
                 />
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Full Assignment History Log</CardTitle>
+                    <CardTitle>{t('full_assignment_history_title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {/* --- START: 3. เพิ่ม Div ครอบ Table และปรับปรุง Header --- */}
                     <div className="border rounded-md">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b bg-muted/50 hover:bg-muted/50">
-                                    <th className="p-2 text-left">Asset Code</th>
-                                    <th className="p-2 text-left">Product</th>
-                                    <th className="p-2 text-left">Assigned Date</th>
-                                    <th className="p-2 text-left">Returned Date</th>
+                                    <th className="p-2 text-left">{t('tableHeader_assetCode')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_product')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_assignedDate')}</th>
+                                    <th className="p-2 text-left">{t('tableHeader_returnedDate')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -114,15 +112,14 @@ export default function UserAssetHistoryPage() {
                                         <td className="p-2 font-semibold">{h.inventoryItem.assetCode}</td>
                                         <td className="p-2">{h.inventoryItem.productModel.modelNumber}</td>
                                         <td className="p-2">{new Date(h.assignedAt).toLocaleString()}</td>
-                                        <td className="p-2">{h.returnedAt ? new Date(h.returnedAt).toLocaleString() : <Badge variant="warning">In Possession</Badge>}</td>
+                                        <td className="p-2">{h.returnedAt ? new Date(h.returnedAt).toLocaleString() : <Badge variant="warning">{t('status_in_possession')}</Badge>}</td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">This user has no assignment history.</td></tr>
+                                    <tr><td colSpan="4" className="p-4 text-center text-muted-foreground">{t('no_assignment_history_for_user')}</td></tr>
                                 )}
                             </tbody>
                         </table>
                     </div>
-                    {/* --- END --- */}
                 </CardContent>
             </Card>
         </div>
