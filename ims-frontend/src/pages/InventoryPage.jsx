@@ -87,7 +87,7 @@ export default function InventoryPage() {
         sortBy, sortOrder, handleSortChange,
         handleSearchChange, handlePageChange, handleItemsPerPageChange, handleFilterChange, refreshData
     } = usePaginatedFetch("/inventory", 10, {
-        status: initialStatus,
+        status: "IN_STOCK",
         categoryId: "All",
         brandId: "All"
     });

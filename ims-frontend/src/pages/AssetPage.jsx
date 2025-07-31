@@ -72,7 +72,7 @@ export default function AssetPage() {
         handleFilterChange,
         refreshData
     } = usePaginatedFetch("/assets", 10, {
-        status: "All",
+        status: "IN_WAREHOUSE",
         categoryId: "All",
         brandId: "All"
     });
