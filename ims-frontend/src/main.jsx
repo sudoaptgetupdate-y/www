@@ -9,6 +9,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
+import AdminProtectedRoute from './components/auth/AdminProtectedRoute.jsx';
 import MainLayout from './components/layout/MainLayout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 
@@ -47,7 +48,7 @@ const CreateRepairPage = lazy(() => import('./pages/CreateRepairPage.jsx'));
 const RepairDetailPage = lazy(() => import('./pages/RepairDetailPage.jsx'));
 const SupplierPage = lazy(() => import('./pages/SupplierPage.jsx'));
 const CompanyProfilePage = lazy(() => import('./pages/CompanyProfilePage.jsx'));
-const SalesReportPage = lazy(() => import('./pages/SalesReportPage.jsx')); // <-- เพิ่ม import
+const SalesReportPage = lazy(() => import('./pages/SalesReportPage.jsx'));
 
 // Fallback component to show while lazy components are loading
 const Loading = () => (
@@ -56,9 +57,8 @@ const Loading = () => (
   </div>
 );
 
-const routes = [
+const generalRoutes = [
   { path: 'dashboard', Page: DashboardRedirect },
-  // Business
   { path: 'sales', Page: SalePage },
   { path: 'sales/new', Page: CreateSalePage },
   { path: 'sales/:saleId', Page: SaleDetailPage },
@@ -70,13 +70,9 @@ const routes = [
   { path: 'customers/:id/active-borrowings', Page: ActiveBorrowingsPage },
   { path: 'customers/:id/returned-history', Page: CustomerReturnedHistoryPage },
   { path: 'customers/:id/purchase-history', Page: CustomerPurchaseHistoryPage },
-  // Reports
-  { path: 'reports/sales', Page: SalesReportPage }, // <-- เพิ่ม Route
-  // Assets (Transaction Based)
   { path: 'asset-assignments', Page: AssetAssignmentPage },
   { path: 'asset-assignments/new', Page: CreateAssetAssignmentPage },
   { path: 'asset-assignments/:assignmentId', Page: AssetAssignmentDetailPage },
-  // Products & Master Data
   { path: 'inventory', Page: InventoryPage },
   { path: 'inventory/:itemId/history', Page: InventoryHistoryPage },
   { path: 'assets', Page: AssetPage },
@@ -86,16 +82,19 @@ const routes = [
   { path: 'brands', Page: BrandPage },
   { path: 'categories', Page: CategoryPage },
   { path: 'suppliers', Page: SupplierPage },
-  // System & Repair
   { path: 'repairs', Page: RepairPage },
   { path: 'repairs/new', Page: CreateRepairPage },
   { path: 'repairs/:repairId', Page: RepairDetailPage },
   { path: 'addresses', Page: AddressPage },
-  { path: 'users', Page: UserManagementPage },
-  { path: 'users/:userId/assets', Page: UserAssetHistoryPage },
-  { path: 'users/:userId/active-assets', Page: UserActiveAssetsPage },
   { path: 'profile', Page: ProfilePage },
-  { path: 'company-profile', Page: CompanyProfilePage },
+];
+
+const adminRoutes = [
+    { path: 'reports/sales', Page: SalesReportPage },
+    { path: 'users', Page: UserManagementPage },
+    { path: 'users/:userId/assets', Page: UserAssetHistoryPage },
+    { path: 'users/:userId/active-assets', Page: UserActiveAssetsPage },
+    { path: 'company-profile', Page: CompanyProfilePage },
 ];
 
 const router = createBrowserRouter([
@@ -114,10 +113,19 @@ const router = createBrowserRouter([
             element: <MainLayout />,
             children: [
               { index: true, element: <Navigate to="/dashboard" replace /> },
-              ...routes.map(({ path, Page }) => ({
+              // General routes
+              ...generalRoutes.map(({ path, Page }) => ({
                 path,
                 element: <Suspense fallback={<Loading />}><Page /></Suspense>,
               })),
+              // Admin only routes
+              {
+                element: <AdminProtectedRoute />,
+                children: adminRoutes.map(({ path, Page }) => ({
+                  path,
+                  element: <Suspense fallback={<Loading />}><Page /></Suspense>,
+                }))
+              }
             ]
           }
         ]
