@@ -174,7 +174,7 @@ const MainLayout = () => {
                         </p>
                         <div className="space-y-1">
                             <NavItem to="/users" icon={<Settings size={18}/>} text={t('userManagement')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
-                            <NavItem to="/company-profile" icon={<Building size={18}/>} text="Company Profile" isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
+                            <NavItem to="/company-profile" icon={<Building size={18}/>} text={t('company_profile')} isCollapsed={isSidebarCollapsed} onClick={handleNavLinkClick} />
                         </div>
                     </div>
                 )}

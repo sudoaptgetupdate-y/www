@@ -26,7 +26,6 @@ const CustomerPurchaseHistoryPage = lazy(() => import('./pages/CustomerPurchaseH
 const SalePage = lazy(() => import('./pages/SalePage.jsx'));
 const CreateSalePage = lazy(() => import('./pages/CreateSalePage.jsx'));
 const SaleDetailPage = lazy(() => import('./pages/SaleDetailPage.jsx'));
-const EditSalePage = lazy(() => import('./pages/EditSalePage.jsx'));
 const BorrowingPage = lazy(() => import('./pages/BorrowingPage.jsx'));
 const CreateBorrowingPage = lazy(() => import('./pages/CreateBorrowingPage.jsx'));
 const BorrowingDetailPage = lazy(() => import('./pages/BorrowingDetailPage.jsx'));
@@ -63,7 +62,6 @@ const routes = [
   { path: 'sales', Page: SalePage },
   { path: 'sales/new', Page: CreateSalePage },
   { path: 'sales/:saleId', Page: SaleDetailPage },
-  { path: 'sales/edit/:saleId', Page: EditSalePage },
   { path: 'borrowings', Page: BorrowingPage },
   { path: 'borrowings/new', Page: CreateBorrowingPage },
   { path: 'borrowings/:borrowingId', Page: BorrowingDetailPage },
