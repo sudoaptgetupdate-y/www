@@ -19,7 +19,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useTranslation } from "react-i18next"; // --- 1. Import useTranslation ---
+import { useTranslation } from "react-i18next";
+import { Textarea } from "@/components/ui/textarea";
+
+const NOTE_MAX_LENGTH = 191; // กำหนดความยาวสูงสุด
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -33,7 +36,7 @@ function useDebounce(value, delay) {
 export default function EditSalePage() {
     const { saleId } = useParams();
     const navigate = useNavigate();
-    const { t } = useTranslation(); // --- 2. เรียกใช้ useTranslation ---
+    const { t } = useTranslation();
     const token = useAuthStore((state) => state.token);
 
     const [initialCustomer, setInitialCustomer] = useState(null);
@@ -42,6 +45,7 @@ export default function EditSalePage() {
     const [selectedItems, setSelectedItems] = useState([]);
     const [itemSearch, setItemSearch] = useState("");
     const [loading, setLoading] = useState(true);
+    const [notes, setNotes] = useState("");
     
     const debouncedItemSearch = useDebounce(itemSearch, 500);
 
@@ -56,6 +60,7 @@ export default function EditSalePage() {
                 setInitialCustomer(saleData.customer);
                 setSelectedCustomerId(String(saleData.customerId));
                 setSelectedItems(saleData.itemsSold);
+                setNotes(saleData.notes || "");
                 
                 const inventoryRes = await axiosInstance.get("/inventory", {
                     headers: { Authorization: `Bearer ${token}` },
@@ -71,7 +76,7 @@ export default function EditSalePage() {
                 setAvailableItems(uniqueAvailable.filter(item => !selectedIds.has(item.id)));
 
             } catch (error) {
-                toast.error(t('error_fetch_initial_data')); // --- 3. แปลข้อความ ---
+                toast.error(t('error_fetch_initial_data'));
                 navigate("/sales");
             } finally {
                 setLoading(false);
@@ -91,7 +96,7 @@ export default function EditSalePage() {
                 const selectedIds = new Set(selectedItems.map(i => i.id));
                 setAvailableItems((inventoryRes.data.data || []).filter(item => !selectedIds.has(item.id)));
             } catch (error) {
-                toast.error(t('error_fetch_inventory')); // --- 3. แปลข้อความ ---
+                toast.error(t('error_fetch_inventory'));
             }
         };
         fetchInventoryOnSearch();
@@ -108,23 +113,29 @@ export default function EditSalePage() {
     };
 
     const handleSubmit = async () => {
-        if (!selectedCustomerId) { toast.error(t('error_select_customer')); return; } // --- 3. แปลข้อความ ---
-        if (selectedItems.length === 0) { toast.error(t('error_add_item')); return; } // --- 3. แปลข้อความ ---
+        if (!selectedCustomerId) { toast.error(t('error_select_customer')); return; }
+        if (selectedItems.length === 0) { toast.error(t('error_add_item')); return; }
+        
+        if (notes && notes.length > NOTE_MAX_LENGTH) {
+            toast.error(`Notes cannot exceed ${NOTE_MAX_LENGTH} characters.`);
+            return;
+        }
         
         const payload = {
             customerId: parseInt(selectedCustomerId),
             inventoryItemIds: selectedItems.map(item => item.id),
+            notes: notes,
         };
         try {
             await axiosInstance.put(`/sales/${saleId}`, payload, { headers: { Authorization: `Bearer ${token}` } });
-            toast.success(t('success_sale_updated')); // --- 3. แปลข้อความ ---
+            toast.success(t('success_sale_updated'));
             navigate(`/sales/${saleId}`);
         } catch (error) {
-            toast.error(error.response?.data?.error || t('error_update_sale')); // --- 3. แปลข้อความ ---
+            toast.error(error.response?.data?.error || t('error_update_sale'));
         }
     };
     
-    if (loading) return <p>{t('loading_sale_data')}</p>; // --- 3. แปลข้อความ ---
+    if (loading) return <p>{t('loading_sale_data')}</p>;
 
     const subtotal = selectedItems.reduce((total, item) => total + (item.productModel?.sellingPrice || 0), 0);
     const vatAmount = subtotal * 0.07;
@@ -134,7 +145,6 @@ export default function EditSalePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2">
                 <CardHeader>
-                    {/* --- 3. แปลข้อความ --- */}
                     <CardTitle>{t('edit_sale_select_items_title')}</CardTitle>
                     <CardDescription>{t('edit_sale_select_items_description')}</CardDescription>
                 </CardHeader>
@@ -188,6 +198,18 @@ export default function EditSalePage() {
                              onSelect={setSelectedCustomerId}
                              initialCustomer={initialCustomer}
                         />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="notes">{t('notes')}</Label>
+                        <Textarea 
+                            id="notes" 
+                            value={notes} 
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Add or edit notes for this sale..."
+                        />
+                        <p className={`text-xs text-right ${notes.length > NOTE_MAX_LENGTH ? 'text-red-500' : 'text-muted-foreground'}`}>
+                            {notes.length} / {NOTE_MAX_LENGTH}
+                        </p>
                     </div>
                     <Separator />
                     <div className="space-y-2">

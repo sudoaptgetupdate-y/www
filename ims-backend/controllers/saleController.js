@@ -1,4 +1,5 @@
-// controllers/saleController.js
+// ims-backend/controllers/saleController.js
+
 const prisma = require('../prisma/client');
 const { EventType } = require('@prisma/client');
 const saleController = {};
@@ -10,7 +11,7 @@ const createEventLog = (tx, inventoryItemId, userId, eventType, details) => {
 };
 
 saleController.createSale = async (req, res, next) => {
-    const { customerId, inventoryItemIds } = req.body;
+    const { customerId, inventoryItemIds, notes } = req.body; // 1. รับค่า notes จาก request
     const soldById = req.user.id; 
 
     const parsedCustomerId = parseInt(customerId, 10);
@@ -20,7 +21,6 @@ saleController.createSale = async (req, res, next) => {
         return next(err);
     }
     
-    // ... (the rest of the function)
     if (!Array.isArray(inventoryItemIds) || inventoryItemIds.length === 0 || inventoryItemIds.some(id => typeof id !== 'number')) {
         const err = new Error('inventoryItemIds must be a non-empty array of numbers.');
         err.statusCode = 400;
@@ -61,6 +61,7 @@ saleController.createSale = async (req, res, next) => {
                     subtotal,
                     vatAmount,
                     total,
+                    notes, // 2. เพิ่ม notes ตอนสร้าง sale
                 },
             });
 
@@ -100,7 +101,6 @@ saleController.createSale = async (req, res, next) => {
     }
 };
 
-// ... (rest of the file is correct)
 saleController.getAllSales = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -232,15 +232,12 @@ saleController.voidSale = async (req, res, next) => {
             const itemIdsToUpdate = saleToVoid.itemsSold.map(item => item.id);
 
             if (itemIdsToUpdate.length > 0) {
-                // *** START: CORRECTED LOGIC ***
-                // We ONLY update the status, but keep the saleId for historical tracking.
                 await tx.inventoryItem.updateMany({
                     where: { id: { in: itemIdsToUpdate } },
                     data: {
                         status: 'IN_STOCK' 
                     },
                 });
-                // *** END: CORRECTED LOGIC ***
 
                 for (const itemId of itemIdsToUpdate) {
                     await createEventLog(
@@ -275,7 +272,7 @@ saleController.voidSale = async (req, res, next) => {
 
 saleController.updateSale = async (req, res, next) => {
     const { id } = req.params;
-    const { customerId, inventoryItemIds } = req.body;
+    const { customerId, inventoryItemIds, notes } = req.body; // 1. รับค่า notes
     const actorId = req.user.id;
 
     try {
@@ -353,6 +350,7 @@ saleController.updateSale = async (req, res, next) => {
                     subtotal: subtotal,
                     vatAmount: vatAmount,
                     total: total,
+                    notes: notes, // 2. เพิ่ม notes ตอนอัปเดต
                 },
                 include: { customer: true, soldBy: true, itemsSold: true },
             });
